@@ -71,8 +71,44 @@
   font-size: var(--size-sm);
 }
 
-/* A caption belongs to the title above it, not to the next block. */
-.screen__title + .screen__sub {
+/* Who is signed in, as a mark rather than a control. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--text);
+  font-size: var(--size-lg);
+  font-weight: var(--weight-bold);
+}
+
+/* The one action floats above the list, so the title is the only thing at
+   the top competing for the eye. Sticky keeps it in reach when the list
+   scrolls; margin-top pushes it down when it does not. */
+.fab {
+  position: sticky;
+  bottom: var(--space-4);
+  align-self: flex-end;
+  margin-top: auto;
+  padding-left: var(--space-4);
+  box-shadow: var(--shadow-raised);
+}
+
+.fab::before {
+  content: "";
+  width: var(--space-5);
+  height: var(--space-5);
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* A caption directly under a bare title belongs to it, not to the next block.
+   Inside .screen__header the header's own gap already does this. */
+.screen > .screen__title + .screen__sub {
   margin-top: calc(var(--space-3) * -1);
 }
 
@@ -128,14 +164,33 @@
 
 /* ---------- Today list ---------- */
 
-/* The list runs to the phone edge and carries the gutter as its own inset, so
-   the dividers read as one continuous list rather than a stack of cards. */
-.today__rows {
-  margin: var(--space-1) calc(var(--pad-gutter) * -1) 0;
+/* Rows live in one white card on the grey page: a single grouped list, not
+   a stack of floating cards. Dividers start where the text starts. */
+.today__rows,
+.members,
+.checklist {
+  overflow: hidden;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
-.today__rows > li + li {
-  border-top: var(--border-thin) solid var(--divider);
+.today__rows > li + li,
+.members > li + li,
+.checklist > li + li {
+  position: relative;
+}
+
+.today__rows > li + li::before,
+.members > li + li::before,
+.checklist > li + li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: 0;
+  height: var(--border-thin);
+  background: var(--divider);
 }
 
 .row {
@@ -214,14 +269,6 @@
 }
 
 /* ---------- Family detail ---------- */
-
-.members {
-  margin: calc(var(--space-2) * -1) calc(var(--pad-gutter) * -1) 0;
-}
-
-.members > li + li {
-  border-top: var(--border-thin) solid var(--divider);
-}
 
 /* Name and age on the left, the state and the action on the right. */
 .member {
@@ -386,7 +433,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: 0 var(--space-1);
+  padding: var(--pad-card);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .reasons__item {
@@ -494,8 +544,8 @@
 /* Unavailable is struck through as well as greyed, so the state does not
    depend on colour, and the chip stays one line high like its neighbours. */
 .choice:has(.choice__input:disabled) {
-  background: var(--surface-sunken);
-  border-color: transparent;
+  background: transparent;
+  border-color: var(--border);
   color: var(--text-muted);
   text-decoration: line-through;
   cursor: not-allowed;
@@ -505,9 +555,13 @@
 
 .summary {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 0;
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
   font-size: var(--size-sm);
 }
 
@@ -536,18 +590,16 @@
   text-align: right;
 }
 
+/* A long status still has to fit the card, so it may wrap here. */
+.summary .pill {
+  white-space: normal;
+  text-align: right;
+}
+
 .summary__note {
   color: var(--text-muted);
   font-size: var(--size-xs);
   font-weight: var(--weight-regular);
-}
-
-.checklist {
-  margin: calc(var(--space-2) * -1) calc(var(--pad-gutter) * -1) 0;
-}
-
-.checklist > li + li {
-  border-top: var(--border-thin) solid var(--divider);
 }
 
 .checklist__item {

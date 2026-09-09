@@ -87,12 +87,12 @@
   --radius-pill: 999px;
 
   /* ---- Padding roles. Every card of the same rank gets the same inset. ---- */
-  --pad-gutter: var(--space-5);          /* screen edge, and the device chrome above it */
+  /* Content inset from the screen edge. Sits inside --phone-safe, so anything
+     using it clears the device bezel by --phone-safe as well. */
+  --pad-gutter: var(--space-3);
   --pad-card: var(--space-4);            /* a card that holds a block of content */
   --pad-item: var(--space-3) var(--space-4); /* a row inside a list */
-  /* A full-bleed list row keeps the screen gutter as its own inset, so the
-     divider runs edge to edge the way it does in a native list. */
-  --pad-row: var(--space-4) var(--pad-gutter);
+  --pad-row: var(--space-4);             /* a row inside a grouped list card */
 
   /* ---- Touch targets ---- */
   --touch: 48px;
@@ -110,6 +110,9 @@
   --phone-bezel: 10px;
   --phone-status: 30px;
   --phone-nav: 24px;
+  /* Safe area: the inset the screen keeps clear on all four sides, so nothing
+     is drawn into the rounded corners of the frame. */
+  --phone-safe: var(--space-3);
   --page-max: 1200px;
 
   /* ---- Motion ---- */

@@ -244,7 +244,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg);
+  padding: var(--phone-safe);
+  background: var(--surface-sunken);
   border: var(--phone-bezel) solid var(--demo-bg);
   border-radius: var(--radius-frame);
   box-shadow:
@@ -255,7 +256,7 @@
 /* Punch-hole camera, centred in the status bar. */
 .phone__camera {
   position: absolute;
-  top: calc((var(--phone-status) - var(--space-3)) / 2);
+  top: calc(var(--phone-safe) + (var(--phone-status) - var(--space-3)) / 2);
   left: 50%;
   width: var(--space-3);
   height: var(--space-3);
@@ -274,7 +275,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--pad-gutter);
-  background: var(--bg);
+  background: var(--surface-sunken);
   color: var(--text);
   font-size: var(--size-xs);
   font-weight: 600;
@@ -347,7 +348,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: var(--surface-sunken);
 }
 
 .phone__handle {
@@ -358,12 +359,15 @@
   opacity: 0.45;
 }
 
+/* The screen's own corners follow the frame's, one safe area in. Full-bleed
+   rows are then rounded off rather than running into the curve. */
 .phone__screen {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: var(--bg);
+  border-radius: calc(var(--radius-frame) - var(--phone-safe));
+  background: var(--surface-sunken);
   overscroll-behavior: contain;
 }
 

@@ -16,20 +16,20 @@ export default function Keypad({
   inCall: boolean;
 }) {
   return (
-    <div>
-      <div role="group" aria-label="Keypad">
+    <div className="dialer">
+      <div className="keypad" role="group" aria-label="Keypad">
         {KEYS.map((k) => (
-          <button key={k} type="button" onClick={() => onKey(k)} disabled={!inCall} aria-label={`Key ${k}`}>
-            {k}
-            {HINT[k] ? ` (${HINT[k]})` : ""}
+          <button className="key" key={k} type="button" onClick={() => onKey(k)} disabled={!inCall} aria-label={`Key ${k}`}>
+            <span className="key__num">{k}</span>
+            <span className="key__label">{HINT[k] ?? ""}</span>
           </button>
         ))}
       </div>
-      <p>
-        <button type="button" onClick={onCall} disabled={inCall}>
+      <p className="dialer__actions">
+        <button className="btn callbtn callbtn--dial" type="button" onClick={onCall} disabled={inCall}>
           Call
-        </button>{" "}
-        <button type="button" onClick={onHangUp} disabled={!inCall}>
+        </button>
+        <button className="btn callbtn callbtn--hangup" type="button" onClick={onHangUp} disabled={!inCall}>
           Hang up
         </button>
       </p>

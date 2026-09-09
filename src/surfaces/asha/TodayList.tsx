@@ -70,9 +70,9 @@ export default function TodayList() {
         <p className="screen__eyebrow">{ASHA.name} · ASHA worker</p>
         <div className="screen__headline">
           <h1 className="screen__title">Today</h1>
-          <Link className="btn btn--accent btn--compact" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
-            New concern
-          </Link>
+          <span className="avatar" aria-hidden="true">
+            {ASHA.name[0]}
+          </span>
         </div>
         <p className="screen__sub">
           {longDate(today)}
@@ -101,6 +101,9 @@ export default function TodayList() {
           ))}
         </ul>
       )}
+      <Link className="btn btn--primary fab" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
+        New concern
+      </Link>
     </section>
   );
 }

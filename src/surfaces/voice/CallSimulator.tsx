@@ -7,6 +7,7 @@ import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import { PHC } from "../../app/seed";
 import { decodeAnswers } from "../../app/triage";
+import PhoneFrame from "../../shell/PhoneFrame";
 import FamilyCard from "./FamilyCard";
 import Keypad from "./Keypad";
 import { IDLE, KEYS, hangUp, press, startCall, tick, type Call, type Effect, type Env, type Key, type Step } from "./callMachine";
@@ -15,6 +16,16 @@ import { IDLE, KEYS, hangUp, press, startCall, tick, type Call, type Effect, typ
 const OPERATOR_DELAY_MS = 1200;
 
 const SPEAKER_LABEL = { line: "Arogya Line", caller: "You", operator: "Health worker" } as const;
+
+/** The number printed on the family card, dialled by the Call button. */
+const LINE_NUMBER = "1800 4471 108";
+
+/** What the handset shows: a call state, not the machine's state name. */
+function statusLabel(state: Call["state"]): string {
+  if (state === "idle") return "Ready to dial";
+  if (state === "ended") return "Call ended";
+  return "On call";
+}
 
 /** Fresh store slice at the moment of the key press, not at last render. */
 function readEnv(): Env {
@@ -46,6 +57,7 @@ export default function CallSimulator() {
   const [call, setCall] = useState<Call>(() => initialCall(params));
   // Keys pressed faster than React re-renders must still see the latest call.
   const callRef = useRef<Call>(call);
+  const logRef = useRef<HTMLOListElement>(null);
 
   const createConcern = useStore((s) => s.createConcern);
   const createBooking = useStore((s) => s.createBooking);
@@ -84,6 +96,13 @@ export default function CallSimulator() {
 
   const inCall = call.state !== "idle";
 
+  // A call log shows the newest line, like a handset does. Jumped, not
+  // animated, so there is nothing for reduced motion to suppress.
+  useEffect(() => {
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
+  }, [call.transcript]);
+
   // A real caller uses the handset, not the mouse: the number row dials and
   // Backspace hangs up. The on-screen keypad stays for people who prefer it.
   useEffect(() => {
@@ -106,32 +125,55 @@ export default function CallSimulator() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [apply]);
 
+  // The prompt still hanging in the air is the last thing the line said, which
+  // may sit above the keys the caller has pressed since.
+  const currentIndex = call.transcript.reduce((found, line, i) => (line.speaker === "caller" ? found : i), -1);
+
   return (
-    <section>
-      <h1>Voice line</h1>
-      <p>Call simulator. No audio: each spoken prompt appears in the call log.</p>
-      <p>Use the keypad below, or the number keys 0–9 on your keyboard. Backspace hangs up.</p>
+    <div className="voice">
+      <PhoneFrame>
+        <div className="call">
+          <header className="call__header">
+            <p className="call__to">Arogya Line</p>
+            <p className="call__number">{LINE_NUMBER}</p>
+            <p className={`call__status call__status--${inCall ? "on" : call.state}`}>{statusLabel(call.state)}</p>
+          </header>
 
-      <FamilyCard />
+          {call.transcript.length === 0 ? (
+            <p className="call__empty">Not on a call. Press Call to dial.</p>
+          ) : (
+            <ol className="log" aria-label="Call log" ref={logRef}>
+              {call.transcript.map((line, i) => (
+                <li
+                  key={i}
+                  className={`log__line log__line--${line.speaker}${i === currentIndex ? " log__line--current" : ""}`}
+                >
+                  <span className="log__who">{SPEAKER_LABEL[line.speaker]}</span>
+                  <span className="log__text">{line.text}</span>
+                </li>
+              ))}
+            </ol>
+          )}
 
-      <div>
-        <h2>Call log</h2>
-        <p>Status: {call.state}</p>
-        {call.transcript.length === 0 ? (
-          <p>Not on a call. Press Call to dial.</p>
-        ) : (
-          <ol aria-label="Call log">
-            {call.transcript.map((line, i) => (
-              <li key={i}>
-                {SPEAKER_LABEL[line.speaker]}: {line.text}
-              </li>
-            ))}
-          </ol>
-        )}
-        {call.state === "enterFamilyId" && <p>Entered: {call.idBuffer || "____"}</p>}
+          {call.state === "enterFamilyId" && (
+            <p className="call__entry">
+              <span className="call__entry-key">Family ID</span>
+              <span className="call__digits">{call.idBuffer.padEnd(4, "·")}</span>
+            </p>
+          )}
+
+          <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} />
+        </div>
+      </PhoneFrame>
+
+      <div className="voice__side">
+        <div className="voice__intro">
+          <h1>Voice line</h1>
+          <p>Call simulator. No audio: each spoken prompt appears in the call log.</p>
+          <p>Use the keypad, or the number keys 0–9 on your keyboard. Backspace hangs up.</p>
+        </div>
+        <FamilyCard />
       </div>
-
-      <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} />
-    </section>
+    </div>
   );
 }

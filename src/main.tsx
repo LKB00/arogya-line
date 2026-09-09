@@ -5,6 +5,7 @@ import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/shell.css";
 import "./styles/asha.css";
+import "./styles/voice.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

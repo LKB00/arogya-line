@@ -21,9 +21,11 @@ export default function Result() {
 
   if (!family || !member) {
     return (
-      <section>
-        <p>Member not found.</p>
-        <Link to="/asha">Back to today</Link>
+      <section className="screen">
+        <p className="screen__empty">Member not found.</p>
+        <Link className="screen__back" to="/asha">
+          Back to today
+        </Link>
       </section>
     );
   }
@@ -39,45 +41,58 @@ export default function Result() {
   };
 
   return (
-    <section>
-      <p>
-        <Link to={`/asha/family/${familyId}`}>Back to {family.head}</Link>
-      </p>
-      <h1>
-        {urgency.toUpperCase()}: {HEADLINE[urgency]}
-      </h1>
-      <p>
-        {member.name}, {member.age}
-      </p>
-      <ul>
+    <section className="screen">
+      <Link className="screen__back" to={`/asha/family/${familyId}`}>
+        Back to {family.head}
+      </Link>
+      <div className={`result__banner urgency--${urgency}`}>
+        <h1 className="result__headline">
+          {urgency.toUpperCase()}: {HEADLINE[urgency]}
+        </h1>
+        <p className="screen__sub">
+          {member.name}, {member.age}
+        </p>
+      </div>
+      <ul className="reasons">
         {reasons.map((r) => (
-          <li key={r}>{r}</li>
+          <li key={r} className="reasons__item">
+            {r}
+          </li>
         ))}
       </ul>
 
       {urgency === "green" && (
-        <p>
-          <button type="button" onClick={saveHomeCare}>
+        <p className="screen__action">
+          <button type="button" className="btn btn--primary btn--block btn--tall" onClick={saveHomeCare}>
             Save home-care advice
           </button>
         </p>
       )}
 
       {urgency === "amber" && (
-        <p>
-          <button type="button" onClick={() => navigate(`/asha/family/${familyId}/check/${memberId}/booking?${query}`)}>
+        <p className="screen__action">
+          <button
+            type="button"
+            className="btn btn--primary btn--block btn--tall"
+            onClick={() => navigate(`/asha/family/${familyId}/check/${memberId}/booking?${query}`)}
+          >
             Book PHC visit
-          </button>{" "}
-          <button type="button" onClick={() => navigate(`/voice?family=${familyId}`)}>
+          </button>
+          <button
+            type="button"
+            className="btn btn--secondary btn--block"
+            onClick={() => navigate(`/voice?family=${familyId}`)}
+          >
             Call the doctor line
           </button>
         </p>
       )}
 
       {urgency === "red" && (
-        <p>
+        <p className="screen__action">
           <button
             type="button"
+            className="btn btn--primary btn--block btn--tall"
             onClick={() => navigate(`/voice?mode=emergency&family=${familyId}&member=${memberId}&${query}`)}
           >
             Call PHC now

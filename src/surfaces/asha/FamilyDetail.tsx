@@ -14,9 +14,11 @@ export default function FamilyDetail() {
 
   if (!family) {
     return (
-      <section>
-        <p>Family {familyId} not found.</p>
-        <Link to="/asha">Back to today</Link>
+      <section className="screen">
+        <p className="screen__empty">Family {familyId} not found.</p>
+        <Link className="screen__back" to="/asha">
+          Back to today
+        </Link>
       </section>
     );
   }
@@ -33,36 +35,44 @@ export default function FamilyDetail() {
   const latestAdvice = latestAdviceFor({ concerns, bookings }, family.id);
 
   return (
-    <section>
-      <p>
-        <Link to="/asha">Back to today</Link>
-      </p>
-      <h1>
+    <section className="screen">
+      <Link className="screen__back" to="/asha">
+        Back to today
+      </Link>
+      <h1 className="screen__title">
         {family.head} · {family.id}
       </h1>
-      <p>
+      <p className="family__meta">
         {family.village} · {family.phone}
       </p>
-      <ul>
+      <ul className="members">
         {family.members.map((m) => {
           const open = openConcernFor(m.id);
           return (
-            <li key={m.id}>
-              {m.name}, {m.age}, {m.role}
-              {m.note && <> · {m.note}</>}
-              {open && <strong> · open concern ({open.urgency})</strong>}{" "}
-              <Link to={`/asha/family/${family.id}/check/${m.id}`}>Check symptoms</Link>
+            <li key={m.id} className={open ? "member member--flagged" : "member"}>
+              <span className="member__name">
+                {m.name}, {m.age}, {m.role}
+              </span>
+              {m.note && <span className="member__meta">{m.note}</span>}
+              {open && (
+                <span className={`urgency urgency--${open.urgency}`}>
+                  <span className="member__flag">open concern ({open.urgency})</span>
+                </span>
+              )}
+              <Link className="btn btn--secondary" to={`/asha/family/${family.id}/check/${m.id}`}>
+                Check symptoms
+              </Link>
             </li>
           );
         })}
       </ul>
       <p>
-        <button type="button" onClick={() => setShowNote((v) => !v)}>
+        <button type="button" className="btn btn--quiet read-aloud" onClick={() => setShowNote((v) => !v)}>
           Hear last doctor note
         </button>
       </p>
       {showNote && (
-        <blockquote>
+        <blockquote className="note">
           {latestAdvice ? `${latestAdvice.doctor}, ${latestAdvice.date}: ${latestAdvice.advice}` : "No advice yet."}
         </blockquote>
       )}

@@ -26,9 +26,11 @@ export default function Booking() {
 
   if (!family || !member) {
     return (
-      <section>
-        <p>Member not found.</p>
-        <Link to="/asha">Back to today</Link>
+      <section className="screen">
+        <p className="screen__empty">Member not found.</p>
+        <Link className="screen__back" to="/asha">
+          Back to today
+        </Link>
       </section>
     );
   }
@@ -45,50 +47,70 @@ export default function Booking() {
   };
 
   return (
-    <section>
-      <p>
-        <Link to={`/asha/family/${familyId}/check/${memberId}/result?a=${params.get("a") ?? ""}`}>Back to result</Link>
-      </p>
-      <h1>Book PHC visit</h1>
-      <p>
+    <section className="screen">
+      <Link
+        className="screen__back"
+        to={`/asha/family/${familyId}/check/${memberId}/result?a=${params.get("a") ?? ""}`}
+      >
+        Back to result
+      </Link>
+      <h1 className="screen__title">Book PHC visit</h1>
+      <p className="screen__sub">
         {member.name}, {member.age} · {PHC.facility}, {PHC.doctor}
       </p>
 
-      <fieldset>
-        <legend>Day</legend>
-        {DAYS.map((d) => (
-          <label key={d.date}>
-            <input
-              type="radio"
-              name="day"
-              value={d.date}
-              checked={date === d.date}
-              onChange={() => {
-                setDate(d.date);
-                setSlot(null);
-              }}
-            />{" "}
-            {d.label} ({d.date}){" "}
-          </label>
-        ))}
-      </fieldset>
-
-      <fieldset>
-        <legend>Slot</legend>
-        {SLOTS.map((s) => {
-          const taken = takenSlots.has(s);
-          return (
-            <label key={s}>
-              <input type="radio" name="slot" value={s} disabled={taken} checked={slot === s} onChange={() => setSlot(s)} />{" "}
-              {s}
-              {taken && " (taken)"}{" "}
+      <fieldset className="choices">
+        <legend className="choices__legend">Day</legend>
+        <span className="choices__set choices__set--stack">
+          {DAYS.map((d) => (
+            <label key={d.date} className="choice">
+              <input
+                className="choice__input"
+                type="radio"
+                name="day"
+                value={d.date}
+                checked={date === d.date}
+                onChange={() => {
+                  setDate(d.date);
+                  setSlot(null);
+                }}
+              />
+              <span>
+                {d.label} ({d.date})
+              </span>
             </label>
-          );
-        })}
+          ))}
+        </span>
       </fieldset>
 
-      <p>
-        <button type="button" onClick={confirm} disabled={!slot}>
+      <fieldset className="choices">
+        <legend className="choices__legend">Slot</legend>
+        <span className="choices__set">
+          {SLOTS.map((s) => {
+            const taken = takenSlots.has(s);
+            return (
+              <label key={s} className="choice">
+                <input
+                  className="choice__input"
+                  type="radio"
+                  name="slot"
+                  value={s}
+                  disabled={taken}
+                  checked={slot === s}
+                  onChange={() => setSlot(s)}
+                />
+                <span>
+                  {s}
+                  {taken && " (taken)"}
+                </span>
+              </label>
+            );
+          })}
+        </span>
+      </fieldset>
+
+      <p className="screen__action">
+        <button type="button" className="btn btn--primary btn--block btn--tall" onClick={confirm} disabled={!slot}>
           Confirm booking
         </button>
       </p>

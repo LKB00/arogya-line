@@ -11,7 +11,7 @@ export default function SyncBanner() {
   );
   if (online || waiting === 0) return null;
   return (
-    <div role="status">
+    <div className="sync-banner" role="status">
       No signal. {waiting} {waiting === 1 ? "item" : "items"} saved on the phone, waiting to send.
     </div>
   );

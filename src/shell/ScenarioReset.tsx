@@ -17,7 +17,7 @@ export default function ScenarioReset() {
   }
 
   return (
-    <button type="button" onClick={onReset}>
+    <button type="button" className="btn btn--secondary demo__reset" onClick={onReset}>
       Reset demo
     </button>
   );

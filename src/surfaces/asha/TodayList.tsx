@@ -62,21 +62,29 @@ export default function TodayList() {
     .sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
 
   return (
-    <section>
-      <h1>Today</h1>
+    <section className="screen">
+      <h1 className="screen__title">Today</h1>
       <p>
-        <Link to={`/asha/family/${DEFAULT_FAMILY_ID}`}>New family concern</Link>
+        <Link className="btn btn--primary btn--block" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
+          New family concern
+        </Link>
       </p>
       {rows.length === 0 ? (
-        <p>Nothing open today.</p>
+        <p className="screen__empty">Nothing open today.</p>
       ) : (
-        <ul>
+        <ul className="today__rows">
           {rows.map((r) => (
             <li key={r.family.id}>
-              <Link to={`/asha/family/${r.family.id}`}>
-                [{r.band}] {r.family.head} · {r.family.id} · {r.reason}
+              <Link className={`row row--${r.band}`} to={`/asha/family/${r.family.id}`}>
+                <span className="row__tags">
+                  <span className={`urgency urgency--${r.band}`}>{r.band}</span>
+                  {r.sync === "saved_offline" && <em className="pill pill--waiting">waiting to send</em>}
+                </span>
+                <span className="row__head">
+                  {r.family.head} <span className="row__id">· {r.family.id}</span>
+                </span>
+                <span className="row__reason">{r.reason}</span>
               </Link>
-              {r.sync === "saved_offline" && <em> (waiting to send)</em>}
             </li>
           ))}
         </ul>

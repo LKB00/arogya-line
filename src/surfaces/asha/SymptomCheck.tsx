@@ -1,7 +1,7 @@
 // One question per screen, driven by triage.nextQuestion (SPEC 6.1 SymptomCheck).
 // Answers live in the URL (?a=...) so browser back steps one question back.
 
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { decodeAnswers, encodeAnswers, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
@@ -29,9 +29,11 @@ export default function SymptomCheck() {
 
   if (!family || !member || !role) {
     return (
-      <section>
-        <p>Member not found.</p>
-        <Link to="/asha">Back to today</Link>
+      <section className="screen">
+        <p className="screen__empty">Member not found.</p>
+        <Link className="screen__back" to="/asha">
+          Back to today
+        </Link>
       </section>
     );
   }
@@ -43,27 +45,36 @@ export default function SymptomCheck() {
   };
 
   return (
-    <section>
-      <p>
-        <Link to={`/asha/family/${familyId}`}>Back to {family.head}</Link>
-      </p>
-      <h1>
+    <section className="screen">
+      <Link className="screen__back" to={`/asha/family/${familyId}`}>
+        Back to {family.head}
+      </Link>
+      <h1 className="screen__title">
         {member.name}, {member.age}
       </h1>
+      <div className="progress">
+        <p className="progress__label">
+          Question {answers.length + 1} of {total}
+        </p>
+        {/* The bar carries no new information, so it stays out of the reading order. */}
+        <div className="progress__track" aria-hidden="true">
+          <div
+            className="progress__fill"
+            style={{ "--step": answers.length + 1, "--steps": total } as CSSProperties}
+          />
+        </div>
+      </div>
+      <p className="question">{question.text}</p>
       <p>
-        Question {answers.length + 1} of {total}
-      </p>
-      <p>{question.text}</p>
-      <p>
-        <button type="button" aria-label="Read aloud">
+        <button type="button" className="btn btn--quiet read-aloud" aria-label="Read aloud">
           Read aloud
         </button>
       </p>
-      <p>
-        <button type="button" onClick={() => answer("yes")}>
+      <p className="screen__action answers">
+        <button type="button" className="btn btn--primary btn--tall" onClick={() => answer("yes")}>
           Yes
-        </button>{" "}
-        <button type="button" onClick={() => answer("no")}>
+        </button>
+        <button type="button" className="btn btn--secondary btn--tall" onClick={() => answer("no")}>
           No
         </button>
       </p>

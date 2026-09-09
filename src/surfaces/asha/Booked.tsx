@@ -20,51 +20,60 @@ export default function Booked() {
 
   if (!booking) {
     return (
-      <section>
-        <p>Booking not found.</p>
-        <Link to="/asha">Back to today</Link>
+      <section className="screen">
+        <p className="screen__empty">Booking not found.</p>
+        <Link className="screen__back" to="/asha">
+          Back to today
+        </Link>
       </section>
     );
   }
 
   return (
-    <section>
-      <h1>Visit booked</h1>
-      <dl>
-        <dt>Patient</dt>
-        <dd>
+    <section className="screen">
+      <h1 className="screen__title">Visit booked</h1>
+      <dl className="summary">
+        <dt className="summary__key">Patient</dt>
+        <dd className="summary__value">
           {member ? `${member.name}, ${member.age}` : "—"} · family {family?.id ?? "—"}
         </dd>
-        <dt>Date</dt>
-        <dd>{booking.date}</dd>
-        <dt>Slot</dt>
-        <dd>{booking.slot}</dd>
-        <dt>Facility</dt>
-        <dd>{booking.facility}</dd>
-        <dt>Doctor</dt>
-        <dd>{booking.doctor}</dd>
-        <dt>Status</dt>
-        <dd>{booking.sync === "sent" ? "Sent to PHC" : "Saved on phone, waiting for signal"}</dd>
+        <dt className="summary__key">Date</dt>
+        <dd className="summary__value">{booking.date}</dd>
+        <dt className="summary__key">Slot</dt>
+        <dd className="summary__value">{booking.slot}</dd>
+        <dt className="summary__key">Facility</dt>
+        <dd className="summary__value">{booking.facility}</dd>
+        <dt className="summary__key">Doctor</dt>
+        <dd className="summary__value">{booking.doctor}</dd>
+        <dt className="summary__key">Status</dt>
+        <dd className="summary__value">
+          <span className={booking.sync === "sent" ? "pill pill--sent" : "pill pill--waiting"}>
+            {booking.sync === "sent" ? "Sent to PHC" : "Saved on phone, waiting for signal"}
+          </span>
+        </dd>
       </dl>
 
       <h2>What to tell the family</h2>
-      <ul>
+      <ul className="checklist">
         {CHECKLIST.map((item, i) => (
           <li key={item}>
-            <label>
+            <label className="checklist__item">
               <input
+                className="checklist__box"
                 type="checkbox"
                 checked={checked[i]}
                 onChange={(e) => setChecked((prev) => prev.map((v, j) => (j === i ? e.target.checked : v)))}
-              />{" "}
-              {item}
+              />
+              <span>{item}</span>
             </label>
           </li>
         ))}
       </ul>
 
-      <p>
-        <Link to="/asha">Back to today</Link>
+      <p className="screen__action">
+        <Link className="btn btn--secondary btn--block" to="/asha">
+          Back to today
+        </Link>
       </p>
     </section>
   );

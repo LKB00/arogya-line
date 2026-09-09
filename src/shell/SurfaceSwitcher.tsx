@@ -11,21 +11,26 @@ const surfaces = [
 
 export default function SurfaceSwitcher() {
   return (
-    <div>
-      <nav aria-label="Surface">
-        {surfaces.map((s) => (
-          <NavLink key={s.to} to={s.to}>
-            {s.label}
-          </NavLink>
-        ))}
-      </nav>
-      <ConnectivityToggle />
-      <ScenarioReset />
+    <div className="demo">
+      <header className="demo__bar">
+        <span className="demo__brand">Arogya Line</span>
+        <nav className="demo__nav" aria-label="Surface">
+          {surfaces.map((s) => (
+            <NavLink key={s.to} to={s.to} className="demo__tab">
+              {s.label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="demo__controls">
+          <ConnectivityToggle />
+          <ScenarioReset />
+        </div>
+      </header>
       <GuidedWalkthrough />
-      <main>
+      <main className="stage">
         <Outlet />
       </main>
-      <footer>
+      <footer className="demo__footer">
         <p>Concept prototype. Illustrative triage questions, not clinical guidance. No real data.</p>
       </footer>
     </div>

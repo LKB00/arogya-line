@@ -20,10 +20,12 @@ export const router = createBrowserRouter([
         path: "asha",
         // Every ASHA screen sits under the sync banner.
         element: (
-          <>
-            <SyncBanner />
-            <Outlet />
-          </>
+          <div className="phone">
+            <div className="phone__screen">
+              <SyncBanner />
+              <Outlet />
+            </div>
+          </div>
         ),
         children: [
           { index: true, element: <TodayList /> },

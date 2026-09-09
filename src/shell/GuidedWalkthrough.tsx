@@ -49,15 +49,28 @@ export default function GuidedWalkthrough() {
   const step = STEPS[index];
 
   return (
-    <aside aria-label="Guided walkthrough">
-      <p>
-        Step {index + 1} of {STEPS.length}: {step.text}
+    <aside className="guide" aria-label="Guided walkthrough">
+      <p className="guide__step">
+        <span className="guide__count">
+          Step {index + 1} of {STEPS.length}
+        </span>
+        <span>{step.text}</span>
       </p>
-      <p>
-        <button type="button" onClick={() => go(index - 1)} disabled={index === 0}>
+      <p className="guide__controls">
+        <button
+          type="button"
+          className="btn btn--secondary guide__btn"
+          onClick={() => go(index - 1)}
+          disabled={index === 0}
+        >
           Back
-        </button>{" "}
-        <button type="button" onClick={() => go(index + 1)} disabled={index === STEPS.length - 1}>
+        </button>
+        <button
+          type="button"
+          className="btn btn--secondary guide__btn"
+          onClick={() => go(index + 1)}
+          disabled={index === STEPS.length - 1}
+        >
           Next
         </button>
       </p>

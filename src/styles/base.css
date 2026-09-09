@@ -1,0 +1,265 @@
+/* Reset, page typography and the primitives shared by all three surfaces. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--size-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+h1 {
+  font-size: var(--size-xl);
+  line-height: var(--leading-tight);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: var(--size-base);
+  font-weight: var(--weight-semibold);
+}
+
+a {
+  color: var(--primary);
+  text-decoration-thickness: var(--border-thin);
+  text-underline-offset: 0.2em;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+/* Focus is never removed, only replaced with something clearer. */
+:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: var(--space-3) var(--space-5);
+  border: var(--border-thick) solid transparent;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-base);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.btn--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-inverse);
+}
+
+.btn--primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.btn--secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn--secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn--quiet {
+  min-height: var(--touch);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
+}
+
+.btn--quiet:hover {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--tall {
+  min-height: var(--touch-lg);
+  font-size: var(--size-lg);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--surface-sunken);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ---------- Urgency: colour AND icon AND word, never colour alone ---------- */
+
+.urgency {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  border: var(--border-thin) solid var(--u-border);
+  border-radius: var(--radius-pill);
+  background: var(--u-soft);
+  color: var(--u-color);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.urgency::before {
+  content: "";
+  width: var(--space-4);
+  height: var(--space-4);
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--u-icon) center / contain no-repeat;
+  mask: var(--u-icon) center / contain no-repeat;
+}
+
+.urgency--red {
+  --u-color: var(--red);
+  --u-soft: var(--red-soft);
+  --u-border: var(--red-border);
+  --u-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 1 21h22L12 2Zm0 6a1.2 1.2 0 0 1 1.2 1.2l-.35 5.2a.85.85 0 0 1-1.7 0l-.35-5.2A1.2 1.2 0 0 1 12 8Zm0 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'/%3E%3C/svg%3E");
+}
+
+.urgency--amber {
+  --u-color: var(--amber);
+  --u-soft: var(--amber-soft);
+  --u-border: var(--amber-border);
+  --u-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm.9 4.7v6.1l4 2.4-.9 1.5-4.9-3V6.5Z'/%3E%3C/svg%3E");
+}
+
+.urgency--green {
+  --u-color: var(--green);
+  --u-soft: var(--green-soft);
+  --u-border: var(--green-border);
+  --u-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm-1.3 14.6-4-4 1.5-1.5 2.5 2.5 5.6-5.6 1.5 1.5Z'/%3E%3C/svg%3E");
+}
+
+.urgency--done {
+  --u-color: var(--text-muted);
+  --u-soft: var(--surface-sunken);
+  --u-border: var(--border);
+  --u-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm-1.3 14.6-4-4 1.5-1.5 2.5 2.5 5.6-5.6 1.5 1.5Z'/%3E%3C/svg%3E");
+}
+
+/* ---------- Small status pills ---------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-semibold);
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.pill--waiting {
+  background: var(--amber-soft);
+  border-color: var(--amber-border);
+  color: var(--amber);
+}
+
+.pill--sent {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

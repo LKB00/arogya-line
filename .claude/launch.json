@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "arogya-line",
+      "runtimeExecutable": "/Users/manish/.nvm/versions/node/v24.18.1/bin/node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js"],
+      "port": 5173,
+      "autoPort": true
+    }
+  ]
+}

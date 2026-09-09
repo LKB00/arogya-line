@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStore } from "../../app/store";
+import { dayLabel, longDate, memberLine, slotLabel } from "../../app/format";
 
 const CHECKLIST = [
   "Tell them the day and time, and to carry the family card.",
@@ -35,12 +36,18 @@ export default function Booked() {
       <dl className="summary">
         <dt className="summary__key">Patient</dt>
         <dd className="summary__value">
-          {member ? `${member.name}, ${member.age}` : "—"} · family {family?.id ?? "—"}
+          {member?.name ?? "—"}
+          <span className="summary__note">
+            {member && `${memberLine(member)} · `}Family {family?.id ?? "—"}
+          </span>
         </dd>
         <dt className="summary__key">Date</dt>
-        <dd className="summary__value">{booking.date}</dd>
-        <dt className="summary__key">Slot</dt>
-        <dd className="summary__value">{booking.slot}</dd>
+        <dd className="summary__value">
+          {dayLabel(booking.date)}
+          <span className="summary__note">{longDate(booking.date)}</span>
+        </dd>
+        <dt className="summary__key">Time</dt>
+        <dd className="summary__value">{slotLabel(booking.slot)}</dd>
         <dt className="summary__key">Facility</dt>
         <dd className="summary__value">{booking.facility}</dd>
         <dt className="summary__key">Doctor</dt>

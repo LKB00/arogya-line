@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { PHC, SLOTS, isoDate } from "../../app/seed";
+import { shortDate, slotLabel } from "../../app/format";
 import { decodeAnswers, evaluate, toTriageRole } from "../../app/triage";
 
 const DAYS = [0, 1, 2].map((offset) => ({
@@ -56,7 +57,7 @@ export default function Booking() {
       </Link>
       <h1 className="screen__title">Book PHC visit</h1>
       <p className="screen__sub">
-        {member.name}, {member.age} · {PHC.facility}, {PHC.doctor}
+        {member.name} · {PHC.facility} · {PHC.doctor}
       </p>
 
       <fieldset className="choices">
@@ -75,8 +76,9 @@ export default function Booking() {
                   setSlot(null);
                 }}
               />
-              <span>
-                {d.label} ({d.date})
+              <span className="choice__stack">
+                <span className="choice__lead">{d.label}</span>
+                <span className="choice__meta">{shortDate(d.date)}</span>
               </span>
             </label>
           ))}
@@ -100,8 +102,8 @@ export default function Booking() {
                   onChange={() => setSlot(s)}
                 />
                 <span>
-                  {s}
-                  {taken && " (taken)"}
+                  {slotLabel(s)}
+                  {taken && <span className="visually-hidden"> — already taken</span>}
                 </span>
               </label>
             );

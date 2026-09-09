@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import SurfaceSwitcher from "../shell/SurfaceSwitcher";
+import PhoneFrame from "../shell/PhoneFrame";
 import TodayList from "../surfaces/asha/TodayList";
 import FamilyDetail from "../surfaces/asha/FamilyDetail";
 import SymptomCheck from "../surfaces/asha/SymptomCheck";
@@ -20,12 +21,10 @@ export const router = createBrowserRouter([
         path: "asha",
         // Every ASHA screen sits under the sync banner.
         element: (
-          <div className="phone">
-            <div className="phone__screen">
-              <SyncBanner />
-              <Outlet />
-            </div>
-          </div>
+          <PhoneFrame>
+            <SyncBanner />
+            <Outlet />
+          </PhoneFrame>
         ),
         children: [
           { index: true, element: <TodayList /> },

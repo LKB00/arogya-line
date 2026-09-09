@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { latestAdviceFor, useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
+import { URGENCY_LABEL, dayLabel, memberLine } from "../../app/format";
 
 export default function FamilyDetail() {
   const { familyId = "" } = useParams();
@@ -39,28 +40,28 @@ export default function FamilyDetail() {
       <Link className="screen__back" to="/asha">
         Back to today
       </Link>
-      <h1 className="screen__title">
-        {family.head} · {family.id}
-      </h1>
-      <p className="family__meta">
-        {family.village} · {family.phone}
-      </p>
+      <header className="screen__header">
+        <p className="screen__eyebrow">Family {family.id}</p>
+        <h1 className="screen__title">{family.head}</h1>
+        <p className="screen__sub">
+          {family.village} · {family.phone}
+        </p>
+      </header>
+      <h2>Family members</h2>
       <ul className="members">
         {family.members.map((m) => {
           const open = openConcernFor(m.id);
           return (
             <li key={m.id} className={open ? "member member--flagged" : "member"}>
-              <span className="member__name">
-                {m.name}, {m.age}, {m.role}
+              <span className="member__name">{m.name}</span>
+              <span className="member__meta">
+                {memberLine(m)}
+                {m.note && <span className="member__note">{m.note}</span>}
               </span>
-              {m.note && <span className="member__meta">{m.note}</span>}
-              {open && (
-                <span className={`urgency urgency--${open.urgency}`}>
-                  <span className="member__flag">open concern ({open.urgency})</span>
-                </span>
-              )}
-              <Link className="btn btn--secondary" to={`/asha/family/${family.id}/check/${m.id}`}>
-                Check symptoms
+              {open && <span className={`urgency urgency--${open.urgency}`}>{URGENCY_LABEL[open.urgency]}</span>}
+              <Link className="btn btn--secondary btn--compact" to={`/asha/family/${family.id}/check/${m.id}`}>
+                Check
+                <span className="visually-hidden"> symptoms of {m.name}</span>
               </Link>
             </li>
           );
@@ -73,7 +74,16 @@ export default function FamilyDetail() {
       </p>
       {showNote && (
         <blockquote className="note">
-          {latestAdvice ? `${latestAdvice.doctor}, ${latestAdvice.date}: ${latestAdvice.advice}` : "No advice yet."}
+          {latestAdvice ? (
+            <>
+              <span className="note__who">
+                {latestAdvice.doctor} · {dayLabel(latestAdvice.date)}
+              </span>
+              {latestAdvice.advice}
+            </>
+          ) : (
+            "No advice yet."
+          )}
         </blockquote>
       )}
     </section>

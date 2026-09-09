@@ -237,16 +237,125 @@
 /* ---------- Phone frame (ASHA app, and later the voice line) ---------- */
 
 .phone {
+  position: relative;
   width: var(--phone-width);
   height: var(--phone-height);
   flex: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface);
-  border: var(--space-2) solid var(--demo-bg);
+  background: var(--bg);
+  border: var(--phone-bezel) solid var(--demo-bg);
   border-radius: var(--radius-frame);
-  box-shadow: var(--shadow-frame);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    var(--shadow-frame);
+}
+
+/* Punch-hole camera, centred in the status bar. */
+.phone__camera {
+  position: absolute;
+  top: calc((var(--phone-status) - var(--space-3)) / 2);
+  left: 50%;
+  width: var(--space-3);
+  height: var(--space-3);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--demo-bg);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  z-index: 1;
+}
+
+.phone__status {
+  flex: none;
+  height: var(--phone-status);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--pad-gutter);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.phone__indicators {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.phone__icon {
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.phone__icon--signal {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 3v18H3z' fill='black'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 3v18H3z' fill='black'/%3E%3C/svg%3E");
+}
+
+.phone__icon--wifi {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M2.6 8.6a14 14 0 0 1 18.8 0'/%3E%3Cpath d='M6.3 12.4a9 9 0 0 1 11.4 0'/%3E%3Cpath d='M9.9 16.2a4 4 0 0 1 4.2 0'/%3E%3Ccircle cx='12' cy='19.6' r='1.4' fill='black' stroke='none'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M2.6 8.6a14 14 0 0 1 18.8 0'/%3E%3Cpath d='M6.3 12.4a9 9 0 0 1 11.4 0'/%3E%3Cpath d='M9.9 16.2a4 4 0 0 1 4.2 0'/%3E%3Ccircle cx='12' cy='19.6' r='1.4' fill='black' stroke='none'/%3E%3C/svg%3E");
+}
+
+/* Battery drawn from the box itself: shell, nub and a part-filled level. */
+.phone__battery {
+  position: relative;
+  width: 22px;
+  height: 11px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+}
+
+.phone__battery::before {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  width: 70%;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.phone__battery::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 2px;
+  height: 5px;
+  margin-left: 1px;
+  transform: translateY(-50%);
+  border-radius: 0 2px 2px 0;
+  background: currentColor;
+}
+
+/* Gesture navigation bar. */
+.phone__nav {
+  flex: none;
+  height: var(--phone-nav);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.phone__handle {
+  width: 38%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  opacity: 0.45;
 }
 
 .phone__screen {

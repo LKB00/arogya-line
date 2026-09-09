@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useStore } from "../../app/store";
 import { decodeAnswers, evaluate, toTriageRole } from "../../app/triage";
 import type { Urgency } from "../../app/types";
+import { URGENCY_LABEL, memberLine } from "../../app/format";
 
 const HEADLINE: Record<Urgency, string> = {
   green: "Care at home",
@@ -46,11 +47,10 @@ export default function Result() {
         Back to {family.head}
       </Link>
       <div className={`result__banner urgency--${urgency}`}>
-        <h1 className="result__headline">
-          {urgency.toUpperCase()}: {HEADLINE[urgency]}
-        </h1>
-        <p className="screen__sub">
-          {member.name}, {member.age}
+        <p className="result__label">{URGENCY_LABEL[urgency]}</p>
+        <h1 className="result__headline">{HEADLINE[urgency]}</h1>
+        <p className="result__who">
+          {member.name} · {memberLine(member)}
         </p>
       </div>
       <ul className="reasons">

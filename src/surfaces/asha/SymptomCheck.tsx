@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useStore } from "../../app/store";
 import { decodeAnswers, encodeAnswers, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
 import type { TriageAnswer } from "../../app/types";
+import { memberLine } from "../../app/format";
 
 export default function SymptomCheck() {
   const { familyId = "", memberId = "" } = useParams();
@@ -49,9 +50,8 @@ export default function SymptomCheck() {
       <Link className="screen__back" to={`/asha/family/${familyId}`}>
         Back to {family.head}
       </Link>
-      <h1 className="screen__title">
-        {member.name}, {member.age}
-      </h1>
+      <h1 className="screen__title">{member.name}</h1>
+      <p className="screen__sub">{memberLine(member)}</p>
       <div className="progress">
         <p className="progress__label">
           Question {answers.length + 1} of {total}
@@ -71,10 +71,10 @@ export default function SymptomCheck() {
         </button>
       </p>
       <p className="screen__action answers">
-        <button type="button" className="btn btn--primary btn--tall" onClick={() => answer("yes")}>
+        <button type="button" className="btn btn--answer btn--tall" onClick={() => answer("yes")}>
           Yes
         </button>
-        <button type="button" className="btn btn--secondary btn--tall" onClick={() => answer("no")}>
+        <button type="button" className="btn btn--answer btn--tall" onClick={() => answer("no")}>
           No
         </button>
       </p>

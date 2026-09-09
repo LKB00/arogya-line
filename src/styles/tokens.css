@@ -13,53 +13,60 @@
   --weight-bold: 700;
 
   /* ---- Type scale ---- */
-  --size-xs: 0.75rem;    /* 12 */
-  --size-sm: 0.875rem;   /* 14 */
-  --size-base: 1rem;     /* 16 */
-  --size-lg: 1.125rem;   /* 18 */
-  --size-xl: 1.375rem;   /* 22 */
-  --size-2xl: 1.75rem;   /* 28 */
-  --leading-tight: 1.25;
+  --size-xs: 0.75rem;      /* 12 */
+  --size-sm: 0.8125rem;    /* 13 */
+  --size-base: 0.9375rem;  /* 15 */
+  --size-md: 1.0625rem;    /* 17 */
+  --size-lg: 1.1875rem;    /* 19 */
+  --size-xl: 1.375rem;     /* 22 */
+  --size-2xl: 1.75rem;     /* 28 */
+  --leading-tight: 1.15;
   --leading-normal: 1.5;
   --tracking-caps: 0.06em;
 
   /* ---- Product colour ---- */
-  --bg: #f7f5f0;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-sunken: #efece4;
-  --stage: #e9e5db;
-  --text: #17211b;
-  --text-muted: #5a6660;
+  --surface-sunken: #f5f5f7;
+  --stage: #e7e7ea;
+  --text: #131316;
+  --text-muted: #6b6b73;
   --text-inverse: #ffffff;
-  --primary: #0f6e5c;
-  --primary-strong: #0b5648;
-  --primary-soft: #e4efeb;
-  --border: #dcd8cf;
-  --border-strong: #bdb7aa;
+  /* The action colour is ink, not the accent: black reads at any size. */
+  --primary: #131316;
+  --primary-strong: #33333a;
+  --primary-soft: #f3f3f5;
+  --border: #ececef;
+  --border-strong: #d3d3da;
+  --divider: #f0f0f3;
+  /* Brand accent. Decoration and highlight only, never load-bearing text. */
+  --brand: #fcd12a;
+  --brand-strong: #edbe0b;
+  --brand-soft: #fef6d6;
 
   /* ---- Triage colour. Always paired with an icon and a word, never alone. ---- */
   --red: #b3261e;
   --red-soft: #fbeae8;
   --red-border: #e7bcb8;
-  --amber: #8a5b00;
-  --amber-soft: #faf0da;
-  --amber-border: #e0c795;
+  --amber: #96490a;
+  --amber-soft: #fdeee2;
+  --amber-border: #f0c9a8;
   --green: #1e6b3a;
   --green-soft: #e6f0e8;
   --green-border: #b6d3c0;
 
   /* ---- Demo chrome: deliberately unlike the product surfaces ---- */
-  --demo-bg: #12171a;
-  --demo-surface: #1d2428;
-  --demo-surface-hover: #293237;
-  --demo-text: #eef1ef;
-  --demo-muted: #a7b0ac;
-  --demo-border: #333d42;
-  --demo-accent: #7fd4bf;
+  --demo-bg: #131316;
+  --demo-surface: #212127;
+  --demo-surface-hover: #2d2d35;
+  --demo-text: #f2f2f4;
+  --demo-muted: #a9a9b2;
+  --demo-border: #35353d;
+  --demo-accent: #fcd12a;
 
   /* ---- Focus ---- */
-  --focus: #0f6e5c;
-  --focus-inverse: #7fd4bf;
+  --focus: #131316;
+  --focus-inverse: #fcd12a;
   --focus-width: 3px;
   --focus-offset: 2px;
 
@@ -73,24 +80,36 @@
   --space-7: 3rem;
 
   /* ---- Radius ---- */
-  --radius-sm: 0.5rem;
-  --radius: 0.75rem;
-  --radius-lg: 1.25rem;
-  --radius-frame: 2rem;
+  --radius-sm: 0.625rem;
+  --radius: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-frame: 2.5rem;
   --radius-pill: 999px;
+
+  /* ---- Padding roles. Every card of the same rank gets the same inset. ---- */
+  --pad-gutter: var(--space-5);          /* screen edge, and the device chrome above it */
+  --pad-card: var(--space-4);            /* a card that holds a block of content */
+  --pad-item: var(--space-3) var(--space-4); /* a row inside a list */
+  /* A full-bleed list row keeps the screen gutter as its own inset, so the
+     divider runs edge to edge the way it does in a native list. */
+  --pad-row: var(--space-4) var(--pad-gutter);
 
   /* ---- Touch targets ---- */
   --touch: 48px;
   --touch-lg: 56px;
 
   /* ---- Elevation ---- */
-  --shadow-card: 0 1px 2px rgba(23, 33, 27, 0.06), 0 1px 3px rgba(23, 33, 27, 0.04);
-  --shadow-raised: 0 2px 6px rgba(23, 33, 27, 0.08), 0 8px 20px rgba(23, 33, 27, 0.06);
-  --shadow-frame: 0 12px 40px rgba(9, 16, 12, 0.28);
+  --shadow-card: 0 1px 2px rgba(19, 19, 22, 0.05);
+  --shadow-raised: 0 1px 3px rgba(19, 19, 22, 0.08), 0 6px 16px rgba(19, 19, 22, 0.07);
+  --shadow-frame: 0 18px 50px rgba(19, 19, 22, 0.30);
 
   /* ---- Frames ---- */
   --phone-width: 360px;
   --phone-height: 720px;
+  /* Android device chrome inside the frame. */
+  --phone-bezel: 10px;
+  --phone-status: 30px;
+  --phone-nav: 24px;
   --page-max: 1200px;
 
   /* ---- Motion ---- */
@@ -101,7 +120,6 @@
   /* ---- Borders ---- */
   --border-thin: 1px;
   --border-thick: 2px;
-  --rule-strong: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {

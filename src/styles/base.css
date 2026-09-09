@@ -41,15 +41,16 @@ ol {
 }
 
 h1 {
-  font-size: var(--size-xl);
+  font-size: var(--size-2xl);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
 }
 
 h2 {
-  font-size: var(--size-base);
-  font-weight: var(--weight-semibold);
+  font-size: var(--size-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
 }
 
 a {
@@ -90,10 +91,10 @@ legend {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--touch);
+  min-height: var(--touch-lg);
   padding: var(--space-3) var(--space-5);
   border: var(--border-thick) solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text);
   font-size: var(--size-base);
@@ -102,7 +103,21 @@ legend {
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition),
+    transform var(--transition);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* A header action: full-height touch target, but visually a small pill. */
+.btn--compact {
+  min-height: var(--touch);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
 }
 
 .btn--primary {
@@ -123,12 +138,13 @@ legend {
 }
 
 .btn--secondary:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--text);
+  background: var(--surface-sunken);
 }
 
 .btn--quiet {
   min-height: var(--touch);
+  border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-3);
   background: transparent;
   border-color: transparent;
@@ -150,6 +166,30 @@ legend {
   font-size: var(--size-lg);
 }
 
+/* Yes and No are not a primary and a secondary: weighting one of them would
+   nudge the answer. Both carry the same weight. */
+.btn--answer {
+  background: var(--surface);
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.btn--answer:hover {
+  background: var(--surface-sunken);
+}
+
+/* The accent is a highlight, never a label: black text on yellow. */
+.btn--accent {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.btn--accent:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+}
+
 .btn:disabled {
   cursor: not-allowed;
   background: var(--surface-sunken);
@@ -159,26 +199,27 @@ legend {
 
 /* ---------- Urgency: colour AND icon AND word, never colour alone ---------- */
 
+/* Sentence case, not shouted: a person is "Urgent", never "RED". The enum
+   stays in the data; the screen carries the word a health worker would say. */
 .urgency {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
-  border: var(--border-thin) solid var(--u-border);
   border-radius: var(--radius-pill);
   background: var(--u-soft);
   color: var(--u-color);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  font-size: var(--size-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
   white-space: nowrap;
 }
 
 .urgency::before {
   content: "";
-  width: var(--space-4);
-  height: var(--space-4);
+  width: 0.9375rem;
+  height: 0.9375rem;
   flex: none;
   background: currentColor;
   -webkit-mask: var(--u-icon) center / contain no-repeat;
@@ -217,11 +258,11 @@ legend {
 
 .pill {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
-  border: var(--border-thin) solid var(--border);
-  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   color: var(--text-muted);
   font-size: var(--size-xs);
@@ -230,16 +271,25 @@ legend {
   white-space: nowrap;
 }
 
+/* Waiting to send is a state of the phone, not of the patient: it borrows the
+   offline banner's yellow, never a triage colour. */
 .pill--waiting {
-  background: var(--amber-soft);
-  border-color: var(--amber-border);
-  color: var(--amber);
+  background: var(--brand-soft);
+  color: var(--text);
+}
+
+.pill--waiting::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm.9 4.7v6.1l4 2.4-.9 1.5-4.9-3V6.5Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm.9 4.7v6.1l4 2.4-.9 1.5-4.9-3V6.5Z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .pill--sent {
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  color: var(--primary);
+  background: var(--green-soft);
+  color: var(--green);
 }
 
 .visually-hidden {

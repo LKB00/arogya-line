@@ -5,24 +5,33 @@
  */
 
 :root {
-  /* ---- Typeface: one family, four weights ---- */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* ---- Typeface: Inter, variable, self-hosted. One family, four weights. ---- */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* ---- Type scale ---- */
-  --size-xs: 0.75rem;      /* 12 */
-  --size-sm: 0.8125rem;    /* 13 */
-  --size-base: 0.9375rem;  /* 15 */
-  --size-md: 1.0625rem;    /* 17 */
-  --size-lg: 1.1875rem;    /* 19 */
-  --size-xl: 1.375rem;     /* 22 */
-  --size-2xl: 1.75rem;     /* 28 */
-  --leading-tight: 1.15;
-  --leading-normal: 1.5;
-  --tracking-caps: 0.06em;
+  /* ---- Type scale: each step is a role, and reads as a different level. ----
+     xs   label, caption        12
+     sm   meta, secondary       13
+     base body                  15
+     md   row title             17
+     lg   section title         20
+     xl   headline in a card    24
+     2xl  screen title          30 */
+  --size-xs: 0.75rem;
+  --size-sm: 0.8125rem;
+  --size-base: 0.9375rem;
+  --size-md: 1.0625rem;
+  --size-lg: 1.25rem;
+  --size-xl: 1.5rem;
+  --size-2xl: 1.875rem;
+  --leading-tight: 1.15;     /* titles */
+  --leading-snug: 1.3;       /* row titles, headlines */
+  --leading-normal: 1.5;     /* body */
+  --tracking-caps: 0.08em;
+  --tracking-title: -0.02em; /* large sizes pull in */
 
   /* ---- Product colour ---- */
   --bg: #ffffff;

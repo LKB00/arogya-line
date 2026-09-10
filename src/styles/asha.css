@@ -3,38 +3,66 @@
  * obvious action per screen, urgency stated three ways at once.
  */
 
+/* The scrolling region of a screen, between the app bar and any bottom bar. */
 .screen {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--pad-gutter);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: screen-in var(--duration) var(--easing);
 }
 
-.screen__back {
+/* Nothing in the region shrinks to fit; a clipped card would collapse to
+   nothing. The region scrolls instead. */
+.screen > * {
+  flex-shrink: 0;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Back is a round button with an arrow and no text: the title under it
+   already says where you are. The label lives in aria-label. */
+.backbtn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  align-self: flex-start;
-  min-height: var(--touch);
-  margin: calc(var(--space-3) * -1) 0 calc(var(--space-4) * -1);
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-medium);
-  text-decoration: none;
-}
-
-.screen__back::before {
-  content: "";
-  width: var(--space-4);
-  height: var(--space-4);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.4 4.6 13.9 3.1 5 12l8.9 8.9 1.5-1.5L8 12Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.4 4.6 13.9 3.1 5 12l8.9 8.9 1.5-1.5L8 12Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.screen__back:hover {
+  justify-content: center;
+  width: var(--touch);
+  height: var(--touch);
+  margin-left: calc(var(--space-2) * -1);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--transition), transform var(--transition);
+}
+
+.backbtn::before {
+  content: "";
+  width: var(--space-5);
+  height: var(--space-5);
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.backbtn:hover {
+  background: var(--surface-sunken);
+}
+
+.backbtn:active {
+  transform: scale(0.94);
 }
 
 /* Title, its action and its date line are one unit, tight against each other. */
@@ -52,17 +80,10 @@
   text-transform: uppercase;
 }
 
-.screen__headline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
 .screen__title {
   font-size: var(--size-2xl);
   font-weight: var(--weight-bold);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-title);
   line-height: var(--leading-tight);
 }
 
@@ -71,28 +92,46 @@
   font-size: var(--size-sm);
 }
 
-/* Who is signed in, as a mark rather than a control. */
+/* ---------- App bar ---------- */
+
+/* Persistent across the app: the way back on the left when there is one, who
+   is signed in on the right. Identity is a mark, not a line of text. */
+/* Fixed height: the bar is the same size whether or not it holds a back
+   button, so nothing below it moves between screens. */
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  height: calc(var(--touch) + var(--space-2));
+  padding: var(--space-2) var(--pad-gutter) 0;
+}
+
 .avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--touch);
-  height: var(--touch);
+  width: var(--space-6);
+  height: var(--space-6);
   border-radius: 50%;
-  background: var(--brand);
-  color: var(--text);
-  font-size: var(--size-lg);
+  background: var(--text);
+  color: var(--text-inverse);
+  font-size: var(--size-sm);
   font-weight: var(--weight-bold);
 }
 
-/* The one action floats above the list, so the title is the only thing at
-   the top competing for the eye. Sticky keeps it in reach when the list
-   scrolls; margin-top pushes it down when it does not. */
+/* The one action sits in its own bar under the list, so the title is the
+   only thing at the top competing for the eye, and no row is ever hidden
+   under the button: the list scrolls above it. */
+.fab-bar {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--pad-gutter) var(--space-3);
+}
+
 .fab {
-  position: sticky;
-  bottom: var(--space-4);
-  align-self: flex-end;
-  margin-top: auto;
   padding-left: var(--space-4);
   box-shadow: var(--shadow-raised);
 }
@@ -115,9 +154,6 @@
 /* One section-title treatment, wherever a group of items needs a name. */
 .screen h2 {
   margin-top: var(--space-2);
-  font-size: var(--size-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: -0.02em;
 }
 
 .screen__empty {
@@ -193,11 +229,12 @@
   background: var(--divider);
 }
 
+/* A row is a list item: what kind of task on the left, who and when on the
+   head line, how urgent and what exactly on the line below. */
 .row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 0 var(--space-3);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
   padding: var(--pad-row);
   color: var(--text);
   text-decoration: none;
@@ -209,11 +246,193 @@
   background: var(--surface-sunken);
 }
 
-/* The chevron spans the row and stays vertically centred beside it. */
-.row::after {
+/* The band's colour, read by the glyph in the icon tile. */
+.row--red   { --u-color: var(--red); }
+.row--amber { --u-color: var(--amber); }
+.row--green { --u-color: var(--green); }
+.row--done  { --u-color: var(--text-muted); }
+
+/* The task tile: a stethoscope, a phone, a home, a heart or a tick. The glyph
+   takes the band's colour; the tile behind it stays a quiet grey, so the
+   group heading is the only coloured surface on the screen. */
+.row__icon {
+  flex: none;
+  width: var(--space-6);
+  height: var(--space-6);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--u-color);
+}
+
+.row__icon::before {
   content: "";
-  grid-column: 2;
-  grid-row: 1 / -1;
+  width: var(--space-4);
+  height: var(--space-4);
+  background: currentColor;
+  -webkit-mask: var(--k-icon) center / contain no-repeat;
+  mask: var(--k-icon) center / contain no-repeat;
+}
+
+.row__icon--visit {
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3v6a5 5 0 0 0 10 0V3'/%3E%3Cpath d='M10 14v2a5 5 0 0 0 10 0v-3'/%3E%3Ccircle cx='20' cy='11' r='2.2'/%3E%3Cpath d='M3.5 3H6M14 3h2.5'/%3E%3C/svg%3E");
+}
+
+.row__icon--call {
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1Z'/%3E%3C/svg%3E");
+}
+
+.row__icon--home {
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 2 12h3v8h5v-6h4v6h5v-8h3L12 3Z'/%3E%3C/svg%3E");
+}
+
+.row__icon--concern {
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11Z'/%3E%3C/svg%3E");
+}
+
+.row__icon--done {
+  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm-1.3 14.6-4-4 1.5-1.5 2.5 2.5 5.6-5.6 1.5 1.5Z'/%3E%3C/svg%3E");
+}
+
+/* What she does, then for whom: the verb is the biggest thing on the row. */
+.row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.row__task {
+  font-size: var(--size-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: var(--leading-snug);
+}
+
+.row__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+}
+
+/* A reference number for the voice line, not for her: the quietest thing here. */
+.row__id {
+  font-size: var(--size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary__value,
+.call__number,
+.card__number,
+.card__id,
+.call__digits {
+  font-variant-numeric: tabular-nums;
+}
+
+.row__note {
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+}
+
+/* When it is due sits in the corner, where a time belongs: the day above,
+   the slot under it, both ending on the same right edge. */
+.row__when {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  padding-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+.row__when > :first-child {
+  color: var(--text);
+  font-weight: var(--weight-semibold);
+}
+
+.row--done .row__task {
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
+}
+
+/* Rows fill a card that clips its corners, so an outline drawn outside the
+   row would be cut off. Inside the row it stays whole. */
+.row:focus-visible,
+.member:focus-visible,
+.checklist__item:has(.checklist__box:focus-visible),
+.advice__toggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: calc(var(--focus-width) * -1);
+  border-radius: 0;
+}
+
+.checklist__box:focus-visible {
+  outline: none;
+}
+
+/* ---------- Urgency groups ---------- */
+
+/* The list is sorted by urgency, so urgency is said once, as the heading of
+   each group — colour, icon and word together — not repeated on every row. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.screen .group__title {
+  margin: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+}
+
+.group__count {
+  margin-left: var(--space-1);
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
+}
+
+.group + .group {
+  margin-top: var(--space-2);
+}
+
+/* ---------- Family detail ---------- */
+
+/* A member is a row you tap to check them. The one with something open
+   comes first and says why, in one line — the urgency word carries the
+   colour, so the row itself stays white like every other row. */
+.member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--pad-row);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--transition);
+}
+
+.member:hover,
+.member:active {
+  background: var(--surface-sunken);
+}
+
+.member::after {
+  content: "";
+  flex: none;
   width: var(--space-4);
   height: var(--space-4);
   background: var(--border-strong);
@@ -221,112 +440,156 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.6 4.6 7.1 6.1 13 12l-5.9 5.9 1.5 1.5L16 12Z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
-.row > * {
-  grid-column: 1;
+.member__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
-.row__head {
+.member__head {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-2);
+}
+
+.member__name {
   font-size: var(--size-md);
   font-weight: var(--weight-semibold);
   letter-spacing: -0.01em;
-  line-height: var(--leading-tight);
+  line-height: var(--leading-snug);
 }
 
-.row__id {
+.member__age {
   color: var(--text-muted);
   font-size: var(--size-sm);
-  font-weight: var(--weight-regular);
 }
 
-/* The state sits at the end of the name line, where the eye already is. */
-.row__head .urgency {
-  margin-left: auto;
-}
-
-/* The reason gets the full width of the row, so it stays one line. */
-.row__status {
+/* Why this person: the urgency word, then what was noticed. */
+.member__why {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
   font-size: var(--size-sm);
 }
 
-.row__reason {
-  color: var(--text-muted);
+.member__why .urgency--inline {
+  font-size: var(--size-sm);
 }
 
-.row--done {
-  color: var(--text-muted);
-}
-
-.row--done .row__head {
-  font-weight: var(--weight-medium);
-}
-
-/* ---------- Family detail ---------- */
-
-/* Name and age on the left, the state and the action on the right. */
-.member {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 0 var(--space-3);
-  padding: var(--pad-row);
-}
-
-.member--flagged {
-  background: var(--brand-soft);
-}
-
-.member__name {
-  font-size: var(--size-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-tight);
-}
-
-.member__meta {
+.member__note {
   color: var(--text-muted);
   font-size: var(--size-sm);
 }
 
-.member__note::before {
-  content: " · ";
+.member__why .member__note::before {
+  content: "· ";
 }
 
-.member__name {
+/* ---------- Doctor's note ---------- */
+
+/* Shown only when a note exists. The row reads like a recording: what it is,
+   who left it and when; opening it plays the words as text (v1 has no audio). */
+.advice {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.advice__toggle {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--pad-row);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition);
 }
 
-.member .urgency {
-  font-size: var(--size-xs);
+.advice__toggle:hover {
+  background: var(--surface-sunken);
 }
 
-.member .btn {
-  grid-column: 2;
-  grid-row: 1 / -1;
+/* The speaker in a tile, like the task tiles on Today. */
+.advice__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
 }
 
-.note {
+.advice__icon::before {
+  content: "";
+  width: var(--space-4);
+  height: var(--space-4);
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.advice--open .advice__icon {
+  background: var(--brand);
+}
+
+.advice__main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--pad-card);
-  background: var(--brand-soft);
-  border-radius: var(--radius);
-  color: var(--text);
+}
+
+.advice__label {
+  font-size: var(--size-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: var(--leading-snug);
+}
+
+.advice__meta {
+  color: var(--text-muted);
   font-size: var(--size-sm);
 }
 
-.note__who {
-  font-weight: var(--weight-semibold);
+/* A disclosure caret that turns when the note is open. */
+.advice__toggle::after {
+  content: "";
+  flex: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  background: var(--border-strong);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.6 8.6 6.1 7.1 12 13l5.9-5.9 1.5 1.5L12 16Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.6 8.6 6.1 7.1 12 13l5.9-5.9 1.5 1.5L12 16Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform var(--transition);
+}
+
+.advice--open .advice__toggle::after {
+  transform: rotate(180deg);
+}
+
+/* The words, set as the doctor said them. */
+.note {
+  padding: var(--pad-row);
+  border-top: var(--border-thin) solid var(--divider);
+  background: var(--brand-soft);
+  color: var(--text);
+  font-size: var(--size-base);
+  line-height: var(--leading-normal);
 }
 
 /* ---------- Symptom check ---------- */
@@ -360,11 +623,12 @@
   transition: width var(--transition);
 }
 
+/* The question is the title of this screen. */
 .question {
-  padding: var(--space-5) 0 var(--space-2);
+  padding: var(--space-3) 0 var(--space-2);
   font-size: var(--size-2xl);
   font-weight: var(--weight-bold);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-title);
   line-height: var(--leading-tight);
 }
 
@@ -417,9 +681,9 @@
 }
 
 .result__headline {
-  font-size: var(--size-2xl);
+  font-size: var(--size-xl);
   font-weight: var(--weight-bold);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-title);
   line-height: var(--leading-tight);
 }
 

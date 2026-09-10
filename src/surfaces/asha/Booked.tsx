@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStore } from "../../app/store";
-import { dayLabel, longDate, memberLine, slotLabel } from "../../app/format";
+import { dayLabel, longDate, memberAge, slotLabel } from "../../app/format";
 
 const CHECKLIST = [
   "Tell them the day and time, and to carry the family card.",
@@ -23,7 +23,7 @@ export default function Booked() {
     return (
       <section className="screen">
         <p className="screen__empty">Booking not found.</p>
-        <Link className="screen__back" to="/asha">
+        <Link className="btn btn--secondary" to="/asha">
           Back to today
         </Link>
       </section>
@@ -38,7 +38,7 @@ export default function Booked() {
         <dd className="summary__value">
           {member?.name ?? "—"}
           <span className="summary__note">
-            {member && `${memberLine(member)} · `}Family {family?.id ?? "—"}
+            {member && `${memberAge(member)} · `}Family {family?.id ?? "—"}
           </span>
         </dd>
         <dt className="summary__key">Date</dt>

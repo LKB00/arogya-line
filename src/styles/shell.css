@@ -359,16 +359,17 @@
   opacity: 0.45;
 }
 
-/* The screen's own corners follow the frame's, one safe area in. Full-bleed
-   rows are then rounded off rather than running into the curve. */
+/* The screen's own corners follow the frame's, one safe area in. The screen
+   does not scroll itself: the app bar and any bottom bar stay put, and the
+   content region between them scrolls. */
 .phone__screen {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   border-radius: calc(var(--radius-frame) - var(--phone-safe));
   background: var(--surface-sunken);
-  overscroll-behavior: contain;
 }
 
 @media (max-width: 480px) {

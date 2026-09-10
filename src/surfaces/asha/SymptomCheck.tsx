@@ -2,11 +2,11 @@
 // Answers live in the URL (?a=...) so browser back steps one question back.
 
 import { useEffect, type CSSProperties } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { decodeAnswers, encodeAnswers, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
 import type { TriageAnswer } from "../../app/types";
-import { memberLine } from "../../app/format";
+import { memberAge } from "../../app/format";
 
 export default function SymptomCheck() {
   const { familyId = "", memberId = "" } = useParams();
@@ -32,9 +32,6 @@ export default function SymptomCheck() {
     return (
       <section className="screen">
         <p className="screen__empty">Member not found.</p>
-        <Link className="screen__back" to="/asha">
-          Back to today
-        </Link>
       </section>
     );
   }
@@ -47,11 +44,9 @@ export default function SymptomCheck() {
 
   return (
     <section className="screen">
-      <Link className="screen__back" to={`/asha/family/${familyId}`}>
-        Back to {family.head}
-      </Link>
-      <h1 className="screen__title">{member.name}</h1>
-      <p className="screen__sub">{memberLine(member)}</p>
+      <p className="screen__eyebrow">
+        {member.name} · {memberAge(member)}
+      </p>
       <div className="progress">
         <p className="progress__label">
           Question {answers.length + 1} of {total}
@@ -64,7 +59,7 @@ export default function SymptomCheck() {
           />
         </div>
       </div>
-      <p className="question">{question.text}</p>
+      <h1 className="question">{question.text}</h1>
       <p>
         <button type="button" className="btn btn--quiet read-aloud" aria-label="Read aloud">
           Read aloud

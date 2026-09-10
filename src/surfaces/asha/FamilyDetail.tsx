@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { latestAdviceFor, useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
-import { URGENCY_LABEL, dayLabel, memberLine } from "../../app/format";
+import { URGENCY_LABEL, dayLabel, memberAge } from "../../app/format";
 
 export default function FamilyDetail() {
   const { familyId = "" } = useParams();
@@ -17,9 +17,6 @@ export default function FamilyDetail() {
     return (
       <section className="screen">
         <p className="screen__empty">Family {familyId} not found.</p>
-        <Link className="screen__back" to="/asha">
-          Back to today
-        </Link>
       </section>
     );
   }
@@ -34,57 +31,70 @@ export default function FamilyDetail() {
     });
 
   const latestAdvice = latestAdviceFor({ concerns, bookings }, family.id);
+  const adviceFor = latestAdvice
+    ? family.members.find((m) => m.id === concerns.find((c) => c.id === latestAdvice.concernId)?.memberId)
+    : undefined;
+
+  // The person with something open is why she is here: they come first.
+  const members = [...family.members].sort(
+    (a, b) => Number(Boolean(openConcernFor(b.id))) - Number(Boolean(openConcernFor(a.id))),
+  );
 
   return (
     <section className="screen">
-      <Link className="screen__back" to="/asha">
-        Back to today
-      </Link>
       <header className="screen__header">
-        <p className="screen__eyebrow">Family {family.id}</p>
-        <h1 className="screen__title">{family.head}</h1>
-        <p className="screen__sub">
-          {family.village} · {family.phone}
+        <p className="screen__eyebrow">
+          Family {family.id} · {family.village}
         </p>
+        <h1 className="screen__title">{family.head}</h1>
       </header>
-      <h2>Family members</h2>
+
       <ul className="members">
-        {family.members.map((m) => {
+        {members.map((m) => {
           const open = openConcernFor(m.id);
           return (
-            <li key={m.id} className={open ? "member member--flagged" : "member"}>
-              <span className="member__name">{m.name}</span>
-              <span className="member__meta">
-                {memberLine(m)}
-                {m.note && <span className="member__note">{m.note}</span>}
-              </span>
-              {open && <span className={`urgency urgency--${open.urgency}`}>{URGENCY_LABEL[open.urgency]}</span>}
-              <Link className="btn btn--secondary btn--compact" to={`/asha/family/${family.id}/check/${m.id}`}>
-                Check
-                <span className="visually-hidden"> symptoms of {m.name}</span>
+            <li key={m.id}>
+              <Link
+                className={open ? `member member--open urgency--${open.urgency}` : "member"}
+                to={`/asha/family/${family.id}/check/${m.id}`}
+                aria-label={`Check symptoms of ${m.name}`}
+              >
+                <span className="member__main">
+                  <span className="member__head">
+                    <span className="member__name">{m.name}</span>
+                    <span className="member__age">{memberAge(m)}</span>
+                  </span>
+                  {open ? (
+                    <span className="member__why">
+                      <span className="urgency urgency--inline">{URGENCY_LABEL[open.urgency]}</span>
+                      {m.note && <span className="member__note">{m.note}</span>}
+                    </span>
+                  ) : (
+                    m.note && <span className="member__note">{m.note}</span>
+                  )}
+                </span>
               </Link>
             </li>
           );
         })}
       </ul>
-      <p>
-        <button type="button" className="btn btn--quiet read-aloud" onClick={() => setShowNote((v) => !v)}>
-          Hear last doctor note
-        </button>
-      </p>
-      {showNote && (
-        <blockquote className="note">
-          {latestAdvice ? (
-            <>
-              <span className="note__who">
+
+      {/* Only when a doctor has actually left a note. v1 has no audio: opening
+          it shows the words. */}
+      {latestAdvice && (
+        <div className={showNote ? "advice advice--open" : "advice"}>
+          <button type="button" className="advice__toggle" aria-expanded={showNote} onClick={() => setShowNote((v) => !v)}>
+            <span className="advice__icon" aria-hidden="true" />
+            <span className="advice__main">
+              <span className="advice__label">Hear last doctor note</span>
+              <span className="advice__meta">
                 {latestAdvice.doctor} · {dayLabel(latestAdvice.date)}
+                {adviceFor && ` · for ${adviceFor.name}`}
               </span>
-              {latestAdvice.advice}
-            </>
-          ) : (
-            "No advice yet."
-          )}
-        </blockquote>
+            </span>
+          </button>
+          {showNote && <blockquote className="note">{latestAdvice.advice}</blockquote>}
+        </div>
       )}
     </section>
   );

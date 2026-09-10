@@ -11,6 +11,7 @@ import type { ConcernInput } from "../../app/store";
 import { latestAdviceFor } from "../../app/store";
 import { evaluate, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
+import { shortDate, slotLabel } from "../../app/format";
 
 export type CallState =
   | "idle"
@@ -236,7 +237,7 @@ function offerSlot(call: Call, env: Env, from: string): Call {
   const { date, slot } = nextAvailable(env, from);
   const when = dayWord(date, env.today);
   const text =
-    `The next available slot is ${when === "on" ? "on " : `${when}, `}${date}, ${slot}, ` +
+    `The next available slot is ${when === "on" ? "on " : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, ` +
     `at ${PHC.facility} with ${PHC.doctor}. Press 1 to book it, or 2 for another day.`;
   return prompt({ ...call, state: "offerBooking", offerDate: date }, text);
 }
@@ -359,7 +360,7 @@ export function press(call: Call, key: Key, env: Env): Step {
         const concern = concernFor(pressed, env, pressed.result?.urgency ?? "amber");
         const done = end(
           pressed,
-          `Booked. ${member?.name ?? "Your visit"}, ${dayWord(date, env.today) === "on" ? "" : `${dayWord(date, env.today)}, `}${date}, ${slot}, ${PHC.facility}, ${PHC.doctor}.`,
+          `Booked. ${member?.name ?? "Your visit"}, ${dayWord(date, env.today) === "on" ? "" : `${dayWord(date, env.today)}, `}${shortDate(date)}, ${slotLabel(slot)}, ${PHC.facility}, ${PHC.doctor}.`,
           `Your ASHA, ${ASHA.name}, can see this booking now.`,
         );
         return { call: done, effects: [{ type: "book", concern, date, slot }] };
@@ -408,7 +409,7 @@ export function tick(call: Call, env: Env): Step {
     say(
       call,
       "operator",
-      `${member?.name ?? "The patient"} is booked at ${PHC.facility} today, ${env.today}, ${slot}, with ${PHC.doctor}. ` +
+      `${member?.name ?? "The patient"} is booked at ${PHC.facility} today, ${shortDate(env.today)}, ${slotLabel(slot)}, with ${PHC.doctor}. ` +
         `Your ASHA, ${ASHA.name}, has been told. Please come to the PHC now.`,
     ),
   );

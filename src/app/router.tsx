@@ -8,6 +8,7 @@ import Result from "../surfaces/asha/Result";
 import Booking from "../surfaces/asha/Booking";
 import Booked from "../surfaces/asha/Booked";
 import SyncBanner from "../surfaces/asha/SyncBanner";
+import TopBar from "../surfaces/asha/TopBar";
 import CallSimulator from "../surfaces/voice/CallSimulator";
 import Dashboard from "../surfaces/phc/Dashboard";
 
@@ -23,15 +24,17 @@ export const router = createBrowserRouter([
         element: (
           <PhoneFrame>
             <SyncBanner />
+            <TopBar />
             <Outlet />
           </PhoneFrame>
         ),
         children: [
           { index: true, element: <TodayList /> },
-          { path: "family/:familyId", element: <FamilyDetail /> },
-          { path: "family/:familyId/check/:memberId", element: <SymptomCheck /> },
-          { path: "family/:familyId/check/:memberId/result", element: <Result /> },
-          { path: "family/:familyId/check/:memberId/booking", element: <Booking /> },
+          // `handle.back` tells the TopBar where this screen goes back to.
+          { path: "family/:familyId", element: <FamilyDetail />, handle: { back: "today" } },
+          { path: "family/:familyId/check/:memberId", element: <SymptomCheck />, handle: { back: "family" } },
+          { path: "family/:familyId/check/:memberId/result", element: <Result />, handle: { back: "family" } },
+          { path: "family/:familyId/check/:memberId/booking", element: <Booking />, handle: { back: "result" } },
           { path: "booked/:bookingId", element: <Booked /> },
         ],
       },

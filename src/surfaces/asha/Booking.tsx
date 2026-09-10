@@ -1,7 +1,7 @@
 // Pick a day and slot, then create Concern + Booking (SPEC 6.1 Booking).
 
 import { useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { PHC, SLOTS, isoDate } from "../../app/seed";
 import { shortDate, slotLabel } from "../../app/format";
@@ -29,9 +29,6 @@ export default function Booking() {
     return (
       <section className="screen">
         <p className="screen__empty">Member not found.</p>
-        <Link className="screen__back" to="/asha">
-          Back to today
-        </Link>
       </section>
     );
   }
@@ -49,12 +46,6 @@ export default function Booking() {
 
   return (
     <section className="screen">
-      <Link
-        className="screen__back"
-        to={`/asha/family/${familyId}/check/${memberId}/result?a=${params.get("a") ?? ""}`}
-      >
-        Back to result
-      </Link>
       <h1 className="screen__title">Book PHC visit</h1>
       <p className="screen__sub">
         {member.name} · {PHC.facility} · {PHC.doctor}
@@ -86,7 +77,7 @@ export default function Booking() {
       </fieldset>
 
       <fieldset className="choices">
-        <legend className="choices__legend">Slot</legend>
+        <legend className="choices__legend">Time</legend>
         <span className="choices__set">
           {SLOTS.map((s) => {
             const taken = takenSlots.has(s);

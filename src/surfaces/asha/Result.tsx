@@ -1,10 +1,10 @@
 // Triage outcome and next step (SPEC 6.1 Result).
 
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { decodeAnswers, evaluate, toTriageRole } from "../../app/triage";
 import type { Urgency } from "../../app/types";
-import { URGENCY_LABEL, memberLine } from "../../app/format";
+import { URGENCY_LABEL, memberAge } from "../../app/format";
 
 const HEADLINE: Record<Urgency, string> = {
   green: "Care at home",
@@ -24,9 +24,6 @@ export default function Result() {
     return (
       <section className="screen">
         <p className="screen__empty">Member not found.</p>
-        <Link className="screen__back" to="/asha">
-          Back to today
-        </Link>
       </section>
     );
   }
@@ -43,14 +40,11 @@ export default function Result() {
 
   return (
     <section className="screen">
-      <Link className="screen__back" to={`/asha/family/${familyId}`}>
-        Back to {family.head}
-      </Link>
       <div className={`result__banner urgency--${urgency}`}>
         <p className="result__label">{URGENCY_LABEL[urgency]}</p>
         <h1 className="result__headline">{HEADLINE[urgency]}</h1>
         <p className="result__who">
-          {member.name} · {memberLine(member)}
+          {member.name} · {memberAge(member)}
         </p>
       </div>
       <ul className="reasons">

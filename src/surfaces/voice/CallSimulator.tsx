@@ -2,7 +2,7 @@
 // machine's effects into store actions; all call logic lives in callMachine.ts.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import { PHC } from "../../app/seed";
@@ -95,6 +95,10 @@ export default function CallSimulator() {
   }, [apply, call]);
 
   const inCall = call.state !== "idle";
+  // Another surface started this call, so the caller belongs back there when
+  // it is over. The way back sits where it does everywhere else in the
+  // product — top-left, round, always there — not somewhere that appears.
+  const handedOver = Boolean(params.get("family")) || params.get("mode") === "emergency";
 
   // A call log shows the newest line, like a handset does. Jumped, not
   // animated, so there is nothing for reduced motion to suppress.
@@ -134,9 +138,10 @@ export default function CallSimulator() {
       <PhoneFrame>
         <div className="call">
           <header className="call__header">
+            {handedOver && <Link className="backbtn call__back" to="/asha" aria-label="Back to ASHA app" title="Back to ASHA app" />}
             <p className="call__to">Arogya Line</p>
             <p className="call__number">{LINE_NUMBER}</p>
-            <p className={`call__status call__status--${inCall ? "on" : call.state}`}>{statusLabel(call.state)}</p>
+            <p className={`call__status call__status--${call.state === "idle" ? "idle" : call.state === "ended" ? "ended" : "on"}`}>{statusLabel(call.state)}</p>
           </header>
 
           {call.transcript.length === 0 ? (

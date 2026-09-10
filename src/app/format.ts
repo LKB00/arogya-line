@@ -56,7 +56,8 @@ export const URGENCY_LABEL: Record<Urgency | "done", string> = {
   done: "Seen",
 };
 
-/** "3 years · child" rather than a comma-joined field dump. */
-export function memberLine(m: Member): string {
-  return `${m.age} ${m.age === 1 ? "year" : "years"} · ${m.role}`;
+/** Age, plus the role only when it says something the age does not. */
+export function memberAge(m: Member): string {
+  const years = `${m.age} ${m.age === 1 ? "year" : "years"}`;
+  return m.role === "pregnant" ? `${years} · pregnant` : years;
 }

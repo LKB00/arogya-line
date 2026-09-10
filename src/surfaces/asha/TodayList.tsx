@@ -4,13 +4,20 @@
 import { Link } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { ASHA, isoDate } from "../../app/seed";
-import { URGENCY_LABEL, dayLabel, longDate, slotLabel } from "../../app/format";
+import { URGENCY_LABEL, dayLabel, slotLabel } from "../../app/format";
 import type { Booking, Concern, Family, SyncStatus, Urgency } from "../../app/types";
 
 type Band = Urgency | "done";
 const BAND_ORDER: Record<Band, number> = { red: 0, amber: 1, green: 2, done: 3 };
 
-type Row = { family: Family; band: Band; reason: string; sync: SyncStatus };
+/** What kind of thing is due, so the row can show a fitting icon. */
+type Kind = "visit" | "call" | "home" | "concern" | "done";
+
+type When = { day: string; time?: string };
+/** task = what the ASHA does; note = why, when the task alone does not say. */
+type Row = { family: Family; band: Band; kind: Kind; task: string; note?: string; when?: When; sync: SyncStatus };
+
+const BANDS: Band[] = ["red", "amber", "green", "done"];
 
 /** Demo family used until a family picker exists (SPEC 6.1). */
 const DEFAULT_FAMILY_ID = "4471";
@@ -23,9 +30,15 @@ function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today:
     const booking = bookings.find((b) => b.concernId === concern.id);
 
     if (!booking) {
-      const reason =
-        concern.urgency === "green" ? `Home care advised. ${concern.reasons[0] ?? ""}`.trim() : concern.reasons[0] ?? "Concern noted";
-      candidates.push({ family, band: concern.urgency, reason, sync: concern.sync });
+      const green = concern.urgency === "green";
+      candidates.push({
+        family,
+        band: concern.urgency,
+        kind: green ? "home" : "concern",
+        task: green ? "Home care advised" : "Concern noted",
+        note: concern.reasons[0],
+        sync: concern.sync,
+      });
       continue;
     }
 
@@ -33,15 +46,17 @@ function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today:
       candidates.push({
         family,
         band: concern.urgency,
-        reason: `PHC visit ${dayLabel(booking.date).toLowerCase()}, ${slotLabel(booking.slot)}`,
+        kind: "visit",
+        task: "PHC visit",
+        when: { day: dayLabel(booking.date), time: slotLabel(booking.slot) },
         sync: booking.sync,
       });
     } else if (booking.followUpStatus === "pending" && booking.followUpDue === today) {
-      candidates.push({ family, band: concern.urgency, reason: "Follow-up call due today", sync: booking.sync });
+      candidates.push({ family, band: concern.urgency, kind: "call", task: "Follow-up call due", when: { day: "Today" }, sync: booking.sync });
     } else if (booking.followUpStatus === "missed") {
-      candidates.push({ family, band: concern.urgency, reason: "Follow-up missed. Home visit requested", sync: booking.sync });
+      candidates.push({ family, band: concern.urgency, kind: "home", task: "Home visit requested", note: "Follow-up missed", sync: booking.sync });
     } else {
-      candidates.push({ family, band: "done", reason: `Consulted ${dayLabel(booking.date).toLowerCase()}`, sync: booking.sync });
+      candidates.push({ family, band: "done", kind: "done", task: "Consulted", when: { day: dayLabel(booking.date) }, sync: booking.sync });
     }
   }
 
@@ -62,48 +77,58 @@ export default function TodayList() {
     .filter((r): r is Row => r !== null)
     .sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
 
-  const urgent = rows.filter((r) => r.band === "red").length;
-
   return (
-    <section className="screen">
-      <header className="screen__header">
-        <p className="screen__eyebrow">{ASHA.name} · ASHA worker</p>
-        <div className="screen__headline">
+    <>
+      <section className="screen">
+        <header className="screen__header">
           <h1 className="screen__title">Today</h1>
-          <span className="avatar" aria-hidden="true">
-            {ASHA.name[0]}
-          </span>
-        </div>
-        <p className="screen__sub">
-          {longDate(today)}
-          {rows.length > 0 && ` · ${rows.length} ${rows.length === 1 ? "family" : "families"}`}
-          {urgent > 0 && `, ${urgent} urgent`}
-        </p>
-      </header>
+        </header>
       {rows.length === 0 ? (
         <p className="screen__empty">Nothing open today.</p>
       ) : (
-        <ul className="today__rows">
-          {rows.map((r) => (
-            <li key={r.family.id}>
-              <Link className={`row row--${r.band}`} to={`/asha/family/${r.family.id}`}>
-                <span className="row__head">
-                  {r.family.head}
-                  <span className="row__id">{r.family.id}</span>
-                  <span className={`urgency urgency--${r.band}`}>{URGENCY_LABEL[r.band]}</span>
-                </span>
-                <span className="row__status">
-                  <span className="row__reason">{r.reason}</span>
-                  {r.sync === "saved_offline" && <em className="pill pill--waiting">Waiting</em>}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        BANDS.map((band) => {
+          const group = rows.filter((r) => r.band === band);
+          if (group.length === 0) return null;
+          return (
+            <section className="group" key={band}>
+              <h2 className={`group__title urgency urgency--inline urgency--${band}`}>
+                {URGENCY_LABEL[band]}
+                <span className="group__count">{group.length}</span>
+              </h2>
+              <ul className="today__rows">
+                {group.map((r) => (
+                  <li key={r.family.id}>
+                    <Link className={`row row--${r.band}`} to={`/asha/family/${r.family.id}`}>
+                      <span className={`row__icon row__icon--${r.kind}`} aria-hidden="true" />
+                      <span className="row__main">
+                        <span className="row__task">{r.task}</span>
+                        <span className="row__who">
+                          {r.family.head}
+                          <span className="row__id">{r.family.id}</span>
+                        </span>
+                        {r.note && <span className="row__note">{r.note}</span>}
+                        {r.sync === "saved_offline" && <em className="pill pill--waiting">Waiting to send</em>}
+                      </span>
+                      {r.when && (
+                        <span className="row__when">
+                          <span>{r.when.day}</span>
+                          {r.when.time && <span>{r.when.time}</span>}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
       )}
-      <Link className="btn btn--primary fab" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
-        New concern
-      </Link>
-    </section>
+      </section>
+      <p className="fab-bar">
+        <Link className="btn btn--primary fab" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
+          New concern
+        </Link>
+      </p>
+    </>
   );
 }

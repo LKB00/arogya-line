@@ -19,6 +19,10 @@ body {
   font-weight: var(--weight-regular);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
+  /* Inter: open digits and a clearer lowercase l, so numbers and names read
+     correctly at a glance in sunlight. */
+  font-feature-settings: "cv05", "cv11", "ss03";
 }
 
 h1,
@@ -44,11 +48,12 @@ h1 {
   font-size: var(--size-2xl);
   line-height: var(--leading-tight);
   font-weight: var(--weight-bold);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-title);
 }
 
 h2 {
-  font-size: var(--size-md);
+  font-size: var(--size-lg);
+  line-height: var(--leading-snug);
   font-weight: var(--weight-bold);
   letter-spacing: -0.01em;
 }
@@ -214,6 +219,13 @@ legend {
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   white-space: nowrap;
+}
+
+/* The same triple — colour, icon, word — set in a line of text, without the
+   pill behind it. */
+.urgency--inline {
+  padding: 0;
+  background: transparent;
 }
 
 .urgency::before {

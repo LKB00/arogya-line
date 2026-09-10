@@ -19,9 +19,6 @@ type Row = { family: Family; band: Band; kind: Kind; task: string; note?: string
 
 const BANDS: Band[] = ["red", "amber", "green", "done"];
 
-/** Demo family used until a family picker exists (SPEC 6.1). */
-const DEFAULT_FAMILY_ID = "4471";
-
 function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today: string): Row | null {
   const own = concerns.filter((c) => c.familyId === family.id);
   const candidates: Row[] = [];
@@ -125,7 +122,7 @@ export default function TodayList() {
       )}
       </section>
       <p className="fab-bar">
-        <Link className="btn btn--primary fab" to={`/asha/family/${DEFAULT_FAMILY_ID}`}>
+        <Link className="btn btn--primary fab" to="/asha/families">
           New concern
         </Link>
       </p>

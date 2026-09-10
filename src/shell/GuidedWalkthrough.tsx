@@ -9,7 +9,7 @@ type Step = { path: string; text: string };
 
 /** Each step names the surface its Next control should land on. */
 const STEPS: Step[] = [
-  { path: "/asha", text: "ASHA app, offline: open family 4471, check Arjun's symptoms, book a PHC visit. Notice it says waiting to send." },
+  { path: "/asha", text: "ASHA app, offline: tap New concern, choose family 4471, check Arjun's symptoms, book a PHC visit. Notice it says waiting to send." },
   { path: "/asha", text: "Turn the signal on with the toggle. Watch the booking sync." },
   { path: "/phc", text: "PHC dashboard: find Arjun for tomorrow. Mark the visit as needed and save advice." },
   { path: "/voice", text: "Voice line: call, enter 4471, press 3. Hear the doctor's advice read back." },

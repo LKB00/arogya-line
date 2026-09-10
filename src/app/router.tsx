@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import SurfaceSwitcher from "../shell/SurfaceSwitcher";
 import PhoneFrame from "../shell/PhoneFrame";
 import TodayList from "../surfaces/asha/TodayList";
+import FamilyPicker from "../surfaces/asha/FamilyPicker";
 import FamilyDetail from "../surfaces/asha/FamilyDetail";
 import SymptomCheck from "../surfaces/asha/SymptomCheck";
 import Result from "../surfaces/asha/Result";
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <TodayList /> },
+          { path: "families", element: <FamilyPicker />, handle: { back: "today" } },
           // `handle.back` tells the TopBar where this screen goes back to.
           { path: "family/:familyId", element: <FamilyDetail />, handle: { back: "today" } },
           { path: "family/:familyId/check/:memberId", element: <SymptomCheck />, handle: { back: "family" } },

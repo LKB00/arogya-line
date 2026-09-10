@@ -1,9 +1,11 @@
-// Doctor's after-consult panel (SPEC 6.3 AfterConsult). Opens from a row.
+// Doctor's after-consult panel (SPEC 6.3 AfterConsult). Opens from a row and
+// renders directly beneath it.
 
 import { useState } from "react";
+import { dayLabel, slotLabel } from "../../app/format";
 import { useStore } from "../../app/store";
 import { VisitNeededToggle } from "./PatientRow";
-import { patientLabel, type BookingRow } from "./rows";
+import { patientMeta, patientName, type BookingRow } from "./rows";
 
 type Props = {
   row: BookingRow;
@@ -19,50 +21,75 @@ export default function AfterConsult({ row, onClose }: Props) {
   const hasFollowUp = booking.followUpStatus !== undefined;
 
   return (
-    <section aria-labelledby="after-consult-heading">
-      <h2 id="after-consult-heading">After consult</h2>
-      <p>
-        {patientLabel(row)} · {booking.date}, {booking.slot}
-      </p>
+    <section className="consult" aria-labelledby="after-consult-heading">
+      <header className="consult__header">
+        <div>
+          <p className="consult__eyebrow">After consult</p>
+          <h2 id="after-consult-heading" className="consult__name">
+            {patientName(row)}
+          </h2>
+          <p className="consult__meta">
+            {patientMeta(row)} · {dayLabel(booking.date)}, {slotLabel(booking.slot)}
+          </p>
+        </div>
+        <button type="button" className="closebtn" onClick={onClose} aria-label="Close panel" />
+      </header>
 
-      <p>
-        Visit needed: <VisitNeededToggle booking={booking} />
-      </p>
+      <div className="consult__grid">
+        <div className="consult__block">
+          <p className="consult__label">Visit needed</p>
+          <VisitNeededToggle booking={booking} />
+        </div>
 
-      <p>
-        <label>
-          Advice for the family (stands in for the 20-second voice note)
-          <br />
-          <textarea rows={3} cols={60} value={text} onChange={(e) => setText(e.target.value)} />
-        </label>
-      </p>
-      <p>
-        <button type="button" disabled={!canSave} onClick={() => saveAdvice(booking.id, text.trim())}>
-          Save advice
-        </button>
-      </p>
+        <div className="consult__block consult__block--advice">
+          <label className="consult__label" htmlFor="advice-text">
+            Advice for the family
+            <span className="consult__hint"> · stands in for the 20-second voice note</span>
+          </label>
+          <textarea
+            id="advice-text"
+            className="textarea"
+            rows={3}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={!canSave}
+            onClick={() => saveAdvice(booking.id, text.trim())}
+          >
+            Save advice
+          </button>
+        </div>
 
-      <p>
-        Follow-up: {booking.followUpDue ? `due ${booking.followUpDue}, ${booking.followUpStatus}` : "not scheduled yet"}
-      </p>
-      <p>
-        <button
-          type="button"
-          disabled={!hasFollowUp}
-          onClick={() => setFollowUpStatus(booking.id, "answered")}
-        >
-          Follow-up answered
-        </button>{" "}
-        <button type="button" disabled={!hasFollowUp} onClick={() => setFollowUpStatus(booking.id, "missed")}>
-          Follow-up missed
-        </button>
-      </p>
-
-      <p>
-        <button type="button" onClick={onClose}>
-          Close
-        </button>
-      </p>
+        <div className="consult__block">
+          <p className="consult__label">Follow-up</p>
+          <p className="consult__value">
+            {booking.followUpDue
+              ? `Due ${dayLabel(booking.followUpDue)} · ${booking.followUpStatus}`
+              : "Set when advice is saved"}
+          </p>
+          <div className="consult__actions">
+            <button
+              type="button"
+              className="btn btn--compact btn--secondary"
+              disabled={!hasFollowUp}
+              onClick={() => setFollowUpStatus(booking.id, "answered")}
+            >
+              Mark answered
+            </button>
+            <button
+              type="button"
+              className="btn btn--compact btn--secondary"
+              disabled={!hasFollowUp}
+              onClick={() => setFollowUpStatus(booking.id, "missed")}
+            >
+              Mark missed
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

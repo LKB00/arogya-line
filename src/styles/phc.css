@@ -1,0 +1,565 @@
+/*
+ * PHC dashboard. A desktop sheet, not a phone: full width of the stage up to
+ * --page-max. The metrics strip is the first thing read; the table is the
+ * work. Same tokens as the ASHA app, nothing declared here that is not in
+ * tokens.css.
+ */
+
+.phc {
+  width: 100%;
+  max-width: var(--page-max);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  box-shadow: var(--shadow-raised);
+  animation: screen-in var(--duration) var(--easing) both;
+}
+
+/* ---------- Header ---------- */
+
+.phc__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.phc__title {
+  margin: 0;
+  font-size: var(--size-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-tight);
+}
+
+.phc__sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--size-base);
+}
+
+/* ---------- Metrics strip: three numbers, the outcome of the whole loop ---------- */
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--pad-card) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.metric__label {
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.metric__value {
+  margin: 0;
+  font-size: var(--size-2xl);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-tight);
+}
+
+.metric__detail {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+}
+
+/* ---------- View tabs ---------- */
+
+.tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--size-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab[aria-pressed="true"] .tab__count {
+  background: var(--brand);
+  color: var(--text);
+}
+
+/* ---------- Day toolbar: which day, how heavy, change it ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-5);
+}
+
+.toolbar__day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.toolbar__title {
+  margin: 0;
+  font-size: var(--size-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-tight);
+}
+
+.toolbar__sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  list-style: none;
+}
+
+.counts .urgency {
+  font-variant-numeric: tabular-nums;
+}
+
+.datefield {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.datefield__label {
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.datefield__input {
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: var(--border-thin) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--size-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Table ---------- */
+
+.table-wrap {
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-base);
+}
+
+.th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-thin) solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.th--time {
+  width: 6.5rem;
+}
+
+.th--symptoms {
+  width: 34%;
+}
+
+.th--action {
+  text-align: right;
+}
+
+.cell {
+  padding: var(--pad-item);
+  border-top: var(--border-thin) solid var(--divider);
+  vertical-align: middle;
+  line-height: var(--leading-snug);
+}
+
+.trow:first-child .cell {
+  border-top: 0;
+}
+
+.cell--time {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell--muted {
+  color: var(--text-muted);
+}
+
+.cell--action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cell--action .pill {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.patient__name {
+  display: block;
+  font-size: var(--size-md);
+  font-weight: var(--weight-semibold);
+}
+
+.patient__meta {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Urgency first, then the reasons under it: colour, icon, word, then why. */
+.cell--symptoms .urgency {
+  margin-bottom: var(--space-1);
+}
+
+.symptoms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+}
+
+/* The open row is the one the panel hangs from. */
+.trow.is-selected .cell {
+  background: var(--primary-soft);
+}
+
+.trow.is-selected .cell:first-child {
+  box-shadow: inset var(--border-thick) 0 0 var(--primary);
+}
+
+.trow--consult .cell--consult {
+  padding: 0 var(--space-4) var(--space-4);
+  background: var(--primary-soft);
+  border-top: 0;
+}
+
+/* ---------- Yes / No segmented control ---------- */
+
+.seg {
+  display: inline-flex;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: var(--border-thin) solid var(--border);
+}
+
+.seg__btn {
+  min-width: 3.25rem;
+  min-height: calc(var(--touch) - var(--space-2) - var(--border-thick));
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--size-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.seg__btn:hover {
+  color: var(--text);
+}
+
+.seg__btn[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+/* ---------- After-consult panel, attached to its row ---------- */
+
+.consult {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--pad-card) var(--space-5) var(--space-5);
+  border-radius: var(--radius);
+  border-left: var(--border-thick) solid var(--primary);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.consult-standalone {
+  padding: var(--space-1);
+}
+
+.consult__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.consult__eyebrow {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.consult__name {
+  margin: 0;
+  font-size: var(--size-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-tight);
+}
+
+.consult__meta {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+}
+
+.closebtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch);
+  height: var(--touch);
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color var(--transition), transform var(--transition);
+}
+
+.closebtn::before {
+  content: "";
+  width: var(--space-4);
+  height: var(--space-4);
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.3 5.7 12 12l6.3 6.3-1.4 1.4L12 13.4l-6.3 6.3-1.4-1.4L10.6 12 4.3 5.7l1.4-1.4L12 10.6l6.3-6.3z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.3 5.7 12 12l6.3 6.3-1.4 1.4L12 13.4l-6.3 6.3-1.4-1.4L10.6 12 4.3 5.7l1.4-1.4L12 10.6l6.3-6.3z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.closebtn:hover {
+  background: var(--border);
+}
+
+.closebtn:active {
+  transform: scale(0.94);
+}
+
+.consult__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.consult__block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.consult__label {
+  margin: 0;
+  font-size: var(--size-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.consult__hint {
+  color: var(--text-muted);
+  font-weight: var(--weight-regular);
+}
+
+.consult__value {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--size-base);
+}
+
+.consult__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-thin) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--size-base);
+  line-height: var(--leading-normal);
+  resize: vertical;
+}
+
+.textarea:hover {
+  border-color: var(--text);
+}
+
+/* ---------- Follow-up status pill ---------- */
+
+.pill--missed {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.pill--missed::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 1 21h22L12 2Zm0 6a1.2 1.2 0 0 1 1.2 1.2l-.35 5.2a.85.85 0 0 1-1.7 0l-.35-5.2A1.2 1.2 0 0 1 12 8Zm0 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 1 21h22L12 2Zm0 6a1.2 1.2 0 0 1 1.2 1.2l-.35 5.2a.85.85 0 0 1-1.7 0l-.35-5.2A1.2 1.2 0 0 1 12 8Zm0 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ---------- Empty state ---------- */
+
+.empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---------- Focus ---------- */
+
+.tab:focus-visible,
+.seg__btn:focus-visible,
+.closebtn:focus-visible,
+.datefield__input:focus-visible,
+.textarea:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.textarea:focus-visible,
+.datefield__input:focus-visible {
+  border-color: var(--text);
+  outline-offset: 0;
+}
+
+/* ---------- Narrow screens: the table scrolls sideways, the rest stacks ---------- */
+
+@media (max-width: 767px) {
+  .phc {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 44rem;
+  }
+
+  .datefield {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .consult__grid {
+    grid-template-columns: 1fr;
+  }
+}

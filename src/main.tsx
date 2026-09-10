@@ -8,6 +8,7 @@ import "./styles/base.css";
 import "./styles/shell.css";
 import "./styles/asha.css";
 import "./styles/voice.css";
+import "./styles/phc.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

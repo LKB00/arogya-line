@@ -1,12 +1,14 @@
 // PHC dashboard (SPEC 6.3). Day/view/selected booking live in the URL query so
 // browser back closes the panel. Only synced ("sent") bookings are visible here.
 
+import { Fragment } from "react";
 import { useSearchParams } from "react-router-dom";
+import { dayLabel, longDate, URGENCY_LABEL } from "../../app/format";
 import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import type { Booking, Urgency } from "../../app/types";
 import PatientRow from "./PatientRow";
-import { patientLabel, type BookingRow } from "./rows";
+import { patientMeta, patientName, type BookingRow } from "./rows";
 import AfterConsult from "./AfterConsult";
 
 const URGENCY_ORDER: Record<Urgency, number> = { red: 0, amber: 1, green: 2 };
@@ -72,108 +74,178 @@ export default function Dashboard() {
 
   const consultRow = consultId ? sent.filter((b) => b.id === consultId).map(toRow)[0] : undefined;
   const openConsult = (id: string) => update({ consult: id });
+  const closeConsult = () => update({ consult: null });
+
+  // The panel sits in the table, directly under the row it belongs to.
+  const consultPanelBody = consultRow ? (
+    <AfterConsult key={consultRow.booking.id} row={consultRow} onClose={closeConsult} />
+  ) : null;
+  const consultPanel = (columns: number) =>
+    consultRow ? (
+      <tr className="trow trow--consult">
+        <td className="cell cell--consult" colSpan={columns}>
+          {consultPanelBody}
+        </td>
+      </tr>
+    ) : null;
+  const inView = (view === "day" ? dayRows : followUpRows).some((r) => r.booking.id === consultId);
 
   return (
-    <section>
-      <h1>PHC Tumkur · Dr. Ramesh</h1>
+    <section className="phc">
+      <header className="phc__header">
+        <h1 className="phc__title">PHC Tumkur</h1>
+        <p className="phc__sub">Dr. Ramesh</p>
+      </header>
 
-      <dl aria-label="Metrics">
-        <dt>Bookings pre-booked</dt>
-        <dd>
-          {percent(preBooked, sent.length)} ({preBooked} of {sent.length})
-        </dd>
-        <dt>Visits marked not needed</dt>
-        <dd>{notNeeded}</dd>
-        <dt>Follow-ups completed</dt>
-        <dd>
-          {percent(answered, withFollowUp.length)} ({answered} of {withFollowUp.length})
-        </dd>
+      <dl className="metrics" aria-label="Metrics">
+        <div className="metric">
+          <dt className="metric__label">Bookings pre-booked</dt>
+          <dd className="metric__value">{percent(preBooked, sent.length)}</dd>
+          <dd className="metric__detail">
+            {preBooked} of {sent.length} visits
+          </dd>
+        </div>
+        <div className="metric">
+          <dt className="metric__label">Visits marked not needed</dt>
+          <dd className="metric__value">{notNeeded}</dd>
+          <dd className="metric__detail">of {sent.length} visits</dd>
+        </div>
+        <div className="metric">
+          <dt className="metric__label">Follow-ups completed</dt>
+          <dd className="metric__value">{percent(answered, withFollowUp.length)}</dd>
+          <dd className="metric__detail">
+            {answered} of {withFollowUp.length} follow-ups
+          </dd>
+        </div>
       </dl>
 
-      <nav aria-label="View">
-        <button type="button" aria-pressed={view === "day"} onClick={() => update({ view: null })}>
+      <nav className="tabs" aria-label="View">
+        <button
+          type="button"
+          className="tab"
+          aria-pressed={view === "day"}
+          onClick={() => update({ view: null })}
+        >
           Day
-        </button>{" "}
-        <button type="button" aria-pressed={view === "followups"} onClick={() => update({ view: "followups" })}>
-          Follow-ups ({followUpRows.length})
+        </button>
+        <button
+          type="button"
+          className="tab"
+          aria-pressed={view === "followups"}
+          onClick={() => update({ view: "followups" })}
+        >
+          Follow-ups
+          <span className="tab__count">{followUpRows.length}</span>
         </button>
       </nav>
 
       {view === "day" ? (
         <>
-          <p>
-            <label>
-              Day{" "}
-              <input type="date" value={day} onChange={(e) => update({ day: e.target.value || null })} />
-            </label>{" "}
-            {counts.map((c) => (
-              <span key={c.urgency}>
-                {c.urgency}: {c.count}{" "}
-              </span>
-            ))}
-          </p>
+          <div className="toolbar">
+            <div className="toolbar__day">
+              <h2 className="toolbar__title">{dayLabel(day)}</h2>
+              <p className="toolbar__sub">{longDate(day)}</p>
+            </div>
+            <ul className="counts" aria-label="Bookings by urgency">
+              {counts.map((c) => (
+                <li key={c.urgency} className={`urgency urgency--${c.urgency}`}>
+                  {c.count} {URGENCY_LABEL[c.urgency].toLowerCase()}
+                </li>
+              ))}
+            </ul>
+            <label className="datefield">
+              <span className="datefield__label">Change day</span>
+              <input
+                className="datefield__input"
+                type="date"
+                value={day}
+                onChange={(e) => update({ day: e.target.value || null })}
+              />
+            </label>
+          </div>
 
           {dayRows.length === 0 ? (
-            <p>No bookings for this day.</p>
+            <p className="empty">No bookings for this day.</p>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Patient</th>
-                  <th>Reported by</th>
-                  <th>Symptoms captured</th>
-                  <th>Visit needed</th>
-                  <th>After consult</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dayRows.map((row) => (
-                  <PatientRow key={row.booking.id} row={row} onOpen={openConsult} />
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th className="th th--time">Time</th>
+                    <th className="th">Patient</th>
+                    <th className="th">Reported by</th>
+                    <th className="th th--symptoms">Symptoms captured</th>
+                    <th className="th">Visit needed</th>
+                    <th className="th th--action">After consult</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dayRows.map((row) => (
+                    <Fragment key={row.booking.id}>
+                      <PatientRow row={row} selected={row.booking.id === consultId} onOpen={openConsult} />
+                      {row.booking.id === consultId ? consultPanel(6) : null}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       ) : followUpRows.length === 0 ? (
-        <p>No follow-ups pending or missed.</p>
+        <p className="empty">No follow-ups pending or missed.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Consulted</th>
-              <th>Follow-up due</th>
-              <th>Status</th>
-              <th>After consult</th>
-            </tr>
-          </thead>
-          <tbody>
-            {followUpRows.map((row) => (
-              <tr key={row.booking.id}>
-                <td>{patientLabel(row)}</td>
-                <td>{row.booking.date}</td>
-                <td>{row.booking.followUpDue}</td>
-                <td>
-                  {row.booking.followUpStatus}
-                  {row.booking.followUpStatus === "missed" ? " · ASHA visit requested" : ""}
-                </td>
-                <td>
-                  <button type="button" onClick={() => openConsult(row.booking.id)}>
-                    Open
-                  </button>
-                </td>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="th">Patient</th>
+                <th className="th">Consulted</th>
+                <th className="th">Follow-up due</th>
+                <th className="th">Status</th>
+                <th className="th th--action">After consult</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {followUpRows.map((row) => {
+                const selected = row.booking.id === consultId;
+                const missed = row.booking.followUpStatus === "missed";
+                return (
+                  <Fragment key={row.booking.id}>
+                    <tr className={selected ? "trow is-selected" : "trow"} aria-selected={selected}>
+                      <td className="cell">
+                        <span className="patient__name">{patientName(row)}</span>
+                        <span className="patient__meta">{patientMeta(row)}</span>
+                      </td>
+                      <td className="cell cell--muted">{dayLabel(row.booking.date)}</td>
+                      <td className="cell">{row.booking.followUpDue ? dayLabel(row.booking.followUpDue) : "—"}</td>
+                      <td className="cell">
+                        <span className={missed ? "pill pill--missed" : "pill pill--waiting"}>
+                          {missed ? "Missed · ASHA visit requested" : "Pending"}
+                        </span>
+                      </td>
+                      <td className="cell cell--action">
+                        <button
+                          type="button"
+                          className="btn btn--compact btn--secondary"
+                          aria-expanded={selected}
+                          onClick={() => openConsult(row.booking.id)}
+                        >
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                    {selected ? consultPanel(5) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {consultRow ? (
-        <AfterConsult key={consultRow.booking.id} row={consultRow} onClose={() => update({ consult: null })} />
-      ) : consultId ? (
-        <p>That booking has not reached the PHC yet.</p>
-      ) : null}
+      {/* Selected booking outside the visible table (other day or view): the panel still opens. */}
+      {consultRow && !inView ? <div className="consult-standalone">{consultPanelBody}</div> : null}
+      {consultId && !consultRow ? <p className="empty">That booking has not reached the PHC yet.</p> : null}
     </section>
   );
 }

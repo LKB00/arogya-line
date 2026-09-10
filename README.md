@@ -1,32 +1,57 @@
-# React + TypeScript + Vite
+# Arogya Line
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+An interactive prototype for a rural primary-care service concept: one shared
+record that a community health worker, a family on a basic phone, and a
+doctor at the primary health centre (PHC) can all reach. It is the working
+demo behind a portfolio case study, not a product.
 
-Currently, two official plugins are available:
+Everything runs in the browser from one in-memory store. There is no backend,
+no network call and no saved data. A page refresh, or **Reset demo**, returns
+to the seed scenario.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## The three surfaces
 
-## React Compiler
+- **ASHA app** (`/asha`): a phone-sized app for the health worker. Today's
+  list, a family's members, a short symptom check that triages to urgent /
+  needs a visit / home care, and booking a PHC slot. Works offline: bookings
+  wait on the phone and send when the signal toggle is turned on.
+- **Voice line** (`/voice`): a simulated call from a basic phone. The caller
+  keys in the family ID printed on their card, then uses the keypad to book
+  a visit, run the same symptom check, or hear the doctor's last advice.
+- **PHC dashboard** (`/phc`): the doctor's desktop view. A metrics strip, the
+  day's bookings sorted by urgency, a visit-needed toggle, and an after-consult
+  panel to record advice. The advice is what the voice line reads back.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+All three read and write the same store, so a booking made offline in the
+ASHA app appears on the dashboard the moment it syncs.
 
-## Expanding the Oxlint configuration
+## Run it
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Requires Node 24.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Then open `http://localhost:5173`. Other scripts: `npm run build`,
+`npm run test`, `npm run lint`.
+
+## Guided demo
+
+Add `?guided=1` to the URL to show a step bar above the prototype that walks
+through the story in order:
+
+1. ASHA app, offline: check Arjun in family 4471, get "needs a visit", book a
+   slot, see it waiting to send.
+2. Turn the signal on and watch the booking sync.
+3. PHC dashboard: Arjun appears; mark the visit needed and record advice.
+4. Voice line: enter 4471, press 3, hear the advice read back.
+
+The bar in the dark strip at the top (surface tabs, signal toggle, reset) is
+demo chrome, not part of the product.
+
+## Disclaimer
+
+This is a concept prototype. The triage questions are illustrative and are
+not clinical guidance. All names, families and data are invented.

@@ -1,6 +1,7 @@
 // The dashboard row shape and its label helpers. They live apart from the row
 // component so both the table and AfterConsult can read them.
 
+import { memberAge } from "../../app/format";
 import type { Booking, Concern, Family, Member } from "../../app/types";
 
 export type BookingRow = {
@@ -15,7 +16,13 @@ export function reportedBy(row: BookingRow): string {
   return row.concern?.source === "ivr" ? "Voice line" : "ASHA";
 }
 
-export function patientLabel(row: BookingRow): string {
-  const who = row.member ? `${row.member.name}, ${row.member.age}` : "Unknown";
-  return `${who} · family ${row.family?.id ?? "—"}`;
+/** The patient's name, then the line beneath it: age and family ID. */
+export function patientName(row: BookingRow): string {
+  return row.member?.name ?? "Unknown patient";
+}
+
+export function patientMeta(row: BookingRow): string {
+  const age = row.member ? memberAge(row.member) : undefined;
+  const fam = `Family ${row.family?.id ?? "—"}`;
+  return age ? `${age} · ${fam}` : fam;
 }

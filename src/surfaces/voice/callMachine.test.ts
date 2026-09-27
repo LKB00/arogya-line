@@ -4,7 +4,8 @@ import { hangUp, press, startCall, tick, type Call, type Env, type Key, type Ste
 
 function env(): Env {
   const seed = createSeed();
-  return { families: seed.families, concerns: seed.concerns, bookings: seed.bookings, today: isoDate(0) };
+  // A fixed early hour, so "today" still has slots whatever the clock says.
+  return { families: seed.families, concerns: seed.concerns, bookings: seed.bookings, today: isoDate(0), hour: 7 };
 }
 
 /** Press a run of keys, collecting every effect the machine asked for. */
@@ -154,5 +155,76 @@ describe("hang up", () => {
     expect(done.call.state).toBe("idle");
     expect(done.call.transcript).toEqual([]);
     expect(after.call.transcript.length).toBeGreaterThan(0);
+  });
+});
+
+describe("edge cases found in the design pass", () => {
+  it("speaks the result in words, never the colour code", () => {
+    const e = env();
+    const after = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    expect(said(after.call)).toContain("Result: needs a visit.");
+    expect(said(after.call)).not.toMatch(/Result: (amber|red|green)/);
+  });
+
+  it("reads the advice date the way a person says it", () => {
+    const e = env();
+    const after = type(startCall(e), "2205" + "3", e);
+    expect(said(after.call)).toContain("from Dr. Ramesh, yesterday:");
+    expect(said(after.call)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+  });
+
+  it("never dates advice in the future", () => {
+    const e = env();
+    const bookings = e.bookings.map((b) => (b.id === "b-3120" ? { ...b, advice: "Keep her upright." } : b));
+    const after = type(startCall({ ...e, bookings }, { familyId: "3120" }), "3", { ...e, bookings });
+    expect(said(after.call)).toContain("Your doctor's advice from Dr. Ramesh: Keep her upright.");
+  });
+
+  it("asks again when nobody of that kind is in the family", () => {
+    const e = env();
+    // 3120 has an adult and a child, no pregnant woman
+    const after = type(startCall(e), "3120" + "1" + "3", e);
+    expect(after.call.state).toBe("whoIsUnwell");
+    expect(said(after.call)).toContain("There is no pregnant woman recorded in family 3120.");
+  });
+
+  it("books exactly the slot it offered", () => {
+    const e = env();
+    const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const { offerDate, offerSlot } = offered.call;
+    const booked = type(offered, "1", e);
+    const book = booked.effects.find((x) => x.type === "book");
+    expect(book).toMatchObject({ date: offerDate, slot: offerSlot });
+  });
+
+  it("says so, and offers another, when the offered slot is taken meanwhile", () => {
+    const e = env();
+    const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const taken: Env = {
+      ...e,
+      bookings: [...e.bookings, { ...e.bookings[0], id: "b-x", date: offered.call.offerDate!, slot: offered.call.offerSlot! }],
+    };
+    const after = press(offered.call, "1", taken);
+    expect(after.effects).toHaveLength(0);
+    expect(said(after.call)).toContain("Sorry, that slot has just been taken.");
+    expect(after.call.state).toBe("offerBooking");
+    expect(after.call.offerSlot).not.toBe(offered.call.offerSlot);
+  });
+
+  it("late in the day, the operator books the next real slot, not one already past", () => {
+    const e = { ...env(), hour: 22 };
+    let step = type(startCall(e), "4471" + "0", e);
+    step = tick(step.call, e);
+    step = tick(step.call, e);
+    const book = step.effects.find((x) => x.type === "book");
+    expect(book).toMatchObject({ date: isoDate(1) });
+  });
+
+  it("an emergency says come now first, with the booking as the record", () => {
+    const e = { ...env(), hour: 22 };
+    let step = startCall(e, { familyId: "3120", emergency: true });
+    step = tick(step.call, e);
+    step = tick(step.call, e);
+    expect(said(step.call)).toContain("now; you will be seen as an emergency");
   });
 });

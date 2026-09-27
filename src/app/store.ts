@@ -116,7 +116,9 @@ export const useStore = create<StoreState>()((set, get) => ({
     set((s) => ({
       bookings: s.bookings.map((b) =>
         b.id === bookingId
-          ? { ...b, advice, followUpDue: addDays(b.date, 1), followUpStatus: "pending" }
+          ? // Editing advice keeps a follow-up that is already set, and its
+            // outcome: correcting a word must not reopen an answered call.
+            { ...b, advice, followUpDue: b.followUpDue ?? addDays(b.date, 1), followUpStatus: b.followUpStatus ?? "pending" }
           : b,
       ),
     }));

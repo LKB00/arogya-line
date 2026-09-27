@@ -1,32 +1,41 @@
-// PHC dashboard (SPEC 6.3). Day/view/selected booking live in the URL query so
-// browser back closes the panel. Only synced ("sent") bookings are visible here.
+// PHC dashboard (SPEC 6.3). Day, view and the selected booking live in the URL
+// so browser back closes the panel. Only synced ("sent") bookings are shown.
+//
+// A Material 3 list–detail layout: a navigation rail for the two views, the
+// outcomes across the top, the day's list, and the after-consult panel as a
+// side sheet beside the list, so the list never moves while the doctor writes.
 
-import { Fragment } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { dayLabel, longDate, URGENCY_LABEL } from "../../app/format";
+import { IconBuildingHospital, IconCalendarEvent, IconPhoneCall, IconStethoscope, IconX } from "@tabler/icons-react";
+import { URGENCY_LABEL, dayLabel, longDate } from "../../app/format";
 import { useStore } from "../../app/store";
-import { isoDate } from "../../app/seed";
-import type { Booking, Urgency } from "../../app/types";
-import PatientRow from "./PatientRow";
-import { patientMeta, patientName, type BookingRow } from "./rows";
+import { PHC, isoDate } from "../../app/seed";
+import type { Urgency } from "../../app/types";
+import Icon from "../../shell/Icon";
 import AfterConsult from "./AfterConsult";
+import FollowUpRow from "./FollowUpRow";
+import PatientRow from "./PatientRow";
+import { dayFromParam, dayRows, followUpRows, metrics, percent, sent, toRow } from "./selectors";
 
-const URGENCY_ORDER: Record<Urgency, number> = { red: 0, amber: 1, green: 2 };
 const URGENCIES: Urgency[] = ["red", "amber", "green"];
 
-function percent(part: number, whole: number): string {
-  return whole === 0 ? "—" : `${Math.round((part / whole) * 100)}%`;
+/** "today", "tomorrow", "yesterday", or "on Wed 30 Sep". */
+function dayWords(day: string): string {
+  const label = dayLabel(day);
+  return ["Today", "Tomorrow", "Yesterday"].includes(label) ? label.toLowerCase() : `for ${label}`;
 }
 
 export default function Dashboard() {
   const [params, setParams] = useSearchParams();
-  const day = params.get("day") ?? isoDate(1);
+  const day = dayFromParam(params.get("day"));
   const view = params.get("view") === "followups" ? "followups" : "day";
   const consultId = params.get("consult");
 
   const bookings = useStore((s) => s.bookings);
   const concerns = useStore((s) => s.concerns);
   const families = useStore((s) => s.families);
+  const today = isoDate(0);
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -37,215 +46,192 @@ export default function Dashboard() {
     setParams(next);
   };
 
-  const toRow = (booking: Booking): BookingRow => {
-    const concern = concerns.find((c) => c.id === booking.concernId);
-    const family = families.find((f) => f.id === concern?.familyId);
-    const member = family?.members.find((m) => m.id === concern?.memberId);
-    return { booking, concern, family, member };
-  };
+  const rows = dayRows(bookings, concerns, families, day);
+  const followUps = followUpRows(bookings, concerns, families);
+  const m = metrics(bookings);
+  const counts = URGENCIES.map((u) => ({ urgency: u, count: rows.filter((r) => r.concern?.urgency === u).length }));
 
-  // The PHC only knows about bookings that have reached it.
-  const sent = bookings.filter((b) => b.sync === "sent");
-
-  const dayRows = sent
-    .filter((b) => b.date === day)
-    .map(toRow)
-    .sort((a, b) => {
-      const ua = a.concern ? URGENCY_ORDER[a.concern.urgency] : 3;
-      const ub = b.concern ? URGENCY_ORDER[b.concern.urgency] : 3;
-      return ua - ub || a.booking.slot.localeCompare(b.booking.slot);
-    });
-
-  const counts = URGENCIES.map((u) => ({
-    urgency: u,
-    count: dayRows.filter((r) => r.concern?.urgency === u).length,
-  }));
-
-  const followUpRows = sent
-    .filter((b) => b.followUpStatus === "pending" || b.followUpStatus === "missed")
-    .map(toRow)
-    .sort((a, b) => (a.booking.followUpDue ?? "").localeCompare(b.booking.followUpDue ?? ""));
-
-  // Metrics strip: live from the store.
-  const preBooked = sent.filter((b) => !b.walkIn).length;
-  const notNeeded = sent.filter((b) => b.visitNeeded === false).length;
-  const withFollowUp = sent.filter((b) => b.followUpStatus !== undefined);
-  const answered = withFollowUp.filter((b) => b.followUpStatus === "answered").length;
-
-  const consultRow = consultId ? sent.filter((b) => b.id === consultId).map(toRow)[0] : undefined;
-  const openConsult = (id: string) => update({ consult: id });
+  const consultBooking = consultId ? sent(bookings).find((b) => b.id === consultId) : undefined;
+  const consultRow = consultBooking ? toRow(consultBooking, concerns, families) : undefined;
   const closeConsult = () => update({ consult: null });
 
-  // The panel sits in the table, directly under the row it belongs to.
-  const consultPanelBody = consultRow ? (
-    <AfterConsult key={consultRow.booking.id} row={consultRow} onClose={closeConsult} />
-  ) : null;
-  const consultPanel = (columns: number) =>
-    consultRow ? (
-      <tr className="trow trow--consult">
-        <td className="cell cell--consult" colSpan={columns}>
-          {consultPanelBody}
-        </td>
-      </tr>
-    ) : null;
-  const inView = (view === "day" ? dayRows : followUpRows).some((r) => r.booking.id === consultId);
+  // Escape closes the panel, as it closes any side sheet.
+  useEffect(() => {
+    if (!consultId) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        const next = new URLSearchParams(window.location.search);
+        next.delete("consult");
+        setParams(next);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [consultId, setParams]);
 
   return (
-    <section className="phc">
-      <header className="phc__header">
-        <h1 className="phc__title">PHC Tumkur</h1>
-        <p className="phc__sub">Dr. Ramesh</p>
-      </header>
-
-      <dl className="metrics" aria-label="Metrics">
-        <div className="metric">
-          <dt className="metric__label">Bookings pre-booked</dt>
-          <dd className="metric__value">{percent(preBooked, sent.length)}</dd>
-          <dd className="metric__detail">
-            {preBooked} of {sent.length} visits
-          </dd>
-        </div>
-        <div className="metric">
-          <dt className="metric__label">Visits marked not needed</dt>
-          <dd className="metric__value">{notNeeded}</dd>
-          <dd className="metric__detail">of {sent.length} visits</dd>
-        </div>
-        <div className="metric">
-          <dt className="metric__label">Follow-ups completed</dt>
-          <dd className="metric__value">{percent(answered, withFollowUp.length)}</dd>
-          <dd className="metric__detail">
-            {answered} of {withFollowUp.length} follow-ups
-          </dd>
-        </div>
-      </dl>
-
-      <nav className="tabs" aria-label="View">
-        <button
-          type="button"
-          className="tab"
-          aria-pressed={view === "day"}
-          onClick={() => update({ view: null })}
-        >
+    <section className={consultId ? "phc has-sheet" : "phc"}>
+      <nav className="rail" aria-label="Views">
+        <span className="rail__brand" title={PHC.facility}>
+          <Icon icon={IconBuildingHospital} size={24} />
+        </span>
+        <button type="button" className="rail__item" aria-pressed={view === "day"} onClick={() => update({ view: null })}>
+          <span className="rail__pill">
+            <Icon icon={IconCalendarEvent} size={24} />
+          </span>
           Day
         </button>
-        <button
-          type="button"
-          className="tab"
-          aria-pressed={view === "followups"}
-          onClick={() => update({ view: "followups" })}
-        >
+        <button type="button" className="rail__item" aria-pressed={view === "followups"} onClick={() => update({ view: "followups" })}>
+          <span className="rail__pill">
+            <Icon icon={IconPhoneCall} size={24} />
+            {followUps.length > 0 && <span className="rail__badge">{followUps.length}</span>}
+          </span>
           Follow-ups
-          <span className="tab__count">{followUpRows.length}</span>
         </button>
+        <span className="rail__me" title={`Signed in as ${PHC.doctor}`}>
+          <Icon icon={IconStethoscope} />
+          <span className="visually-hidden">Signed in as {PHC.doctor}</span>
+        </span>
       </nav>
 
-      {view === "day" ? (
-        <>
-          <div className="toolbar">
-            <div className="toolbar__day">
-              <h2 className="toolbar__title">{dayLabel(day)}</h2>
-              <p className="toolbar__sub">{longDate(day)}</p>
-            </div>
-            <ul className="counts" aria-label="Bookings by urgency">
-              {counts.map((c) => (
-                <li key={c.urgency} className={`urgency urgency--${c.urgency}`}>
-                  {c.count} {URGENCY_LABEL[c.urgency].toLowerCase()}
-                </li>
-              ))}
-            </ul>
-            <label className="datefield">
-              <span className="datefield__label">Change day</span>
-              <input
-                className="datefield__input"
-                type="date"
-                value={day}
-                onChange={(e) => update({ day: e.target.value || null })}
-              />
-            </label>
+      <main className="phc__main">
+        <header className="phc__head">
+          <div>
+            <p className="phc__eyebrow">
+              {PHC.doctor} · {PHC.facility}
+            </p>
+            <h1 className="phc__title">{view === "day" ? longDate(day) : "Follow-ups"}</h1>
           </div>
-
-          {dayRows.length === 0 ? (
-            <p className="empty">No bookings for this day.</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th className="th th--time">Time</th>
-                    <th className="th">Patient</th>
-                    <th className="th">Reported by</th>
-                    <th className="th th--symptoms">Symptoms captured</th>
-                    <th className="th">Visit needed</th>
-                    <th className="th th--action">After consult</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dayRows.map((row) => (
-                    <Fragment key={row.booking.id}>
-                      <PatientRow row={row} selected={row.booking.id === consultId} onOpen={openConsult} />
-                      {row.booking.id === consultId ? consultPanel(6) : null}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {view === "day" && (
+            <label className="datefield">
+              <Icon icon={IconCalendarEvent} className="datefield__icon" />
+              <span className="visually-hidden">Change day</span>
+              <input className="datefield__input" type="date" value={day} onChange={(e) => update({ day: e.target.value || null })} />
+            </label>
           )}
-        </>
-      ) : followUpRows.length === 0 ? (
-        <p className="empty">No follow-ups pending or missed.</p>
-      ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th className="th">Patient</th>
-                <th className="th">Consulted</th>
-                <th className="th">Follow-up due</th>
-                <th className="th">Status</th>
-                <th className="th th--action">After consult</th>
-              </tr>
-            </thead>
-            <tbody>
-              {followUpRows.map((row) => {
-                const selected = row.booking.id === consultId;
-                const missed = row.booking.followUpStatus === "missed";
-                return (
-                  <Fragment key={row.booking.id}>
-                    <tr className={selected ? "trow is-selected" : "trow"} aria-selected={selected}>
-                      <td className="cell">
-                        <span className="patient__name">{patientName(row)}</span>
-                        <span className="patient__meta">{patientMeta(row)}</span>
-                      </td>
-                      <td className="cell cell--muted">{dayLabel(row.booking.date)}</td>
-                      <td className="cell">{row.booking.followUpDue ? dayLabel(row.booking.followUpDue) : "—"}</td>
-                      <td className="cell">
-                        <span className={missed ? "pill pill--missed" : "pill pill--waiting"}>
-                          {missed ? "Missed · ASHA visit requested" : "Pending"}
-                        </span>
-                      </td>
-                      <td className="cell cell--action">
-                        <button
-                          type="button"
-                          className="btn btn--compact btn--secondary"
-                          aria-expanded={selected}
-                          onClick={() => openConsult(row.booking.id)}
-                        >
-                          Open
-                        </button>
-                      </td>
-                    </tr>
-                    {selected ? consultPanel(5) : null}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+        </header>
 
-      {/* Selected booking outside the visible table (other day or view): the panel still opens. */}
-      {consultRow && !inView ? <div className="consult-standalone">{consultPanelBody}</div> : null}
-      {consultId && !consultRow ? <p className="empty">That booking has not reached the PHC yet.</p> : null}
+        {/* The outcome of the whole loop, in three figures. */}
+        <dl className="metrics" aria-label="Outcomes">
+          <div className="metric">
+            <dt className="metric__label">Visits booked ahead</dt>
+            <dd className="metric__value">{percent(m.preBooked, m.total)}</dd>
+            <dd className="metric__detail">
+              {m.preBooked} of {m.total} came through the ASHA or the line
+            </dd>
+          </div>
+          <div className="metric">
+            <dt className="metric__label">Visits not needed</dt>
+            <dd className="metric__value">{m.notNeeded}</dd>
+            <dd className="metric__detail">Advice given instead of a trip</dd>
+          </div>
+          <div className="metric">
+            <dt className="metric__label">Follow-ups answered</dt>
+            <dd className="metric__value">{percent(m.answered, m.followUps)}</dd>
+            <dd className="metric__detail">
+              {m.answered} of {m.followUps} so far
+            </dd>
+          </div>
+        </dl>
+
+        {view === "day" ? (
+          <section className="phc__list">
+            <div className="phc__listhead">
+              <h2 className="phc__h2">
+                {rows.length} {rows.length === 1 ? "booking" : "bookings"} {dayWords(day)}
+              </h2>
+              {rows.length > 0 && (
+                <ul className="counts" aria-label="By urgency">
+                  {counts.map((c) => (
+                    <li key={c.urgency} className={c.count ? `count urgency--${c.urgency}` : "count count--zero"}>
+                      <b>{c.count}</b> {URGENCY_LABEL[c.urgency].toLowerCase()}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {rows.length === 0 ? (
+              <p className="phc__empty">
+                <Icon icon={IconCalendarEvent} size={24} />
+                <span>
+                  No bookings have reached the PHC {dayWords(day)}.
+                  <span className="phc__empty-sub">Bookings made offline appear once the ASHA's phone has signal.</span>
+                </span>
+              </p>
+            ) : (
+              <div className="tablewrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="th th--time">Time</th>
+                      <th className="th">Patient</th>
+                      <th className="th">What was found</th>
+                      <th className="th th--need">Visit needed</th>
+                      <th className="th th--action">
+                        <span className="visually-hidden">Advice</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <PatientRow key={row.booking.id} row={row} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ) : (
+          <section className="phc__list">
+            <div className="phc__listhead">
+              <h2 className="phc__h2">
+                {followUps.length} open {followUps.length === 1 ? "follow-up" : "follow-ups"}
+              </h2>
+            </div>
+            {followUps.length === 0 ? (
+              <p className="phc__empty">
+                <Icon icon={IconPhoneCall} size={24} />
+                <span>
+                  No follow-ups are waiting.
+                  <span className="phc__empty-sub">A follow-up is set the day after a visit, when you save advice.</span>
+                </span>
+              </p>
+            ) : (
+              <div className="tablewrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="th">Patient</th>
+                      <th className="th">Seen</th>
+                      <th className="th">Follow-up</th>
+                      <th className="th">Status</th>
+                      <th className="th th--action">
+                        <span className="visually-hidden">Open</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {followUps.map((row) => (
+                      <FollowUpRow key={row.booking.id} row={row} today={today} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+      </main>
+
+      {consultRow ? (
+        <AfterConsult key={consultRow.booking.id} row={consultRow} today={today} onClose={closeConsult} />
+      ) : consultId ? (
+        <aside className="sheet sheet--missing" aria-label="After consult">
+          <button type="button" className="iconbtn sheet__close" onClick={closeConsult} aria-label="Close the panel">
+            <Icon icon={IconX} size={24} />
+          </button>
+          <p className="phc__empty-sub">That booking has not reached the PHC yet. It appears once the ASHA's phone has signal.</p>
+        </aside>
+      ) : null}
     </section>
   );
 }

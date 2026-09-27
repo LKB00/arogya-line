@@ -8,6 +8,8 @@ import { isoDate } from "../../app/seed";
 import { PHC } from "../../app/seed";
 import { decodeAnswers } from "../../app/triage";
 import PhoneFrame from "../../shell/PhoneFrame";
+import { IconArrowLeft, IconBuildingHospital, IconMessageCircle } from "@tabler/icons-react";
+import Icon from "../../shell/Icon";
 import FamilyCard from "./FamilyCard";
 import Keypad from "./Keypad";
 import { IDLE, KEYS, hangUp, press, startCall, tick, type Call, type Effect, type Env, type Key, type Step } from "./callMachine";
@@ -100,11 +102,15 @@ export default function CallSimulator() {
   // product — top-left, round, always there — not somewhere that appears.
   const handedOver = Boolean(params.get("family")) || params.get("mode") === "emergency";
 
-  // A call log shows the newest line, like a handset does. Jumped, not
-  // animated, so there is nothing for reduced motion to suppress.
+  // Captions show the prompt still waiting for an answer from its first line,
+  // so a long one (the doctor's advice) is read from the start, not from its
+  // tail. With nothing waiting, the newest line. Jumped, not animated, so
+  // there is nothing for reduced motion to suppress.
   useEffect(() => {
     const log = logRef.current;
-    if (log) log.scrollTop = log.scrollHeight;
+    if (!log) return;
+    const first = log.querySelector<HTMLElement>(".log__line--current");
+    log.scrollTop = first ? first.offsetTop - 16 : log.scrollHeight;
   }, [call.transcript]);
 
   // A real caller uses the handset, not the mouse: the number row dials and
@@ -129,42 +135,66 @@ export default function CallSimulator() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [apply]);
 
-  // The prompt still hanging in the air is the last thing the line said, which
-  // may sit above the keys the caller has pressed since.
-  const currentIndex = call.transcript.reduce((found, line, i) => (line.speaker === "caller" ? found : i), -1);
+  // The prompt still hanging in the air is everything said since the caller
+  // last pressed a key: a question and its "Press 1 for yes" read as one.
+  const lastPress = call.transcript.reduce((found, line, i) => (line.speaker === "caller" ? i : found), -1);
+
+  const status = call.state === "idle" ? "idle" : call.state === "ended" ? "ended" : "on";
 
   return (
     <div className="voice">
-      <PhoneFrame>
+      <PhoneFrame variant="voice">
         <div className="call">
           <header className="call__header">
-            {handedOver && <Link className="backbtn call__back" to="/asha" aria-label="Back to ASHA app" title="Back to ASHA app" />}
+            {handedOver && (
+              <Link className="iconbtn call__back" to="/asha" aria-label="Back to ASHA app" title="Back to ASHA app">
+                <Icon icon={IconArrowLeft} size={24} />
+              </Link>
+            )}
+            {/* Caller ID: this number belongs to the health centre. */}
+            <span className="call__mark">
+              <Icon icon={IconBuildingHospital} size={24} />
+            </span>
             <p className="call__to">Arogya Line</p>
-            <p className="call__number">{LINE_NUMBER}</p>
-            <p className={`call__status call__status--${call.state === "idle" ? "idle" : call.state === "ended" ? "ended" : "on"}`}>{statusLabel(call.state)}</p>
+            <p className={`call__status call__status--${status}`}>
+              <span className="call__number">{LINE_NUMBER}</span> · {statusLabel(call.state)}
+            </p>
           </header>
 
-          {call.transcript.length === 0 ? (
-            <p className="call__empty">Not on a call. Press Call to dial.</p>
-          ) : (
-            <ol className="log" aria-label="Call log" ref={logRef}>
-              {call.transcript.map((line, i) => (
-                <li
-                  key={i}
-                  className={`log__line log__line--${line.speaker}${i === currentIndex ? " log__line--current" : ""}`}
-                >
-                  <span className="log__who">{SPEAKER_LABEL[line.speaker]}</span>
-                  <span className="log__text">{line.text}</span>
-                </li>
-              ))}
-            </ol>
-          )}
+          {/* What the line says, as live captions: there is no audio. */}
+          <section className="captions" aria-label="Live captions">
+            {call.transcript.length === 0 ? (
+              <p className="captions__empty">
+                <Icon icon={IconMessageCircle} size={24} />
+                Not on a call. Press the green button to call the number on the family card.
+              </p>
+            ) : (
+              <ol className="log" ref={logRef}>
+                {call.transcript.map((line, i) => (
+                  <li
+                    key={i}
+                    className={`log__line log__line--${line.speaker}${i > lastPress ? " log__line--current" : ""}`}
+                  >
+                    {/* Named once per run of lines, as a chat does. */}
+                    {line.speaker !== "caller" && call.transcript[i - 1]?.speaker !== line.speaker && (
+                      <span className="log__who">{SPEAKER_LABEL[line.speaker]}</span>
+                    )}
+                    <span className="log__text">{line.speaker === "caller" && /^\d+$/.test(line.text) ? `${line.text.length === 1 ? "Pressed" : "Entered"} ${line.text}` : line.text}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
 
+          {/* The family ID keyed into four boxes, the way it is printed on the card. */}
           {call.state === "enterFamilyId" && (
-            <p className="call__entry">
-              <span className="call__entry-key">Family ID</span>
-              <span className="call__digits">{call.idBuffer.padEnd(4, "·")}</span>
-            </p>
+            <div className="idboxes" aria-label={`Family ID: ${call.idBuffer.length} of 4 digits`}>
+              {[0, 1, 2, 3].map((i) => (
+                <span key={i} className={i === call.idBuffer.length ? "idboxes__box is-next" : "idboxes__box"}>
+                  {call.idBuffer[i] ?? ""}
+                </span>
+              ))}
+            </div>
           )}
 
           <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} />
@@ -174,8 +204,8 @@ export default function CallSimulator() {
       <div className="voice__side">
         <div className="voice__intro">
           <h1>Voice line</h1>
-          <p>Call simulator. No audio: each spoken prompt appears in the call log.</p>
-          <p>Use the keypad, or the number keys 0–9 on your keyboard. Backspace hangs up.</p>
+          <p>A family on any phone, even a basic one, calls the number on their card. There is no audio here: what the line says appears as captions.</p>
+          <p>Use the keypad, or the number keys 0–9. Backspace hangs up.</p>
         </div>
         <FamilyCard />
       </div>

@@ -1,12 +1,19 @@
 // One question per screen, driven by triage.nextQuestion (SPEC 6.1 SymptomCheck).
 // Answers live in the URL (?a=...) so browser back steps one question back.
+//
+// The question is the screen: a large picture of the thing asked about, then
+// the words. The answers given so far stay visible as chips, so she can see
+// the path the check has taken. Yes and No share size, colour and weight: the
+// design never nudges a clinical answer.
 
-import { useEffect, type CSSProperties } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { IconCheck, IconVolume, IconX } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
 import { decodeAnswers, encodeAnswers, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
 import type { TriageAnswer } from "../../app/types";
-import { memberAge } from "../../app/format";
+import Icon from "../../shell/Icon";
+import { iconFor, shortName } from "./pictograms";
 
 export default function SymptomCheck() {
   const { familyId = "", memberId = "" } = useParams();
@@ -42,37 +49,61 @@ export default function SymptomCheck() {
     navigate(`${base}?a=${encodeAnswers(next)}`);
   };
 
+  const step = answers.length + 1;
+
   return (
-    <section className="screen">
-      <p className="screen__eyebrow">
-        {member.name} · {memberAge(member)}
-      </p>
-      <div className="progress">
-        <p className="progress__label">
-          Question {answers.length + 1} of {total}
+    <>
+      <header className="appbar">
+        <Link className="iconbtn" to={`/asha/family/${familyId}`} aria-label="Stop the check" title="Stop the check">
+          <Icon icon={IconX} size={24} />
+        </Link>
+        <p className="appbar__title">
+          Checking {member.name}, {member.age}
         </p>
-        {/* The bar carries no new information, so it stays out of the reading order. */}
-        <div className="progress__track" aria-hidden="true">
-          <div
-            className="progress__fill"
-            style={{ "--step": answers.length + 1, "--steps": total } as CSSProperties}
-          />
+        <p className="appbar__aside">
+          {step} of {total}
+        </p>
+      </header>
+      <section className="screen screen--check">
+        {/* One segment per question: done, the current one, still to come. */}
+        <span className="steps" aria-hidden="true">
+          {Array.from({ length: total }, (_, i) => (
+            <span key={i} className={i < step - 1 ? "steps__seg is-done" : i === step - 1 ? "steps__seg is-now" : "steps__seg"} />
+          ))}
+        </span>
+
+        {answers.length > 0 && (
+          <ul className="answered" aria-label="Answered so far">
+            {answers.map((a) => (
+              <li key={a.questionId} className="answered__chip">
+                <Icon icon={iconFor(a.questionId)} size={16} />
+                {shortName(a.questionId)} · {a.answer === "yes" ? "Yes" : "No"}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="ask" key={question.id}>
+          <span className="ask__picture">
+            <Icon icon={iconFor(question.id)} size={40} />
+          </span>
+          <h1 className="ask__question">{question.text}</h1>
+          <button type="button" className="assist" aria-label="Read aloud">
+            <Icon icon={IconVolume} />
+            Read aloud
+          </button>
         </div>
-      </div>
-      <h1 className="question">{question.text}</h1>
-      <p>
-        <button type="button" className="btn btn--quiet read-aloud" aria-label="Read aloud">
-          Read aloud
-        </button>
-      </p>
-      <p className="screen__action answers">
-        <button type="button" className="btn btn--answer btn--tall" onClick={() => answer("yes")}>
+      </section>
+      <div className="answers">
+        <button type="button" className="answer" onClick={() => answer("yes")}>
+          <Icon icon={IconCheck} size={24} />
           Yes
         </button>
-        <button type="button" className="btn btn--answer btn--tall" onClick={() => answer("no")}>
+        <button type="button" className="answer" onClick={() => answer("no")}>
+          <Icon icon={IconX} size={24} />
           No
         </button>
-      </p>
-    </section>
+      </div>
+    </>
   );
 }

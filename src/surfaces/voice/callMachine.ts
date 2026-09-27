@@ -11,7 +11,7 @@ import type { ConcernInput } from "../../app/store";
 import { latestAdviceFor } from "../../app/store";
 import { evaluate, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
-import { shortDate, slotLabel } from "../../app/format";
+import { URGENCY_LABEL, dayLabel, shortDate, slotLabel } from "../../app/format";
 
 export type CallState =
   | "idle"
@@ -46,12 +46,21 @@ export type Call = {
   result: TriageResult | null;
   /** Date currently offered in offerBooking. */
   offerDate: string | null;
+  /** The exact slot spoken in offerBooking, so pressing 1 books what was offered. */
+  offerSlot: string | null;
   /** How far the scripted operator exchange has got (advanced by tick). */
   operatorStep: number;
 };
 
 /** Read-only slice of the store the machine needs. */
-export type Env = { families: Family[]; concerns: Concern[]; bookings: Booking[]; today: string };
+export type Env = {
+  families: Family[];
+  concerns: Concern[];
+  bookings: Booking[];
+  today: string;
+  /** The hour now (0–23), so slots already started today are never offered. Defaults to the clock. */
+  hour?: number;
+};
 
 /** Store writes for CallSimulator to run. "book" creates the concern and a booking on it. */
 export type Effect =
@@ -80,6 +89,7 @@ export const IDLE: Call = {
   answers: [],
   result: null,
   offerDate: null,
+  offerSlot: null,
   operatorStep: 0,
 };
 
@@ -137,30 +147,35 @@ function memberOf(call: Call, env: Env): Member | undefined {
   return family?.members.find((m) => m.id === call.memberId) ?? family?.members[0];
 }
 
-/** The family member the caller most likely means; the head of family if none fits. */
-function memberForRole(family: Family, role: TriageRole): Member {
-  return family.members.find((m) => toTriageRole(m.role) === role) ?? family.members[0];
+/** The family member of that kind, if there is one. */
+function memberForRole(family: Family, role: TriageRole): Member | undefined {
+  return family.members.find((m) => toTriageRole(m.role) === role);
 }
 
-function freeSlot(bookings: Booking[], date: string): string | undefined {
-  const taken = new Set(bookings.filter((b) => b.date === date).map((b) => b.slot));
-  return SLOTS.find((s) => !taken.has(s));
+function hourOf(env: Env): number {
+  return env.hour ?? new Date().getHours();
+}
+
+/** First slot on `date` that nobody holds and, today, that has not started. */
+function freeSlot(env: Env, date: string): string | undefined {
+  const taken = new Set(env.bookings.filter((b) => b.date === date).map((b) => b.slot));
+  return SLOTS.find((s) => !taken.has(s) && (date !== env.today || Number(s.slice(0, 2)) > hourOf(env)));
 }
 
 /** First day on or after `from` with a free slot. */
 function nextAvailable(env: Env, from: string): { date: string; slot: string } {
   let date = from;
   for (let i = 0; i < 30; i++) {
-    const slot = freeSlot(env.bookings, date);
+    const slot = freeSlot(env, date);
     if (slot) return { date, slot };
     date = addDays(date, 1);
   }
   return { date: from, slot: SLOTS[SLOTS.length - 1] };
 }
 
-/** Same-day slot for the operator; the last slot is reused when the day is full. */
-function sameDaySlot(env: Env): string {
-  return freeSlot(env.bookings, env.today) ?? SLOTS[SLOTS.length - 1];
+/** The operator books the earliest slot still to come, today if there is one. */
+function operatorSlot(env: Env): { date: string; slot: string } {
+  return nextAvailable(env, env.today);
 }
 
 function reasonsLine(reasons: string[]): string {
@@ -208,7 +223,8 @@ function enterResult(call: Call, env: Env): Step {
   const result = evaluate(call.role, call.answers);
   const member = memberOf(call, env);
   const who = member ? `${member.name}` : "The patient";
-  const headline = `Result: ${result.urgency}. ${who}: ${RESULT_HEADLINE[result.urgency]}`;
+  // Spoken in words the caller knows, never the internal colour name.
+  const headline = `Result: ${URGENCY_LABEL[result.urgency].toLowerCase()}. ${who}: ${RESULT_HEADLINE[result.urgency]}`;
   const withResult = { ...call, result };
 
   if (result.urgency === "green") {
@@ -239,7 +255,7 @@ function offerSlot(call: Call, env: Env, from: string): Call {
   const text =
     `The next available slot is ${when === "on" ? "on " : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, ` +
     `at ${PHC.facility} with ${PHC.doctor}. Press 1 to book it, or 2 for another day.`;
-  return prompt({ ...call, state: "offerBooking", offerDate: date }, text);
+  return prompt({ ...call, state: "offerBooking", offerDate: date, offerSlot: slot }, text);
 }
 
 function enterOperator(call: Call): Call {
@@ -251,7 +267,10 @@ function enterOperator(call: Call): Call {
 
 function enterReadAdvice(call: Call, env: Env): Call {
   const advice = call.familyId ? latestAdviceFor(env, call.familyId) : undefined;
-  const text = advice ? `Your doctor's advice from ${advice.doctor}, ${advice.date}: ${advice.advice}` : "No advice yet.";
+  // The date as a person says it ("yesterday", "Fri 25 Sep"), never ISO, and
+  // never a day still to come: advice written ahead of a visit has no "when".
+  const when = advice && advice.date <= env.today ? `, ${dayLabel(advice.date).toLowerCase()}` : "";
+  const text = advice ? `Your doctor's advice from ${advice.doctor}${when}: ${advice.advice}` : "No advice yet.";
   return prompt({ ...call, state: "readAdvice" }, text, "Press 1 for the main menu, 9 to hear this again, or hang up.");
 }
 
@@ -336,6 +355,12 @@ export function press(call: Call, key: Key, env: Env): Step {
       const family = familyOf(pressed, env);
       if (role && family) {
         const member = memberForRole(family, role);
+        // Nobody of that kind in the family: say so and ask again, rather
+        // than running pregnancy questions for a man.
+        if (!member) {
+          const kind = role === "child" ? "a child" : role === "pregnant" ? "a pregnant woman" : "an adult";
+          return none(prompt(pressed, `There is no ${kind.replace(/^an? /, "")} recorded in family ${family.id}.`, WHO));
+        }
         const chosen = say({ ...pressed, role, memberId: member.id, answers: [] }, "line", `Checking for ${member.name}, ${member.age}.`);
         return none(askQuestion(chosen));
       }
@@ -354,8 +379,14 @@ export function press(call: Call, key: Key, env: Env): Step {
     }
 
     case "offerBooking": {
-      if (key === "1" && pressed.offerDate) {
-        const { date, slot } = nextAvailable(env, pressed.offerDate);
+      if (key === "1" && pressed.offerDate && pressed.offerSlot) {
+        const date = pressed.offerDate;
+        const slot = pressed.offerSlot;
+        // Taken while the caller listened: say so and offer the next one,
+        // never book a different slot than the one spoken.
+        if (freeSlot(env, date) === undefined || env.bookings.some((b) => b.date === date && b.slot === slot)) {
+          return none(offerSlot(say(pressed, "line", "Sorry, that slot has just been taken."), env, date));
+        }
         const member = memberOf(pressed, env);
         const concern = concernFor(pressed, env, pressed.result?.urgency ?? "amber");
         const done = end(
@@ -397,7 +428,8 @@ export function tick(call: Call, env: Env): Step {
     return { call: { ...say(call, "operator", text), operatorStep: 1 }, effects: [] };
   }
 
-  const slot = sameDaySlot(env);
+  const { date, slot } = operatorSlot(env);
+  const day = date === env.today ? "today" : dayWord(date, env.today) === "on" ? "on" : dayWord(date, env.today);
   const urgency: Urgency = call.emergency || call.result?.urgency === "red" ? "red" : "amber";
   const reason = call.emergency
     ? "Emergency call from the ASHA app"
@@ -409,9 +441,13 @@ export function tick(call: Call, env: Env): Step {
     say(
       call,
       "operator",
-      `${member?.name ?? "The patient"} is booked at ${PHC.facility} today, ${shortDate(env.today)}, ${slotLabel(slot)}, with ${PHC.doctor}. ` +
-        `Your ASHA, ${ASHA.name}, has been told. Please come to the PHC now.`,
+      urgency === "red"
+        ? // Urgent: "come now" comes first; the booked slot is the record, not the wait.
+          `Please bring ${member?.name ?? "the patient"} to ${PHC.facility} now; you will be seen as an emergency. ` +
+            `A visit is also booked ${day}, ${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor}. Your ASHA, ${ASHA.name}, has been told.`
+        : `${member?.name ?? "The patient"} is booked at ${PHC.facility} ${day}, ${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor}. ` +
+          `Your ASHA, ${ASHA.name}, has been told.`,
     ),
   );
-  return { call: done, effects: [{ type: "book", concern, date: env.today, slot }] };
+  return { call: done, effects: [{ type: "book", concern, date, slot }] };
 }

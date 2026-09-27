@@ -1,65 +1,44 @@
-// ASHA home screen (SPEC 6.1 TodayList). One row per family with something
-// open today, sorted red → amber → green → done.
+// ASHA home screen (SPEC 6.1 TodayList). It answers her first question of the
+// day, "who needs me first?": the most urgent person leads as one large card
+// with one action, and everyone else follows in order of urgency, sorted
+// red → amber → green → done. The village stays on every row so she can still
+// plan her walk.
 
+import { Fragment } from "react";
 import { Link } from "react-router-dom";
+import {
+  IconArrowRight,
+  IconCalendarEvent,
+  IconChevronRight,
+  IconCircleCheck,
+  IconCloudOff,
+  IconHomeHeart,
+  IconMessageCircle,
+  IconPhoneCall,
+  IconPlus,
+  IconReportMedical,
+  IconStethoscope,
+  type TablerIcon,
+} from "@tabler/icons-react";
 import { useStore } from "../../app/store";
 import { ASHA, isoDate } from "../../app/seed";
-import { URGENCY_LABEL, dayLabel, slotLabel } from "../../app/format";
-import type { Booking, Concern, Family, SyncStatus, Urgency } from "../../app/types";
+import { URGENCY_LABEL, longDate } from "../../app/format";
+import Icon from "../../shell/Icon";
+import SyncBanner from "./SyncBanner";
+import UrgencyChip from "./UrgencyChip";
+import { BANDS, BAND_ORDER, personLabel, reasonFor, rowFor, type Kind, type Row } from "./rows";
 
-type Band = Urgency | "done";
-const BAND_ORDER: Record<Band, number> = { red: 0, amber: 1, green: 2, done: 3 };
+/** What she will do, drawn: see the doctor, phone, go to the home, note it, done. */
+const KIND_ICON: Record<Kind, TablerIcon> = {
+  visit: IconStethoscope,
+  call: IconPhoneCall,
+  home: IconHomeHeart,
+  concern: IconReportMedical,
+  done: IconCircleCheck,
+};
 
-/** What kind of thing is due, so the row can show a fitting icon. */
-type Kind = "visit" | "call" | "home" | "concern" | "done";
-
-type When = { day: string; time?: string };
-/** task = what the ASHA does; note = why, when the task alone does not say. */
-type Row = { family: Family; band: Band; kind: Kind; task: string; note?: string; when?: When; sync: SyncStatus };
-
-const BANDS: Band[] = ["red", "amber", "green", "done"];
-
-function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today: string): Row | null {
-  const own = concerns.filter((c) => c.familyId === family.id);
-  const candidates: Row[] = [];
-
-  for (const concern of own) {
-    const booking = bookings.find((b) => b.concernId === concern.id);
-
-    if (!booking) {
-      const green = concern.urgency === "green";
-      candidates.push({
-        family,
-        band: concern.urgency,
-        kind: green ? "home" : "concern",
-        task: green ? "Home care advised" : "Concern noted",
-        note: concern.reasons[0],
-        sync: concern.sync,
-      });
-      continue;
-    }
-
-    if (booking.date >= today) {
-      candidates.push({
-        family,
-        band: concern.urgency,
-        kind: "visit",
-        task: "PHC visit",
-        when: { day: dayLabel(booking.date), time: slotLabel(booking.slot) },
-        sync: booking.sync,
-      });
-    } else if (booking.followUpStatus === "pending" && booking.followUpDue === today) {
-      candidates.push({ family, band: concern.urgency, kind: "call", task: "Follow-up call due", when: { day: "Today" }, sync: booking.sync });
-    } else if (booking.followUpStatus === "missed") {
-      candidates.push({ family, band: concern.urgency, kind: "home", task: "Home visit requested", note: "Follow-up missed", sync: booking.sync });
-    } else {
-      candidates.push({ family, band: "done", kind: "done", task: "Consulted", when: { day: dayLabel(booking.date) }, sync: booking.sync });
-    }
-  }
-
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
-  return candidates[0];
+function when(row: Row): string {
+  return [row.day, row.time].filter(Boolean).join(", ");
 }
 
 export default function TodayList() {
@@ -74,58 +53,144 @@ export default function TodayList() {
     .filter((r): r is Row => r !== null)
     .sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
 
+  const open = rows.filter((r) => r.band !== "done");
+  const urgent = open.filter((r) => r.band === "red").length;
+  const [next, ...later] = open;
+  const done = rows.filter((r) => r.band === "done");
+  // Still to do, then already done: done work never sits under "Later today".
+  const sections = [
+    { title: "Later today", rows: later },
+    { title: "Already seen", rows: done },
+  ].filter((sec) => sec.rows.length > 0);
+
   return (
     <>
-      <section className="screen">
-        <header className="screen__header">
-          <h1 className="screen__title">Today</h1>
+      <section className="screen screen--today">
+        <header className="home">
+          <div className="home__top">
+            <p className="home__date">{longDate(today)}</p>
+            <SyncBanner />
+          </div>
+          <h1 className="home__title">Namaste, {ASHA.name}</h1>
+          {open.length > 0 && (
+            <p className="home__sub">
+              {open.length} {open.length === 1 ? "family needs" : "families need"} you today
+              {urgent > 0 && <span className="home__urgent tri--red">{urgent} urgent</span>}
+            </p>
+          )}
+
         </header>
-      {rows.length === 0 ? (
-        <p className="screen__empty">Nothing open today.</p>
-      ) : (
-        BANDS.map((band) => {
-          const group = rows.filter((r) => r.band === band);
-          if (group.length === 0) return null;
-          return (
-            <section className="group" key={band}>
-              <h2 className={`group__title urgency urgency--inline urgency--${band}`}>
-                {URGENCY_LABEL[band]}
-                <span className="group__count">{group.length}</span>
-              </h2>
-              <ul className="today__rows">
-                {group.map((r) => (
-                  <li key={r.family.id}>
-                    <Link className={`row row--${r.band}`} to={`/asha/family/${r.family.id}`}>
-                      <span className={`row__icon row__icon--${r.kind}`} aria-hidden="true" />
-                      <span className="row__main">
-                        <span className="row__task">{r.task}</span>
-                        <span className="row__who">
-                          {r.family.head}
-                          <span className="row__id">{r.family.id}</span>
-                        </span>
-                        {r.note && <span className="row__note">{r.note}</span>}
-                        {r.sync === "saved_offline" && <em className="pill pill--waiting">Waiting to send</em>}
-                      </span>
-                      {r.when && (
-                        <span className="row__when">
-                          <span>{r.when.day}</span>
-                          {r.when.time && <span>{r.when.time}</span>}
-                        </span>
-                      )}
-                    </Link>
+
+        {next && (
+          <section className="block">
+            <h2 className="block__title">Up next</h2>
+            <article className={`hero tri--${next.band}`}>
+              <div className="hero__top">
+                {next.band !== "done" && <UrgencyChip urgency={next.band} />}
+                <span className="hero__card">Card {next.family.id}</span>
+              </div>
+              <div>
+                <h3 className="hero__name">{personLabel(next)}</h3>
+                <p className="hero__family">
+                  {next.family.head}'s family · {next.family.village}
+                </p>
+              </div>
+              <ul className="hero__facts">
+                {reasonFor(next, concerns) && (
+                  <li>
+                    <Icon icon={IconMessageCircle} />
+                    {reasonFor(next, concerns)}
                   </li>
-                ))}
+                )}
+                <li>
+                  <Icon icon={next.kind === "visit" ? IconCalendarEvent : KIND_ICON[next.kind]} />
+                  {next.task}
+                  {when(next) && ` · ${when(next)}`}
+                </li>
               </ul>
-            </section>
-          );
-        })
-      )}
+              {next.sync === "saved_offline" && (
+                <p className="hero__pending">
+                  <Icon icon={IconCloudOff} size={16} />
+                  Waiting to send
+                </p>
+              )}
+              <Link className="hero__action" to={`/asha/family/${next.family.id}`}>
+                Open {next.member ? `${next.member.name}'s` : "the"} family
+                <Icon icon={IconArrowRight} />
+              </Link>
+            </article>
+          </section>
+        )}
+
+        {/* A clear day is good news, said plainly, with the one thing she
+            might need next. */}
+        {open.length === 0 && (
+          <section className="empty">
+            <span className="empty__mark">
+              <Icon icon={IconCircleCheck} size={32} />
+            </span>
+            <h2 className="empty__title">No one is waiting on you today</h2>
+            <p className="empty__sub">If someone falls ill, add a new concern.</p>
+          </section>
+        )}
+
+        {sections.map((sec) => (
+          <section className="block" key={sec.title}>
+            <h2 className="block__title">
+              {sec.title}
+              <span className="block__aside">
+                {sec.rows.length} {sec.rows.length === 1 ? "family" : "families"}
+              </span>
+            </h2>
+            <div className="listcard">
+              {BANDS.map((band) => {
+                const group = sec.rows.filter((r) => r.band === band);
+                if (group.length === 0) return null;
+                return (
+                  <Fragment key={band}>
+                    {band !== "done" && <h3 className={`subhead tri--${band}`}>{URGENCY_LABEL[band]}</h3>}
+                    <ul>
+                      {group.map((r) => (
+                        <li key={r.family.id}>
+                          <Link className={`row tri--${r.band}`} to={`/asha/family/${r.family.id}`}>
+                            <span className="row__disc">
+                              <Icon icon={KIND_ICON[r.kind]} />
+                            </span>
+                            <span className="row__main">
+                              <span className="row__title">{personLabel(r)}</span>
+                              <span className="row__meta">
+                                {r.task} · {r.family.village}
+                              </span>
+                              {r.note && <span className="row__note">{r.note}</span>}
+                              {r.sync === "saved_offline" && (
+                                <span className="row__pending">
+                                  <Icon icon={IconCloudOff} size={16} />
+                                  Waiting to send
+                                </span>
+                              )}
+                            </span>
+                            {r.day && (
+                              <span className="row__when">
+                                <span>{r.day}</span>
+                                {r.time && <span className="row__time">{r.time}</span>}
+                              </span>
+                            )}
+                            <Icon icon={IconChevronRight} className="row__chevron" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </Fragment>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </section>
-      <p className="fab-bar">
-        <Link className="btn btn--primary fab" to="/asha/families">
-          New concern
-        </Link>
-      </p>
+      <Link className="fab" to="/asha/families">
+        <Icon icon={IconPlus} size={24} />
+        New concern
+      </Link>
     </>
   );
 }

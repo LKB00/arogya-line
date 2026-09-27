@@ -1,347 +1,486 @@
 /*
- * PHC dashboard. A desktop sheet, not a phone: full width of the stage up to
- * --page-max. The metrics strip is the first thing read; the table is the
- * work. Same tokens as the ASHA app, nothing declared here that is not in
- * tokens.css.
+ * PHC dashboard: the doctor's desktop, in the same system as the phone: warm
+ * ground, white surfaces, Figtree, colour only for triage. A Material 3
+ * list–detail layout: a navigation rail for the two views, the outcomes
+ * across the top, the day's list, and the after-consult panel as a side sheet
+ * so the list never moves while the doctor writes. Everything on the 4 px grid.
  */
 
 .phc {
+  align-self: flex-start;
   width: 100%;
   max-width: var(--page-max);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-6) var(--space-6);
-  border-radius: var(--radius-lg);
-  background: var(--surface-sunken);
-  box-shadow: var(--shadow-raised);
-  animation: screen-in var(--duration) var(--easing) both;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  min-height: 720px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 16px 40px rgba(29, 27, 24, 0.12);
+  color: var(--text);
+  font: var(--t-body);
 }
 
-/* ---------- Header ---------- */
+.phc.has-sheet {
+  grid-template-columns: 88px minmax(0, 1fr) 400px;
+}
 
-.phc__header {
+/* ---------- Navigation rail ---------- */
+
+.rail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--g3);
+  padding: var(--g6) 0;
+  background: var(--container);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+
+.rail__brand {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--g4);
+  border-radius: 16px;
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.rail__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--g1);
+  width: 80px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: 600 12px / 16px var(--font-sans);
+  cursor: pointer;
+}
+
+.rail__pill {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 16px;
+  transition: background-color var(--transition);
+}
+
+.rail__item:hover .rail__pill {
+  background: var(--container-high);
+}
+
+.rail__item[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.rail__item[aria-pressed="true"] .rail__pill {
+  background: var(--primary-soft);
+  color: var(--on-primary-soft);
+}
+
+.rail__badge {
+  position: absolute;
+  top: -4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--g1);
+  border-radius: 8px;
+  background: var(--tri-pink);
+  color: #ffffff;
+  font: 700 12px / 16px var(--font-sans);
+}
+
+.rail__me {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: auto;
+  border-radius: 50%;
+  background: var(--container-high);
+}
+
+/* ---------- Main ---------- */
+
+.phc__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g6);
+  padding: var(--g8);
+}
+
+.phc__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--g4);
+}
+
+.phc__eyebrow {
+  color: var(--text-muted);
+  font: 500 14px / 20px var(--font-sans);
 }
 
 .phc__title {
-  margin: 0;
-  font-size: var(--size-2xl);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
+  font: 600 32px / 40px var(--font-sans);
+  letter-spacing: -0.02em;
 }
 
-.phc__sub {
-  margin: 0;
+.datefield {
+  position: relative;
+  display: flex;
+}
+
+.datefield__icon {
+  position: absolute;
+  top: 10px;
+  left: var(--g3);
   color: var(--text-muted);
-  font-size: var(--size-base);
+  pointer-events: none;
 }
 
-/* ---------- Metrics strip: three numbers, the outcome of the whole loop ---------- */
+.datefield__input {
+  height: 40px;
+  padding: 0 var(--g3) 0 40px;
+  border: 0;
+  border-radius: 20px;
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 14px / 20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.datefield__input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* ---------- Outcomes ---------- */
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--g4);
   margin: 0;
 }
 
 .metric {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--pad-card) var(--space-5);
-  border-radius: var(--radius-lg);
+  padding: var(--g5);
+  border-radius: 20px;
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
 }
 
 .metric__label {
   color: var(--text-muted);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-semibold);
+  font: 500 14px / 20px var(--font-sans);
 }
 
 .metric__value {
-  margin: 0;
-  font-size: var(--size-2xl);
-  font-weight: var(--weight-bold);
+  margin: var(--g1) 0 0;
+  font: 600 36px / 44px var(--font-sans);
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
 }
 
 .metric__detail {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--size-sm);
+  color: var(--text-faint);
+  font: var(--t-meta);
 }
 
-/* ---------- View tabs ---------- */
+/* ---------- The list ---------- */
 
-.tabs {
-  display: inline-flex;
-  align-self: flex-start;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--touch);
-  padding: 0 var(--space-4);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--size-base);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-}
-
-.tab:hover {
-  color: var(--text);
-}
-
-.tab[aria-pressed="true"] {
-  background: var(--primary);
-  color: var(--text-inverse);
-}
-
-.tab__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  font-variant-numeric: tabular-nums;
-}
-
-.tab[aria-pressed="true"] .tab__count {
-  background: var(--brand);
-  color: var(--text);
-}
-
-/* ---------- Day toolbar: which day, how heavy, change it ---------- */
-
-.toolbar {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: var(--space-4) var(--space-5);
-}
-
-.toolbar__day {
+.phc__list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--g3);
 }
 
-.toolbar__title {
-  margin: 0;
-  font-size: var(--size-xl);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
+.phc__listhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--g2) var(--g6);
 }
 
-.toolbar__sub {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--size-sm);
+.phc__h2 {
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
 }
 
+/* The day's weight in words and numbers, coloured, no dots. */
 .counts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0 0 var(--space-1);
-  list-style: none;
+  gap: var(--g4);
 }
 
-.counts .urgency {
+.count {
+  color: var(--u-text);
+  font: 500 14px / 20px var(--font-sans);
+}
+
+.count b {
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.datefield {
+.count--zero {
+  color: var(--text-faint);
+}
+
+.phc__empty {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--g4);
+  padding: var(--g6);
+  border-radius: 20px;
+  background: var(--container);
+  font: 500 16px / 24px var(--font-sans);
+}
+
+.phc__empty .icon {
+  color: var(--text-muted);
+}
+
+.phc__empty > span {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-left: auto;
 }
 
-.datefield__label {
+.phc__empty-sub {
   color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  font: var(--t-meta);
 }
 
-.datefield__input {
-  min-height: var(--touch);
-  padding: 0 var(--space-3);
-  border: var(--border-thin) solid var(--border-strong);
-  border-radius: var(--radius-sm);
+.tablewrap {
+  overflow-x: auto;
+  border-radius: 20px;
   background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--size-base);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---------- Table ---------- */
-
-.table-wrap {
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
 }
 
 .table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
-  font-size: var(--size-base);
 }
 
 .th {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: var(--border-thin) solid var(--border);
+  padding: var(--g3);
   color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
+  font: 600 12px / 16px var(--font-sans);
   text-align: left;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.th--time {
-  width: 6.5rem;
+.th:first-child,
+.cell:first-child {
+  padding-left: var(--g5);
 }
 
-.th--symptoms {
-  width: 34%;
+.th:last-child,
+.cell:last-child {
+  padding-right: var(--g5);
+}
+
+.th--time {
+  width: 96px;
+}
+
+.th--need {
+  width: 120px;
 }
 
 .th--action {
-  text-align: right;
+  width: 144px;
 }
 
+/* Rows are divided by hairlines drawn as shadows, so they add no height. */
 .cell {
-  padding: var(--pad-item);
-  border-top: var(--border-thin) solid var(--divider);
-  vertical-align: middle;
-  line-height: var(--leading-snug);
+  padding: var(--g4) var(--g3);
+  box-shadow: inset 0 1px 0 var(--border);
+  font: var(--t-meta);
+  vertical-align: top;
 }
 
-.trow:first-child .cell {
-  border-top: 0;
-}
-
+/* Each column's first line is a 24 px box, so they share a centre line;
+   32 px controls are lifted 4 px to sit on it. */
 .cell--time {
-  font-weight: var(--weight-semibold);
+  font: 600 16px / 24px var(--font-sans);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .cell--muted {
   color: var(--text-muted);
+  line-height: 24px;
 }
 
-.cell--action {
-  text-align: right;
-  white-space: nowrap;
+.cell .seg,
+.cell--action .btn {
+  margin-top: calc(var(--g1) * -1);
 }
 
-.cell--action .pill {
-  margin-left: var(--space-2);
-  vertical-align: middle;
+.trow {
+  cursor: default;
+  transition: background-color var(--transition);
 }
 
-.patient__name {
+.trow:hover {
+  background: var(--container);
+}
+
+.trow.is-selected {
+  background: var(--primary-soft);
+}
+
+.trow.is-selected > .cell:first-child {
+  box-shadow: inset 0 1px 0 var(--border), inset 3px 0 0 var(--primary);
+}
+
+.who__name {
   display: block;
-  font-size: var(--size-md);
-  font-weight: var(--weight-semibold);
+  font: 600 16px / 24px var(--font-sans);
 }
 
-.patient__meta {
+.who__meta {
   display: block;
-  margin-top: var(--space-1);
   color: var(--text-muted);
-  font-size: var(--size-sm);
-  font-variant-numeric: tabular-nums;
+  font: var(--t-meta);
 }
 
-/* Urgency first, then the reasons under it: colour, icon, word, then why. */
-.cell--symptoms .urgency {
-  margin-bottom: var(--space-1);
-}
-
-.symptoms {
+.who__source {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  align-items: center;
+  gap: var(--g1);
+  margin-top: var(--g1);
+  color: var(--text-muted);
+  font: 500 12px / 16px var(--font-sans);
+}
+
+.cell .urgency-tag {
+  display: flex;
+  min-height: 24px;
+}
+
+.found {
+  display: block;
   color: var(--text);
+  font: var(--t-meta);
 }
 
-/* The open row is the one the panel hangs from. */
-.trow.is-selected .cell {
+.found--none {
+  color: var(--text-faint);
+  line-height: 24px;
+}
+
+.saved {
+  display: flex;
+  align-items: center;
+  gap: var(--g1);
+  margin-top: var(--g2);
+  color: var(--tri-green);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+.sheet__actions .saved {
+  margin-top: 0;
+}
+
+/* ---------- Controls ---------- */
+
+.phc .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g2);
+  height: 40px;
+  min-height: 0;
+  padding: 0 var(--g5);
+  border: 0;
+  border-radius: 20px;
+  font: 600 14px / 20px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--transition), outline-color var(--transition);
+}
+
+.phc .btn--compact {
+  height: 32px;
+  padding: 0 var(--g4);
+  border-radius: 16px;
+}
+
+.phc .btn--primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.phc .btn--primary:hover {
+  background: var(--primary-strong);
+}
+
+.phc .btn--secondary {
+  background: var(--surface);
+  color: var(--text);
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
+}
+
+.phc .btn--secondary:hover {
+  outline-color: var(--text);
+}
+
+.phc .btn--secondary[aria-pressed="true"] {
   background: var(--primary-soft);
+  color: var(--on-primary-soft);
+  outline-color: var(--primary);
 }
 
-.trow.is-selected .cell:first-child {
-  box-shadow: inset var(--border-thick) 0 0 var(--primary);
+.phc .btn:disabled {
+  background: var(--container-high);
+  color: var(--text-faint);
+  outline: 0;
+  cursor: not-allowed;
 }
 
-.trow--consult .cell--consult {
-  padding: 0 var(--space-4) var(--space-4);
-  background: var(--primary-soft);
-  border-top: 0;
-}
-
-/* ---------- Yes / No segmented control ---------- */
-
+/* Yes / No: a segmented control. Neither is filled until the doctor says. */
 .seg {
   display: inline-flex;
-  padding: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  border: var(--border-thin) solid var(--border);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--container-high);
 }
 
 .seg__btn {
-  min-width: 3.25rem;
-  min-height: calc(var(--touch) - var(--space-2) - var(--border-thick));
-  padding: 0 var(--space-3);
+  height: 28px;
+  min-width: 48px;
+  padding: 0 var(--g3);
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
-  font: inherit;
-  font-size: var(--size-sm);
-  font-weight: var(--weight-semibold);
+  font: 500 14px / 20px var(--font-sans);
   cursor: pointer;
   transition: background-color var(--transition), color var(--transition);
 }
@@ -351,215 +490,241 @@
 }
 
 .seg__btn[aria-pressed="true"] {
-  background: var(--primary);
-  color: var(--text-inverse);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(29, 27, 24, 0.14);
+  color: var(--text);
+  font-weight: 600;
 }
 
-/* ---------- After-consult panel, attached to its row ---------- */
+/* ---------- Follow-up status ---------- */
 
-.consult {
+.status {
+  font: 600 14px / 24px var(--font-sans);
+}
+
+.status--pending {
+  color: var(--tri-yellow-text);
+}
+
+.status--overdue,
+.status--missed {
+  color: var(--tri-pink);
+}
+
+.status--answered {
+  color: var(--tri-green);
+}
+
+/* ---------- Side sheet ---------- */
+
+.sheet {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--pad-card) var(--space-5) var(--space-5);
-  border-radius: var(--radius);
-  border-left: var(--border-thick) solid var(--primary);
+  gap: var(--g6);
+  min-width: 0;
+  padding: var(--g6);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: inset 1px 0 0 var(--border);
+  overflow-y: auto;
+  animation: sheet-in var(--duration-slow) var(--easing-out);
 }
 
-.consult-standalone {
-  padding: var(--space-1);
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.consult__header {
+.sheet--missing {
+  padding-top: 72px;
+}
+
+.sheet__close {
+  position: absolute;
+  top: var(--g4);
+  right: var(--g4);
+}
+
+.sheet__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--g3);
+  margin: calc(var(--g2) * -1) calc(var(--g2) * -1) 0 0;
 }
 
-.consult__eyebrow {
-  margin: 0 0 var(--space-1);
+.sheet__who {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--g2);
+}
+
+.sheet__eyebrow {
   color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  font: 600 12px / 16px var(--font-sans);
 }
 
-.consult__name {
-  margin: 0;
-  font-size: var(--size-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
+.sheet__name {
+  font: 600 24px / 32px var(--font-sans);
+  letter-spacing: -0.015em;
 }
 
-.consult__meta {
-  margin: var(--space-1) 0 0;
+.sheet__meta {
   color: var(--text-muted);
-  font-size: var(--size-sm);
+  font: var(--t-meta);
 }
 
-.closebtn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch);
-  height: var(--touch);
-  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-sunken);
-  color: var(--text);
-  cursor: pointer;
-  transition: background-color var(--transition), transform var(--transition);
-}
-
-.closebtn::before {
-  content: "";
-  width: var(--space-4);
-  height: var(--space-4);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.3 5.7 12 12l6.3 6.3-1.4 1.4L12 13.4l-6.3 6.3-1.4-1.4L10.6 12 4.3 5.7l1.4-1.4L12 10.6l6.3-6.3z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.3 5.7 12 12l6.3 6.3-1.4 1.4L12 13.4l-6.3 6.3-1.4-1.4L10.6 12 4.3 5.7l1.4-1.4L12 10.6l6.3-6.3z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.closebtn:hover {
-  background: var(--border);
-}
-
-.closebtn:active {
-  transform: scale(0.94);
-}
-
-.consult__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.consult__block {
+.sheet__block {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--g2);
+  padding-top: var(--g6);
+  box-shadow: inset 0 1px 0 var(--border);
 }
 
-.consult__label {
-  margin: 0;
-  font-size: var(--size-sm);
-  font-weight: var(--weight-semibold);
+.sheet__label {
+  font: 600 14px / 20px var(--font-sans);
 }
 
-.consult__hint {
+.sheet__found {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g1);
+  font: var(--t-body);
+}
+
+.sheet__found li {
+  display: flex;
+  gap: var(--g2);
+}
+
+.sheet__found li::before {
+  content: "–";
+  color: var(--text-faint);
+}
+
+.sheet__source,
+.sheet__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--g2);
   color: var(--text-muted);
-  font-weight: var(--weight-regular);
+  font: var(--t-meta);
 }
 
-.consult__value {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--size-base);
+.sheet__hint .icon,
+.sheet__source .icon {
+  margin-top: 2px;
 }
 
-.consult__actions {
+.sheet__none,
+.sheet__value {
+  font: var(--t-body);
+}
+
+.sheet__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--g3);
 }
 
 .textarea {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-thin) solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  min-height: 120px;
+  box-sizing: border-box;
+  padding: var(--g3) var(--g4);
+  border: 0;
+  border-radius: 12px;
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
   background: var(--surface);
   color: var(--text);
-  font: inherit;
-  font-size: var(--size-base);
-  line-height: var(--leading-normal);
+  font: var(--t-body);
   resize: vertical;
 }
 
-.textarea:hover {
-  border-color: var(--text);
+.textarea::placeholder {
+  color: var(--text-faint);
 }
 
-/* ---------- Follow-up status pill ---------- */
-
-.pill--missed {
-  background: var(--red-soft);
-  color: var(--red);
+.textarea:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
-.pill--missed::before {
-  content: "";
-  width: 0.75rem;
-  height: 0.75rem;
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 1 21h22L12 2Zm0 6a1.2 1.2 0 0 1 1.2 1.2l-.35 5.2a.85.85 0 0 1-1.7 0l-.35-5.2A1.2 1.2 0 0 1 12 8Zm0 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 1 21h22L12 2Zm0 6a1.2 1.2 0 0 1 1.2 1.2l-.35 5.2a.85.85 0 0 1-1.7 0l-.35-5.2A1.2 1.2 0 0 1 12 8Zm0 9.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+.phc :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-/* ---------- Empty state ---------- */
+/* ---------- Narrow windows: the sheet drops below, the rail shrinks ---------- */
 
-.empty {
-  margin: 0;
-  padding: var(--space-6) var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  color: var(--text-muted);
-  text-align: center;
+/* Not wide enough for list and sheet side by side: the sheet floats over the
+   right of the list (a Material 3 modal side sheet), so the list keeps its
+   full width instead of being squeezed. */
+@media (max-width: 1279px) {
+  .phc {
+    position: relative;
+  }
+
+  .phc.has-sheet {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .phc.has-sheet .sheet {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+    max-width: 100%;
+    box-shadow: -16px 0 40px rgba(29, 27, 24, 0.16), inset 1px 0 0 var(--border);
+  }
 }
-
-/* ---------- Focus ---------- */
-
-.tab:focus-visible,
-.seg__btn:focus-visible,
-.closebtn:focus-visible,
-.datefield__input:focus-visible,
-.textarea:focus-visible {
-  outline: var(--focus-width) solid var(--focus);
-  outline-offset: var(--focus-offset);
-}
-
-.textarea:focus-visible,
-.datefield__input:focus-visible {
-  border-color: var(--text);
-  outline-offset: 0;
-}
-
-/* ---------- Narrow screens: the table scrolls sideways, the rest stacks ---------- */
 
 @media (max-width: 767px) {
-  .phc {
-    padding: var(--space-4);
-    gap: var(--space-4);
+  .phc,
+  .phc.has-sheet {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .metrics {
-    grid-template-columns: 1fr;
-  }
-
-  .table-wrap {
-    overflow-x: auto;
-  }
-
-  .table {
-    min-width: 44rem;
-  }
-
-  .datefield {
-    margin-left: 0;
+  .phc.has-sheet .sheet {
     width: 100%;
   }
 
-  .consult__grid {
-    grid-template-columns: 1fr;
+  .rail {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: var(--g3) var(--g4);
+    box-shadow: inset 0 -1px 0 var(--border);
+  }
+
+  .rail__brand {
+    margin: 0 var(--g2) 0 0;
+  }
+
+  .rail__me {
+    margin: 0 0 0 auto;
+  }
+
+  .phc__main {
+    padding: var(--g4);
+  }
+
+  .phc__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

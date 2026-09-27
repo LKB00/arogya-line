@@ -64,6 +64,52 @@
   --green-soft: #e6f0e8;
   --green-border: #b6d3c0;
 
+  /* ---- ASHA app. Its own palette, mapped onto the roles above inside the
+     phone only (asha.css), so the voice line and dashboard keep theirs. ----
+     A warm off-white ground, white cards, ink text and ink actions. */
+  --asha-paper: #fbf9f6;
+  --asha-surface: #ffffff;
+  --asha-ink: #1d1b18;
+  --asha-muted: #5e5a53;
+  --asha-faint: #736e66;
+  --asha-line: #e7e2da;
+  --asha-line-strong: #d8d2c8;
+  /* Actions are ink. A high-end surface earns its colour by withholding it:
+     the only hues on screen are the three triage signals. */
+  --asha-primary: #34449a;
+  --asha-primary-strong: #283680;
+  --asha-primary-soft: #e0e3ff;
+  --asha-marigold: #e5a00d;
+  --asha-marigold-soft: #fdf4df;
+  /* Triage signals, tuned to sit together at small sizes (dots, rules). */
+  --asha-red-solid: #b42b5e;
+  --asha-amber-solid: #6b4e00;
+  --asha-amber-bright: #f2b705;
+  --asha-green-solid: #2f7d4f;
+  --asha-toast: #26231f;
+  /* Triage, in the colours of the IMNCI chart the ASHA trained on:
+     pink = refer urgently, yellow = treat at a facility, green = home care.
+     Each has a strong tone, a soft container and ink for text on it. */
+  --tri-pink: #b42b5e;
+  --tri-pink-soft: #fce4ec;
+  --tri-pink-ink: #5a1030;
+  --tri-pink-text: #7a3452;
+  --tri-yellow: #f2b705;
+  --tri-yellow-soft: #fff2c7;
+  --tri-yellow-ink: #4d3800;
+  --tri-yellow-text: #6b4e00;
+  --tri-green: #2f7d4f;
+  --tri-green-soft: #ddf1e3;
+  --tri-green-ink: #0f3b22;
+  /* Neutral containers, one step apart. */
+  --asha-container: #f5f2ed;
+  --asha-container-high: #efebe5;
+  --asha-on-primary-soft: #13205e;
+  --shadow-asha-card: 0 1px 2px rgba(29, 27, 24, 0.04);
+  --shadow-asha-raised: 0 4px 12px rgba(29, 27, 24, 0.14), 0 1px 3px rgba(29, 27, 24, 0.12);
+  --duration-slow: 260ms;
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
   /* ---- Demo chrome: deliberately unlike the product surfaces ---- */
   --demo-bg: #131316;
   --demo-surface: #212127;
@@ -96,9 +142,8 @@
   --radius-pill: 999px;
 
   /* ---- Padding roles. Every card of the same rank gets the same inset. ---- */
-  /* Content inset from the screen edge. Sits inside --phone-safe, so anything
-     using it clears the device bezel by --phone-safe as well. */
-  --pad-gutter: var(--space-3);
+  /* Content inset from the screen edge. */
+  --pad-gutter: var(--space-4);
   --pad-card: var(--space-4);            /* a card that holds a block of content */
   --pad-item: var(--space-3) var(--space-4); /* a row inside a list */
   --pad-row: var(--space-4);             /* a row inside a grouped list card */
@@ -113,15 +158,17 @@
   --shadow-frame: 0 18px 50px rgba(19, 19, 22, 0.30);
 
   /* ---- Frames ---- */
-  --phone-width: 360px;
-  --phone-height: 720px;
+  /* Outer size of the handset: a 360 × 720 dp screen (a standard 18:9
+     Android size) inside a 10 px bezel. */
+  --phone-width: 380px;
+  --phone-height: 740px;
   /* Android device chrome inside the frame. */
   --phone-bezel: 10px;
-  --phone-status: 30px;
+  --phone-status: 32px;
   --phone-nav: 24px;
-  /* Safe area: the inset the screen keeps clear on all four sides, so nothing
-     is drawn into the rounded corners of the frame. */
-  --phone-safe: var(--space-3);
+  /* The screen runs edge to edge inside the bezel, as on a real handset;
+     each surface keeps its own 16 px side margin inside it. */
+  --phone-safe: 0px;
   --page-max: 1200px;
 
   /* ---- Motion ---- */
@@ -137,5 +184,6 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration: 0ms;
+    --duration-slow: 0ms;
   }
 }

@@ -91,3 +91,23 @@ describe("syncPending", () => {
     expect(after.families.map((f) => f.id)).toContain("4471");
   });
 });
+
+describe("saveAdvice edge cases", () => {
+  it("editing advice keeps the follow-up outcome", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    // b-7809's follow-up was missed; correcting the advice must not reopen it.
+    s.saveAdvice("b-7809", "Corrected advice.");
+    const b = useStore.getState().bookings.find((x) => x.id === "b-7809")!;
+    expect(b.advice).toBe("Corrected advice.");
+    expect(b.followUpStatus).toBe("missed");
+  });
+
+  it("first advice sets a follow-up for the next day, pending", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().saveAdvice("b-3120", "Advice.");
+    const b = useStore.getState().bookings.find((x) => x.id === "b-3120")!;
+    expect(b.followUpStatus).toBe("pending");
+    expect(b.followUpDue).toBeDefined();
+  });
+});

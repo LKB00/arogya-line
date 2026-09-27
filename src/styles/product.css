@@ -1,0 +1,86 @@
+/*
+ * The product system, shared by all three surfaces: the ASHA app, the voice
+ * line and the PHC dashboard. One 4 px grid, one type scale, one palette.
+ * Each surface maps these onto its own layout; none defines its own values.
+ *
+ * Spacing, sizes, radii and every line height are multiples of 4. Icons are
+ * Tabler at 16, 20 or 24 px with the line held at 1.5 px. Type is Figtree:
+ * open, round letters that stay legible at arm's length in daylight.
+ */
+
+.phone--asha,
+.voice,
+.phc {
+  --font-sans: "Figtree Variable", "Segoe UI", system-ui, sans-serif;
+  /* Space: 4 8 12 16 20 24 32 40 48 */
+  --g1: 4px;
+  --g2: 8px;
+  --g3: 12px;
+  --g4: 16px;
+  --g5: 20px;
+  --g6: 24px;
+  --g8: 32px;
+  --g10: 40px;
+  --g12: 48px;
+
+  /* Type: weight size / line height. Every line height is on the grid. */
+  --t-caption: 500 12px / 16px var(--font-sans);
+  --t-meta: 400 14px / 20px var(--font-sans);
+  --t-body: 400 16px / 24px var(--font-sans);
+  --t-headline: 600 20px / 28px var(--font-sans);
+  --t-title: 600 28px / 32px var(--font-sans);
+  --t-figure: 500 32px / 40px var(--font-sans);
+
+  /* Radius: 8 for small things, 12 for controls, 16 for cards. */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  /* Target and disc sizes. */
+  --h-control: 48px;
+  --h-button: 56px;
+  --h-row: 64px;
+  --disc: 40px;
+  --disc-sm: 32px;
+  --dot: 8px;
+
+  /* Colour roles, from the app's own palette. */
+  --bg: var(--asha-paper);
+  --surface: var(--asha-surface);
+  --surface-sunken: var(--asha-paper);
+  --text: var(--asha-ink);
+  --text-muted: var(--asha-muted);
+  --text-faint: var(--asha-faint);
+  --primary: var(--asha-primary);
+  --primary-strong: var(--asha-primary-strong);
+  --primary-soft: var(--asha-primary-soft);
+  --border: var(--asha-line);
+  --border-strong: var(--asha-line-strong);
+  --divider: var(--asha-line);
+  --brand: var(--asha-marigold);
+  --focus: var(--asha-primary);
+  --shadow-card: var(--shadow-asha-card);
+  --hover: #fafaf9;
+  --container: var(--asha-container);
+  --container-high: var(--asha-container-high);
+  --on-primary-soft: var(--asha-on-primary-soft);
+  --danger-soft: var(--tri-pink-soft);
+  --success-soft: var(--tri-green-soft);
+
+  font-family: var(--font-sans);
+}
+
+/* Urgency as a coloured word, shared by the voice line and the dashboard.
+   The colours are the IMNCI chart's: pink, yellow, green. No dot: the
+   coloured word already says it. */
+.urgency--red   { --u-solid: var(--tri-pink);   --u-text: var(--tri-pink); }
+.urgency--amber { --u-solid: var(--tri-yellow); --u-text: var(--tri-yellow-text); }
+.urgency--green { --u-solid: var(--tri-green);  --u-text: var(--tri-green); }
+
+.urgency-tag {
+  display: inline-flex;
+  align-items: center;
+  color: var(--u-text);
+  font: 600 12px / 16px var(--font-sans);
+}
+

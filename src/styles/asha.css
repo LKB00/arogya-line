@@ -1,789 +1,56 @@
 /*
- * ASHA app: a phone held at arm's length in a courtyard. Big targets, one
- * obvious action per screen, urgency stated three ways at once.
+ * ASHA app: a phone held at arm's length, outdoors, by a health worker who
+ * checks many families a day and reads more than she types.
+ *
+ * Six principles, each visible somewhere below:
+ * 1. One next step: every screen has one primary action, at the thumb.
+ * 2. Her chart, her colours: IMNCI pink / yellow / green, always with an
+ *    icon and a word, never colour alone.
+ * 3. Show what it is: people as who they are, symptoms as the body part,
+ *    advice as a voice note.
+ * 4. Nothing is lost: offline is a calm reassurance, not an error.
+ * 5. A shared decision: results show what was found and what was ruled out.
+ * 6. End on the family: a booking ends with what to tell them.
+ *
+ * Material 3 bones (app bars, extended FAB, chips, segmented choices), Airbnb
+ * and Uber habits (one clear next action, a summary bar before committing).
+ * Figtree throughout; every size, gap and line height on the 4 px grid from
+ * product.css.
  */
 
-/* The scrolling region of a screen, between the app bar and any bottom bar. */
-.screen {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--pad-gutter);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  animation: screen-in var(--duration) var(--easing);
-}
+/* ---------- Frame ---------- */
 
-/* Nothing in the region shrinks to fit; a clipped card would collapse to
-   nothing. The region scrolls instead. */
-.screen > * {
-  flex-shrink: 0;
-}
-
-@keyframes screen-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Back is a round button with an arrow and no text: the title under it
-   already says where you are. The label lives in aria-label. */
-.backbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch);
-  height: var(--touch);
-  margin-left: calc(var(--space-2) * -1);
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
+.phone--asha,
+.phone--asha .phone__status,
+.phone--asha .phone__nav,
+.phone--asha .phone__screen {
+  background: var(--bg);
   color: var(--text);
-  text-decoration: none;
-  transition: background-color var(--transition), transform var(--transition);
 }
 
-.backbtn::before {
-  content: "";
-  width: var(--space-5);
-  height: var(--space-5);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.backbtn:hover {
-  background: var(--surface-sunken);
-}
-
-.backbtn:active {
-  transform: scale(0.94);
-}
-
-/* Title, its action and its date line are one unit, tight against each other. */
-.screen__header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.screen__eyebrow {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.screen__title {
-  font-size: var(--size-2xl);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
-}
-
-.screen__sub {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-/* ---------- App bar ---------- */
-
-/* Persistent across the app: the way back on the left when there is one, who
-   is signed in on the right. Identity is a mark, not a line of text. */
-/* Fixed height: the bar is the same size whether or not it holds a back
-   button, so nothing below it moves between screens. */
-.topbar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  height: calc(var(--touch) + var(--space-2));
-  padding: var(--space-2) var(--pad-gutter) 0;
-}
-
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-6);
-  height: var(--space-6);
-  border-radius: 50%;
-  background: var(--text);
-  color: var(--text-inverse);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-bold);
-}
-
-/* The one action sits in its own bar under the list, so the title is the
-   only thing at the top competing for the eye, and no row is ever hidden
-   under the button: the list scrolls above it. */
-.fab-bar {
-  flex: none;
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space-2) var(--pad-gutter) var(--space-3);
-}
-
-.fab {
-  padding-left: var(--space-4);
-  box-shadow: var(--shadow-raised);
-}
-
-.fab::before {
-  content: "";
-  width: var(--space-5);
-  height: var(--space-5);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-/* A caption directly under a bare title belongs to it, not to the next block.
-   Inside .screen__header the header's own gap already does this. */
-.screen > .screen__title + .screen__sub {
-  margin-top: calc(var(--space-3) * -1);
-}
-
-/* One section-title treatment, wherever a group of items needs a name. */
-.screen h2 {
-  margin-top: var(--space-2);
-}
-
-.screen__empty {
-  padding: var(--space-6) 0;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-/* The one primary action of a screen sits at the bottom of the phone. */
-.screen__action {
-  margin-top: auto;
-  padding-top: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-/* ---------- Sync banner ---------- */
-
-.sync-banner {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--pad-gutter);
-  background: var(--brand);
-  color: var(--text);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-semibold);
-  line-height: var(--leading-tight);
-}
-
-.sync-banner::before {
-  content: "";
-  flex: none;
-  width: var(--space-5);
-  height: var(--space-5);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 4.5 3.5 3.1l17.4 17.4-1.4 1.4-3.3-3.3-4.2 4.2-4.6-4.6a10.6 10.6 0 0 1 5.6-2.9L9.7 12A14 14 0 0 0 6 14.4L4 12.3a17 17 0 0 1 4-2.7Zm2.6-1.2 17 .1a20 20 0 0 1 2.2 1.8l-2 2.1A17 17 0 0 0 12 3.2Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.1 4.5 3.5 3.1l17.4 17.4-1.4 1.4-3.3-3.3-4.2 4.2-4.6-4.6a10.6 10.6 0 0 1 5.6-2.9L9.7 12A14 14 0 0 0 6 14.4L4 12.3a17 17 0 0 1 4-2.7Zm2.6-1.2 17 .1a20 20 0 0 1 2.2 1.8l-2 2.1A17 17 0 0 0 12 3.2Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-/* ---------- Today list ---------- */
-
-/* Rows live in one white card on the grey page: a single grouped list, not
-   a stack of floating cards. Dividers start where the text starts. */
-.today__rows,
-.members,
-.checklist {
-  overflow: hidden;
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-}
-
-.today__rows > li + li,
-.members > li + li,
-.checklist > li + li {
+.phone--asha .phone__screen {
   position: relative;
 }
 
-.today__rows > li + li::before,
-.members > li + li::before,
-.checklist > li + li::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: var(--space-4);
-  right: 0;
-  height: var(--border-thin);
-  background: var(--divider);
+.phone--asha .phone__status {
+  padding: 0 var(--g5);
+  font: 600 14px / 20px var(--font-sans);
 }
 
-/* A row is a list item: what kind of task on the left, who and when on the
-   head line, how urgent and what exactly on the line below. */
-.row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--pad-row);
-  color: var(--text);
-  text-decoration: none;
-  transition: background-color var(--transition);
-}
-
-.row:hover,
-.row:active {
-  background: var(--surface-sunken);
-}
-
-/* The band's colour, read by the glyph in the icon tile. */
-.row--red   { --u-color: var(--red); }
-.row--amber { --u-color: var(--amber); }
-.row--green { --u-color: var(--green); }
-.row--done  { --u-color: var(--text-muted); }
-
-/* The task tile: a stethoscope, a phone, a home, a heart or a tick. The glyph
-   takes the band's colour; the tile behind it stays a quiet grey, so the
-   group heading is the only coloured surface on the screen. */
-.row__icon {
+.icon {
   flex: none;
-  width: var(--space-6);
-  height: var(--space-6);
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  color: var(--u-color);
+  display: block;
 }
 
-.row__icon::before {
-  content: "";
-  width: var(--space-4);
-  height: var(--space-4);
-  background: currentColor;
-  -webkit-mask: var(--k-icon) center / contain no-repeat;
-  mask: var(--k-icon) center / contain no-repeat;
-}
-
-.row__icon--visit {
-  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3v6a5 5 0 0 0 10 0V3'/%3E%3Cpath d='M10 14v2a5 5 0 0 0 10 0v-3'/%3E%3Ccircle cx='20' cy='11' r='2.2'/%3E%3Cpath d='M3.5 3H6M14 3h2.5'/%3E%3C/svg%3E");
-}
-
-.row__icon--call {
-  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1Z'/%3E%3C/svg%3E");
-}
-
-.row__icon--home {
-  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 2 12h3v8h5v-6h4v6h5v-8h3L12 3Z'/%3E%3C/svg%3E");
-}
-
-.row__icon--concern {
-  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11Z'/%3E%3C/svg%3E");
-}
-
-.row__icon--done {
-  --k-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8A10.2 10.2 0 1 0 22.2 12 10.2 10.2 0 0 0 12 1.8Zm-1.3 14.6-4-4 1.5-1.5 2.5 2.5 5.6-5.6 1.5 1.5Z'/%3E%3C/svg%3E");
-}
-
-/* What she does, then for whom: the verb is the biggest thing on the row. */
-.row__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-}
-
-.row__task {
-  font-size: var(--size-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-snug);
-}
-
-.row__who {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-/* A reference number for the voice line, not for her: the quietest thing here. */
-.row__id {
-  font-size: var(--size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.summary__value,
-.call__number,
-.card__number,
-.card__id,
-.call__digits {
-  font-variant-numeric: tabular-nums;
-}
-
-.row__note {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-}
-
-/* When it is due sits in the corner, where a time belongs: the day above,
-   the slot under it, both ending on the same right edge. */
-.row__when {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-1);
-  padding-top: 2px;
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-medium);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--leading-tight);
-  white-space: nowrap;
-}
-
-.row__when > :first-child {
-  color: var(--text);
-  font-weight: var(--weight-semibold);
-}
-
-.row--done .row__task {
-  color: var(--text-muted);
-  font-weight: var(--weight-medium);
-}
-
-/* Rows fill a card that clips its corners, so an outline drawn outside the
-   row would be cut off. Inside the row it stays whole. */
-.row:focus-visible,
-.member:focus-visible,
-.checklist__item:has(.checklist__box:focus-visible),
-.advice__toggle:focus-visible {
-  outline: var(--focus-width) solid var(--focus);
-  outline-offset: calc(var(--focus-width) * -1);
-  border-radius: 0;
-}
-
-.checklist__box:focus-visible {
-  outline: none;
-}
-
-/* ---------- Urgency groups ---------- */
-
-/* The list is sorted by urgency, so urgency is said once, as the heading of
-   each group — colour, icon and word together — not repeated on every row. */
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.screen .group__title {
-  margin: 0;
-  padding: 0 var(--space-1);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0;
-}
-
-.group__count {
-  margin-left: var(--space-1);
-  color: var(--text-muted);
-  font-weight: var(--weight-medium);
-}
-
-.group + .group {
-  margin-top: var(--space-2);
-}
-
-/* ---------- Family detail ---------- */
-
-/* A member is a row you tap to check them. The one with something open
-   comes first and says why, in one line — the urgency word carries the
-   colour, so the row itself stays white like every other row. */
-.member {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--pad-row);
-  color: var(--text);
-  text-decoration: none;
-  transition: background-color var(--transition);
-}
-
-.member:hover,
-.member:active {
-  background: var(--surface-sunken);
-}
-
-.member::after {
-  content: "";
-  flex: none;
-  width: var(--space-4);
-  height: var(--space-4);
-  background: var(--border-strong);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.6 4.6 7.1 6.1 13 12l-5.9 5.9 1.5 1.5L16 12Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.6 4.6 7.1 6.1 13 12l-5.9 5.9 1.5 1.5L16 12Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.member__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.member__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.member__name {
-  font-size: var(--size-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-snug);
-}
-
-.member__age {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-/* Why this person: the urgency word, then what was noticed. */
-.member__why {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--size-sm);
-}
-
-.member__why .urgency--inline {
-  font-size: var(--size-sm);
-}
-
-.member__note {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-.member__why .member__note::before {
-  content: "· ";
-}
-
-/* ---------- Doctor's note ---------- */
-
-/* Shown only when a note exists. The row reads like a recording: what it is,
-   who left it and when; opening it plays the words as text (v1 has no audio). */
-.advice {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-}
-
-.advice__toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: var(--touch);
-  padding: var(--pad-row);
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--transition);
-}
-
-.advice__toggle:hover {
-  background: var(--surface-sunken);
-}
-
-/* The speaker in a tile, like the task tiles on Today. */
-.advice__icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: var(--space-6);
-  height: var(--space-6);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  color: var(--text);
-}
-
-.advice__icon::before {
-  content: "";
-  width: var(--space-4);
-  height: var(--space-4);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.advice--open .advice__icon {
-  background: var(--brand);
-}
-
-.advice__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.advice__label {
-  font-size: var(--size-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-snug);
-}
-
-.advice__meta {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-/* A disclosure caret that turns when the note is open. */
-.advice__toggle::after {
-  content: "";
-  flex: none;
-  width: var(--space-4);
-  height: var(--space-4);
-  background: var(--border-strong);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.6 8.6 6.1 7.1 12 13l5.9-5.9 1.5 1.5L12 16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.6 8.6 6.1 7.1 12 13l5.9-5.9 1.5 1.5L12 16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  transition: transform var(--transition);
-}
-
-.advice--open .advice__toggle::after {
-  transform: rotate(180deg);
-}
-
-/* The words, set as the doctor said them. */
-.note {
-  padding: var(--pad-row);
-  border-top: var(--border-thin) solid var(--divider);
-  background: var(--brand-soft);
-  color: var(--text);
-  font-size: var(--size-base);
-  line-height: var(--leading-normal);
-}
-
-/* ---------- Symptom check ---------- */
-
-.progress {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.progress__label {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.progress__track {
-  height: var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  overflow: hidden;
-}
-
-.progress__fill {
-  width: calc(var(--step) / var(--steps) * 100%);
-  height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--primary);
-  transition: width var(--transition);
-}
-
-/* The question is the title of this screen. */
-.question {
-  padding: var(--space-3) 0 var(--space-2);
-  font-size: var(--size-2xl);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
-}
-
-.answers {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-
-.answers .btn {
-  min-height: var(--touch-lg);
-  font-size: var(--size-lg);
-}
-
-.read-aloud::before {
-  content: "";
-  width: var(--space-5);
-  height: var(--space-5);
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9Zm12.5 3a4 4 0 0 0-2-3.5v7a4 4 0 0 0 2-3.5Zm0-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16Z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-/* ---------- Result ---------- */
-
-.result__banner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-5) var(--pad-card);
-  background: var(--u-soft);
-  border-radius: var(--radius-lg);
-}
-
-.result__banner::before {
-  content: "";
-  width: var(--space-6);
-  height: var(--space-6);
-  background: var(--u-color);
-  -webkit-mask: var(--u-icon) center / contain no-repeat;
-  mask: var(--u-icon) center / contain no-repeat;
-}
-
-.result__label {
-  color: var(--u-color);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.result__headline {
-  font-size: var(--size-xl);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--leading-tight);
-}
-
-.result__who {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-}
-
-/* Findings are sentences, not cards. A box around each one is noise. */
-.reasons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--pad-card);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-}
-
-.reasons__item {
-  display: flex;
-  gap: var(--space-3);
-  font-size: var(--size-base);
-  line-height: var(--leading-tight);
-}
-
-.reasons__item::before {
-  content: "";
-  flex: none;
-  width: 0.375rem;
-  height: 0.375rem;
-  margin-top: 0.4em;
-  border-radius: 50%;
-  background: var(--border-strong);
-}
-
-/* ---------- Booking ---------- */
-
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.choices__legend {
-  padding-bottom: var(--space-3);
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.choices__set {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-}
-
-.choices__set--stack {
-  grid-template-columns: 1fr;
-}
-
-.choice {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--touch);
-  padding: var(--pad-item);
-  background: var(--surface);
-  border: var(--border-thick) solid var(--border);
-  border-radius: var(--radius);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-medium);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color var(--transition), background-color var(--transition);
-}
-
-.choice:hover {
-  border-color: var(--border-strong);
-}
-
-.choice__stack {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.choice__lead {
-  font-weight: var(--weight-semibold);
-}
-
-.choice__meta {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-}
+/* Triage colour, set once per element and read by whatever it contains. */
+.tri--red   { --tri: var(--tri-pink);   --tri-soft: var(--tri-pink-soft);   --tri-ink: var(--tri-pink-ink);   --tri-text: var(--tri-pink-text);   --tri-on: #ffffff; }
+.tri--amber { --tri: var(--tri-yellow); --tri-soft: var(--tri-yellow-soft); --tri-ink: var(--tri-yellow-ink); --tri-text: var(--tri-yellow-text); --tri-on: var(--tri-yellow-ink); }
+.tri--green { --tri: var(--tri-green);  --tri-soft: var(--tri-green-soft);  --tri-ink: var(--tri-green-ink);  --tri-text: var(--tri-green);       --tri-on: #ffffff; }
+.tri--done  { --tri: var(--border-strong); --tri-soft: var(--container); --tri-ink: var(--text-muted); --tri-text: var(--text-muted); --tri-on: var(--text); }
 
-.choice__input {
+/* Content that is only for screen readers, e.g. a native input behind a
+   drawn control. */
+.sr-input {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -793,105 +60,1494 @@
   cursor: inherit;
 }
 
-.choice:has(.choice__input:checked) {
-  border-color: var(--text);
-  background: var(--brand-soft);
-  color: var(--text);
-  font-weight: var(--weight-bold);
+/* ---------- Screen ---------- */
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g8);
+  padding: var(--g2) var(--g4) var(--g6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  animation: enter var(--duration-slow) var(--easing-out);
 }
 
-.choice:has(.choice__input:focus-visible) {
-  outline: var(--focus-width) solid var(--focus);
-  outline-offset: var(--focus-offset);
+.screen::-webkit-scrollbar {
+  display: none;
 }
 
-/* Unavailable is struck through as well as greyed, so the state does not
-   depend on colour, and the chip stays one line high like its neighbours. */
-.choice:has(.choice__input:disabled) {
-  background: transparent;
-  border-color: var(--border);
+.screen > * {
+  flex-shrink: 0;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.screen__empty {
+  padding: var(--g8) 0;
   color: var(--text-muted);
-  text-decoration: line-through;
+  font: var(--t-body);
+  text-align: center;
+}
+
+/* ---------- App bars ---------- */
+
+/* Material 3 small top app bar: 56 px, a 48 px icon button whose 24 px icon
+   sits on the 16 px margin, and the offline chip at the far end. */
+.topbar,
+.appbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--g1);
+  height: 56px;
+  padding: 0 var(--g4) 0 var(--g1);
+}
+
+.topbar {
+  justify-content: space-between;
+}
+
+.topbar:not(:has(.iconbtn)) {
+  justify-content: flex-end;
+}
+
+.appbar__title {
+  flex: 1;
+  min-width: 0;
+  font: 600 16px / 24px var(--font-sans);
+}
+
+.appbar__aside {
+  color: var(--text-muted);
+  font: 500 14px / 20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.appbar__spacer {
+  flex: 1;
+}
+
+.iconbtn,
+.backbtn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: var(--text);
+  transition: background-color var(--transition);
+}
+
+.iconbtn:hover,
+.backbtn:hover {
+  background: var(--container-high);
+}
+
+/* Offline: a calm dark chip with the count still to send. A phone state,
+   never a triage colour. */
+.sync-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g2);
+  height: 32px;
+  padding: 0 var(--g3) 0 10px;
+  border-radius: 16px;
+  background: var(--asha-toast);
+  color: #ffffff;
+  font: 600 12px / 16px var(--font-sans);
+  letter-spacing: 0.01em;
+  animation: enter var(--duration-slow) var(--easing-out);
+}
+
+.sync-chip--sending {
+  background: var(--primary-soft);
+  color: var(--on-primary-soft);
+}
+
+/* ---------- Page headings ---------- */
+
+.pagehead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g1);
+}
+
+.pagehead__eyebrow {
+  color: var(--text-muted);
+  font: 600 14px / 20px var(--font-sans);
+}
+
+.pagehead__meta {
+  display: flex;
+  gap: var(--g4);
+  color: var(--text-muted);
+  font: 500 14px / 20px var(--font-sans);
+}
+
+.pagehead__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g1);
+}
+
+.pagehead__title {
+  font: 600 28px / 36px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.pagehead__sub {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  color: var(--text-muted);
+  font: var(--t-body);
+}
+
+/* A titled block: a sentence-case title, 12 px, then its content. */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.block__head {
+  display: flex;
+  flex-direction: column;
+}
+
+.block__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--g2);
+  padding: 0;
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+legend.block__title {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--g3);
+}
+
+legend.block__title + * {
+  clear: both;
+}
+
+.block__title--place {
+  align-items: center;
+  font: 600 16px / 24px var(--font-sans);
+}
+
+.block__title--place .icon {
+  color: var(--text-muted);
+}
+
+.block__aside {
+  margin-left: auto;
+  color: var(--text-faint);
+  font: 400 14px / 20px var(--font-sans);
+  letter-spacing: 0;
+}
+
+.block__title--place .block__aside {
+  margin-left: 0;
+}
+
+.block__sub {
+  color: var(--text-faint);
+  font: var(--t-meta);
+}
+
+/* An outlined card that holds a list: Material 3's outlined card, 20 px. */
+.listcard {
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+/* Hairlines between rows are drawn over the rows, not between them, so a
+   row stays exactly its own height on the grid. */
+.listcard li,
+.listcard .subhead {
+  position: relative;
+}
+
+.listcard > li + li::after,
+.listcard > ul > li + li::after,
+.listcard > ul + .subhead::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.row__chevron {
+  color: var(--text-faint);
+  transition: transform var(--transition);
+}
+
+a:hover > .row__chevron,
+a:hover .person__head .row__chevron {
+  transform: translateX(2px);
+}
+
+/* ---------- Urgency chip ---------- */
+
+.chip {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--g1);
+  height: 28px;
+  padding: 0 var(--g3) 0 var(--g2);
+  border-radius: 14px;
+  background: var(--tri);
+  color: var(--tri-on);
+  font: 600 12px / 16px var(--font-sans);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.chip--tonal {
+  background: var(--tri-soft);
+  color: var(--tri-ink);
+}
+
+.tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 var(--g2);
+  border-radius: 12px;
+  background: var(--tri-soft);
+  color: var(--tri-ink);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+.tag--danger {
+  background: var(--tri-pink);
+  color: #ffffff;
+}
+
+/* ---------- Buttons ---------- */
+
+.phone--asha .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g2);
+  height: 48px;
+  min-height: 0;
+  padding: 0 var(--g6);
+  border: 1px solid transparent;
+  border-radius: 24px;
+  font: 600 16px / 24px var(--font-sans);
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  transition: background-color var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.phone--asha .btn:active {
+  transform: scale(0.98);
+}
+
+.phone--asha .btn--tall {
+  height: 56px;
+  border-radius: 28px;
+}
+
+.phone--asha .btn--block {
+  width: 100%;
+}
+
+.phone--asha .btn--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.phone--asha .btn--primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.phone--asha .btn--secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.phone--asha .btn--secondary:hover {
+  border-color: var(--text);
+}
+
+/* The one time a button takes a triage colour: calling about an emergency. */
+.phone--asha .btn--danger {
+  background: var(--tri-pink);
+  border-color: var(--tri-pink);
+  color: #ffffff;
+}
+
+.phone--asha .btn:disabled {
+  background: var(--container-high);
+  border-color: var(--container-high);
+  color: var(--text-faint);
   cursor: not-allowed;
 }
 
-/* ---------- Booked ---------- */
-
-.summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 0;
-  padding: 0 var(--space-4);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  font-size: var(--size-sm);
+/* A bar that holds a screen's primary action at the foot, in the thumb's
+   reach, above the list rather than over it. */
+.footbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g3);
+  padding: var(--g4) var(--g4) var(--g6);
+  background: var(--bg);
+  box-shadow: 0 -1px 0 var(--border);
 }
 
-.summary__key,
-.summary__value {
-  padding: var(--space-3) 0;
-  border-top: var(--border-thin) solid var(--divider);
+.footbar--plain {
+  box-shadow: none;
+  padding-top: var(--g2);
 }
 
-.summary > .summary__key:first-of-type,
-.summary > .summary__key:first-of-type + .summary__value {
-  border-top: 0;
-}
-
-.summary__key {
-  padding-right: var(--space-4);
+.footbar__hint {
   color: var(--text-muted);
+  font: var(--t-meta);
+  text-align: center;
 }
 
-.summary__value {
+/* ---------- Today ---------- */
+
+.screen--today {
+  padding-bottom: 104px; /* room above the extended FAB: 24 + 56 + 24 */
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--g2);
+}
+
+.home__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+}
+
+.home__date {
+  color: var(--text-muted);
+  font: 500 14px / 20px var(--font-sans);
+}
+
+.home__title {
+  margin-top: var(--g2);
+  font: 600 28px / 36px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.home__sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--g1) var(--g3);
+  color: var(--text-muted);
+  font: var(--t-body);
+}
+
+/* The one number worth saying up front: how many cannot wait. */
+.home__urgent {
+  color: var(--tri-text);
+  font-weight: 600;
+}
+
+
+
+/* Up next: the most urgent person, one large card in their chart colour,
+   with the one thing to do. */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g4);
+  padding: var(--g5);
+  border-radius: 24px;
+  background: var(--tri-soft);
+  color: var(--tri-ink);
+}
+
+.hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero__card {
+  color: var(--tri-text);
+  font: var(--t-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero__name {
+  font: 600 24px / 32px var(--font-sans);
+  letter-spacing: -0.015em;
+}
+
+.hero__family {
+  color: var(--tri-text);
+  font: var(--t-meta);
+}
+
+.hero__facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.hero__facts li {
+  display: flex;
+  align-items: center;
+  gap: var(--g3);
+  font: 500 16px / 24px var(--font-sans);
+}
+
+.hero__pending {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  color: var(--tri-text);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+/* An empty day: good news, calmly, and the one thing she might do next. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--g1);
+  padding: var(--g10) var(--g4);
+  border-radius: 24px;
+  background: var(--container);
+  text-align: center;
+}
+
+.empty__mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--g3);
+  border-radius: 50%;
+  background: var(--tri-green-soft);
+  color: var(--tri-green);
+}
+
+.empty__title {
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.empty__sub {
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.hero__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g2);
+  height: 48px;
+  border-radius: 24px;
+  background: var(--tri);
+  color: var(--tri-on);
+  font: 600 16px / 24px var(--font-sans);
+  text-decoration: none;
+  transition: filter var(--transition), transform var(--transition);
+}
+
+.hero__action:hover {
+  filter: brightness(0.94);
+}
+
+.hero__action:active {
+  transform: scale(0.98);
+}
+
+/* Later today: the subhead says the word in the chart's colour; each row's
+   disc repeats the colour with the kind of task. No dot: it would say it a
+   third time. */
+.subhead {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  height: 40px;
+  padding: 0 var(--g4);
+  color: var(--tri-text);
+  font: 600 14px / 20px var(--font-sans);
+}
+
+
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--g4);
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: var(--g3) var(--g4);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--transition);
+}
+
+.row:hover,
+.fam:hover {
+  background: var(--container);
+}
+
+.row__disc,
+.finding__disc {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--tri-soft, var(--container));
+  color: var(--tri-ink, var(--text));
+}
+
+.row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.row__title {
+  font: 600 16px / 24px var(--font-sans);
+}
+
+.row__meta {
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.row__note {
+  margin-top: var(--g1);
+  color: var(--text-muted);
+  font: 500 12px / 16px var(--font-sans);
+}
+
+.row__pending {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g1);
+  margin-top: var(--g1);
+  color: var(--text-muted);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+.row__when {
+  flex: none;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--space-1);
-  font-weight: var(--weight-semibold);
-  text-align: right;
+  font: 500 14px / 24px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* A long status still has to fit the card, so it may wrap here. */
-.summary .pill {
-  white-space: normal;
-  text-align: right;
-}
-
-.summary__note {
+.row__time {
   color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-regular);
+  font: 400 12px / 16px var(--font-sans);
 }
 
-.checklist__item {
+/* Material 3 extended FAB: 56 px, 16 px corners, the tonal primary. */
+.fab {
+  position: absolute;
+  right: var(--g4);
+  bottom: var(--g6);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: var(--touch);
-  padding: var(--pad-row);
-  font-size: var(--size-base);
-  line-height: var(--leading-tight);
-  cursor: pointer;
+  gap: var(--g3);
+  height: 56px;
+  padding: 0 var(--g5) 0 var(--g4);
+  border-radius: 16px;
+  background: var(--primary-soft);
+  color: var(--on-primary-soft);
+  box-shadow: var(--shadow-asha-raised);
+  font: 600 16px / 24px var(--font-sans);
+  text-decoration: none;
+  transition: transform var(--transition), box-shadow var(--transition);
 }
 
-.checklist__item:hover {
-  background: var(--surface-sunken);
+.fab:hover {
+  box-shadow: 0 8px 20px rgba(29, 27, 24, 0.18), 0 2px 4px rgba(29, 27, 24, 0.12);
 }
 
-/* A ticked instruction is done with; it steps back. */
-.checklist__item:has(.checklist__box:checked) {
+.fab:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Which family ---------- */
+
+.fam {
+  display: flex;
+  align-items: center;
+  gap: var(--g4);
+  padding: var(--g4);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color var(--transition);
+}
+
+.fam__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g1);
+}
+
+.fam__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--g2);
+}
+
+.fam__name {
+  font: 600 16px / 24px var(--font-sans);
+}
+
+.fam__card {
+  color: var(--text-faint);
+  font: 500 12px / 16px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.fam__people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g1) var(--g3);
   color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.fam__person {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g1);
+}
+
+.fam__told,
+.fam__status {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  margin-top: var(--g1);
+  font: var(--t-meta);
+}
+
+.fam__told {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.fam__told .icon {
+  color: var(--text-muted);
+}
+
+/* What is open for this family, in its chart colour: the text carries it. */
+.fam__status {
+  color: var(--tri-text);
+  font-weight: 500;
+}
+
+/* ---------- Family ---------- */
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g3);
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g4);
+  padding: var(--g4);
+  border-radius: 20px;
+  background: var(--surface);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.person:hover {
+  outline-color: var(--border-strong);
+  box-shadow: 0 2px 8px rgba(29, 27, 24, 0.06);
+}
+
+/* The person the family reported is the reason she is here. */
+.person--focus {
+  outline-color: var(--border-strong);
+}
+
+.person__head {
+  display: flex;
+  align-items: center;
+  gap: var(--g4);
+}
+
+.person__disc {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--container);
+}
+
+.person__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.person__name {
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.person__detail {
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.person__status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.person__task {
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+/* What the family said, in their words. */
+.quote {
+  display: flex;
+  gap: var(--g3);
+  padding: var(--g3) var(--g4);
+  border-radius: 12px;
+  background: var(--container);
+}
+
+.quote > .icon {
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.quote > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.quote__text {
+  font: 500 16px / 24px var(--font-sans);
+}
+
+.quote__by {
+  color: var(--text-faint);
+  font: 500 12px / 16px var(--font-sans);
+}
+
+/* The doctor's advice as a voice note, the way WhatsApp draws one. */
+.voicenote {
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+.voicenote__player {
+  display: flex;
+  align-items: center;
+  gap: var(--g3);
+  padding: var(--g4);
+}
+
+.voicenote__play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color var(--transition), transform var(--transition);
+}
+
+.voicenote__play:hover {
+  background: var(--primary-strong);
+}
+
+.voicenote__play:active {
+  transform: scale(0.94);
+}
+
+.voicenote__play .icon {
+  fill: currentColor;
+}
+
+.voicenote__track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.voicenote__wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+}
+
+.voicenote__wave > span {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background-color var(--duration-slow) var(--easing);
+}
+
+.voicenote__wave > span.is-played {
+  background: var(--primary);
+}
+
+.voicenote__time {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font: 500 12px / 16px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.voicenote__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  padding: 0 var(--g4) var(--g4);
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.voicenote__words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g1);
+  padding: var(--g4);
+  background: var(--container);
+  animation: enter var(--duration-slow) var(--easing-out);
+}
+
+.voicenote__label {
+  color: var(--text-faint);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+.voicenote__words blockquote {
+  margin: 0;
+  font: var(--t-body);
+}
+
+/* ---------- Symptom check ---------- */
+
+.screen--check {
+  gap: var(--g4);
+  padding-top: 0;
+}
+
+.steps {
+  display: flex;
+  gap: var(--g1);
+}
+
+.steps__seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background-color var(--duration-slow) var(--easing);
+}
+
+.steps__seg.is-done {
+  background: var(--primary);
+}
+
+.steps__seg.is-now {
+  background: #9aa5d9;
+}
+
+.answered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g2);
+}
+
+.answered__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g1);
+  height: 32px;
+  padding: 0 var(--g3) 0 var(--g2);
+  border-radius: 8px;
+  background: var(--container);
+  color: var(--text-muted);
+  font: 600 12px / 16px var(--font-sans);
+}
+
+/* The question is the screen: a picture of the thing asked about, then the
+   words, large. Each new question slides in. */
+.ask {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--g6);
+  padding-top: var(--g8);
+  animation: ask-in var(--duration-slow) var(--easing-out);
+}
+
+@keyframes ask-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ask__picture {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--on-primary-soft);
+}
+
+.ask__question {
+  font: 600 32px / 40px var(--font-sans);
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+/* Material 3 assist chip. */
+.assist {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g2);
+  height: 40px;
+  margin-top: calc(var(--g2) * -1);
+  padding: 0 var(--g4) 0 var(--g3);
+  border-radius: 20px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: 600 14px / 20px var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.assist:hover {
+  background: var(--container);
+}
+
+/* Yes and No: same size, colour and weight. A tick and a cross tell them
+   apart; neither is nudged. */
+.answers {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--g3);
+  padding: var(--g2) var(--g4) var(--g6);
+}
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g1);
+  height: 80px;
+  border-radius: 20px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: 600 20px / 28px var(--font-sans);
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition), transform var(--transition);
+}
+
+.answer:hover {
+  border-color: var(--text);
+}
+
+.answer:active {
+  transform: scale(0.98);
+  background: var(--container);
+}
+
+/* ---------- Result ---------- */
+
+.screen--result {
+  gap: var(--g6);
+  padding-top: 0;
+}
+
+/* The verdict fills the top in the chart's colour and reads before it is
+   read: icon, word, headline. */
+.verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0 calc(var(--g4) * -1);
+  padding: 0 var(--g4) var(--g6);
+  border-radius: 0 0 28px 28px;
+  background: var(--tri-soft);
+  color: var(--tri-ink);
+}
+
+/* The verdict's colour runs up under the status bar, edge to edge. */
+.phone--asha:has(.verdict.tri--red) .phone__status { background: var(--tri-pink-soft); }
+.phone--asha:has(.verdict.tri--amber) .phone__status { background: var(--tri-yellow-soft); }
+.phone--asha:has(.verdict.tri--green) .phone__status { background: var(--tri-green-soft); }
+
+.verdict__back {
+  margin: var(--g1) 0 var(--g1) -12px;
+  color: var(--tri-ink);
+}
+
+.verdict__back:hover {
+  background: rgba(29, 27, 24, 0.06);
+}
+
+.verdict__mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--g4);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--tri-ink);
+}
+
+.tri--red .verdict__mark {
+  color: var(--tri-pink);
+}
+
+.verdict__headline {
+  margin-top: var(--g3);
+  font: 600 28px / 36px var(--font-sans);
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+.verdict__next {
+  margin-top: var(--g1);
+  color: var(--tri-text);
+  font: var(--t-body);
+}
+
+.finding {
+  display: flex;
+  align-items: center;
+  gap: var(--g4);
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: var(--g2) var(--g4);
+}
+
+.finding .finding__disc {
+  background: var(--container);
+  color: var(--text);
+}
+
+.finding__text {
+  flex: 1;
+  min-width: 0;
+  font: 500 16px / 24px var(--font-sans);
+}
+
+.finding--clear .finding__text {
+  color: var(--text-muted);
+}
+
+.finding--clear .finding__disc {
+  color: var(--text-faint);
+}
+
+/* ---------- Book ---------- */
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--g2);
+}
+
+.daycard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.daycard:hover {
+  border-color: var(--border-strong);
+}
+
+.daycard__label,
+.daycard__dow {
+  color: var(--text-muted);
+  font: 500 12px / 16px var(--font-sans);
+}
+
+.daycard__num {
+  font: 600 24px / 32px var(--font-sans);
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.daycard:has(.sr-input:checked) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.daycard:has(.sr-input:checked) .daycard__label,
+.daycard:has(.sr-input:checked) .daycard__dow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.slots + .slots {
+  margin-top: var(--g4);
+}
+
+.slots__part {
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  color: var(--text-muted);
+  font: 600 14px / 20px var(--font-sans);
+}
+
+.slots__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--g2);
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.slot:hover {
+  border-color: var(--text);
+}
+
+.slot__time {
+  font: 600 16px / 24px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.slot:has(.sr-input:checked) {
+  flex-direction: row;
+  gap: var(--g2);
+  background: var(--primary-soft);
+  border: 2px solid var(--primary);
+  color: var(--on-primary-soft);
+}
+
+/* Full stays in place, dashed and struck through, so nothing jumps. */
+.slot:has(.sr-input:disabled) {
+  background: var(--container);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.slot:has(.sr-input:disabled) .slot__time {
+  font-weight: 500;
   text-decoration: line-through;
 }
 
-.checklist__box {
+.slot__full {
+  font: 600 12px / 16px var(--font-sans);
+}
+
+.daycard:has(.sr-input:focus-visible),
+.slot:has(.sr-input:focus-visible),
+.tick:has(.sr-input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.notice.notice--strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.notice {
+  display: flex;
+  gap: var(--g3);
+  padding: var(--g3) var(--g4);
+  border-radius: 16px;
+  background: var(--container);
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+/* The reservation bar: the choice read back beside the button. */
+.reservebar {
   flex: none;
-  width: var(--space-5);
-  height: var(--space-5);
-  margin: 0;
-  accent-color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g4);
+  padding: var(--g4) var(--g4) var(--g6);
+  background: var(--surface);
+  box-shadow: 0 -1px 0 var(--border);
+}
+
+.reservebar__summary {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.reservebar__summary strong {
+  color: var(--text);
+  font: 600 16px / 24px var(--font-sans);
+}
+
+/* ---------- Visit booked ---------- */
+
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--g1);
+  text-align: center;
+}
+
+.done__mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--g3);
+  border-radius: 50%;
+  background: var(--tri-green-soft);
+  color: var(--tri-green);
+  animation: pop 400ms var(--easing-out) both;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.done__title {
+  font: 600 28px / 36px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.done__sub {
+  color: var(--text-muted);
+  font: var(--t-body);
+}
+
+/* The slip: written to be turned round and shown to the family. */
+.slip {
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--surface);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+.slip__when {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--g5) var(--g5) var(--g3);
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.slip__facts li {
+  display: flex;
+  align-items: center;
+  gap: var(--g3);
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: var(--g3) var(--g5);
+  font: var(--t-body);
+}
+
+.slip__facts .icon {
+  color: var(--text-muted);
+}
+
+.slip__sync {
+  display: flex;
+  align-items: center;
+  gap: var(--g3);
+  padding: var(--g3) var(--g5);
+  background: var(--container);
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+.slip__sync.is-sent {
+  background: var(--tri-green-soft);
+  color: var(--tri-green-ink);
+}
+
+.tick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--g4);
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: var(--g3) var(--g4);
   cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.tick:hover {
+  background: var(--container);
+}
+
+.tick__text {
+  flex: 1;
+  font: var(--t-body);
+}
+
+.tick:has(.sr-input:checked) .tick__text {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
+.tick__box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  color: transparent;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.tick:has(.sr-input:checked) .tick__box {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+/* ---------- Focus ---------- */
+
+.phone--asha :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.listcard :focus-visible,
+.row:focus-visible,
+.fam:focus-visible {
+  outline-offset: -2px;
+}
+
+.summary__value,
+.call__number,
+.card__number,
+.card__id,
+.call__digits {
+  font-variant-numeric: tabular-nums;
 }

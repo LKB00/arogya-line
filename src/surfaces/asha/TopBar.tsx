@@ -1,16 +1,18 @@
-// The app bar every ASHA screen sits under. Left: the way back, when the
-// current screen has one (declared on its route as `handle.back`). Right: who
-// is signed in, as a mark. Destinations are the same ones the screens used to
-// carry themselves; only where the link is drawn has moved.
+// The app bar every ASHA screen sits under: the way back, when the current
+// screen has one (declared on its route as `handle.back`). The bar keeps its
+// 56 px height either way, so every screen's title starts at the same y.
 
 import { Link, useLocation, useMatches, useParams } from "react-router-dom";
-import { ASHA } from "../../app/seed";
 import { useStore } from "../../app/store";
+import { IconArrowLeft } from "@tabler/icons-react";
+import Icon from "../../shell/Icon";
+import SyncBanner from "./SyncBanner";
 
 /** Where a screen goes back to. Set per route in router.tsx. */
 export type BackKind = "today" | "family" | "result";
 
-type Handle = { back?: BackKind };
+/** `own`: the screen draws its own bar (Today, the check, results, booked). */
+type Handle = { back?: BackKind; own?: boolean };
 
 export default function TopBar() {
   const { familyId = "", memberId = "" } = useParams();
@@ -18,7 +20,9 @@ export default function TopBar() {
   const matches = useMatches();
   const family = useStore((s) => s.families.find((f) => f.id === familyId));
 
-  const kind = (matches[matches.length - 1]?.handle as Handle | undefined)?.back;
+  const handle = matches[matches.length - 1]?.handle as Handle | undefined;
+  const kind = handle?.back;
+  if (handle?.own) return null;
 
   let back: { to: string; label: string } | null = null;
   if (kind === "today" || (kind && !family)) back = { to: "/asha", label: "Back to today" };
@@ -29,17 +33,12 @@ export default function TopBar() {
 
   return (
     <header className="topbar">
-      {back ? (
-        <Link className="backbtn" to={back.to} aria-label={back.label} title={back.label} />
-      ) : (
-        <span />
+      {back && (
+        <Link className="iconbtn" to={back.to} aria-label={back.label} title={back.label}>
+          <Icon icon={IconArrowLeft} size={24} />
+        </Link>
       )}
-      <span className="avatar" title={`${ASHA.name} · ASHA worker`}>
-        <span aria-hidden="true">{ASHA.name[0]}</span>
-        <span className="visually-hidden">
-          {ASHA.name}, ASHA worker
-        </span>
-      </span>
+      <SyncBanner />
     </header>
   );
 }

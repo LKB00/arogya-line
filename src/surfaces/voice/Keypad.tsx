@@ -1,5 +1,9 @@
-// The 0–9 keypad, plus Call and Hang up (SPEC 6.2).
+// The 0–9 keypad, plus Call and Hang up (SPEC 6.2). Laid out as a handset
+// dialer: round keys, and one round call button that is green to dial and
+// red to hang up, as on the phone in her hand.
 
+import { IconPhone } from "@tabler/icons-react";
+import Icon from "../../shell/Icon";
 import { KEYS, type Key } from "./callMachine";
 
 const HINT: Partial<Record<Key, string>> = { "9": "repeat", "0": "person" };
@@ -21,17 +25,20 @@ export default function Keypad({
         {KEYS.map((k) => (
           <button className="key" key={k} type="button" onClick={() => onKey(k)} disabled={!inCall} aria-label={`Key ${k}`}>
             <span className="key__num">{k}</span>
-            <span className="key__label">{HINT[k] ?? ""}</span>
+            {HINT[k] && <span className="key__label">{HINT[k]}</span>}
           </button>
         ))}
       </div>
       <p className="dialer__actions">
-        <button className="btn callbtn callbtn--dial" type="button" onClick={onCall} disabled={inCall}>
-          Call
-        </button>
-        <button className="btn callbtn callbtn--hangup" type="button" onClick={onHangUp} disabled={!inCall}>
-          Hang up
-        </button>
+        {inCall ? (
+          <button className="callbtn callbtn--hangup" type="button" onClick={onHangUp} aria-label="Hang up">
+            <Icon icon={IconPhone} size={24} className="callbtn__end" />
+          </button>
+        ) : (
+          <button className="callbtn callbtn--dial" type="button" onClick={onCall} aria-label="Call">
+            <Icon icon={IconPhone} size={24} />
+          </button>
+        )}
       </p>
     </div>
   );

@@ -1,6 +1,10 @@
 /*
- * Voice line: a phone call, not an app. The handset carries the call; the
- * printed card sits beside it the way it would sit in a caller's hand.
+ * Voice line: a phone call, not an app. The family's side is a call on any
+ * phone, so the handset shows a native in-call screen, dark as phones draw
+ * it: who is on the line, what the line says as live captions, and the
+ * dialer. The printed family card sits beside it, as it would in the
+ * caller's hand. Scales and colours come from product.css; everything sits
+ * on the 4 px grid.
  */
 
 .voice {
@@ -8,206 +12,231 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: center;
-  gap: var(--space-6);
+  gap: var(--g8);
+  color: var(--text);
+  font: var(--t-body);
 }
 
-.voice__side {
-  width: var(--phone-width);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
+/* ---------- The handset ---------- */
+
+.phone--voice,
+.phone--voice .phone__status,
+.phone--voice .phone__nav,
+.phone--voice .phone__screen {
+  background: #1b1a18;
+  color: #ffffff;
 }
 
-/* How to drive the demo is not part of the service: it wears the demo chrome. */
-.voice__intro {
-  padding: var(--space-5);
-  background: var(--demo-bg);
-  border-radius: var(--radius-lg);
-  color: var(--demo-text);
+.phone--voice .phone__status {
+  padding: 0 var(--g5);
+  font: 600 14px / 20px var(--font-sans);
 }
 
-.voice__intro h1 {
-  font-size: var(--size-lg);
+.phone--voice .phone__handle {
+  background: #ffffff;
 }
 
-.voice__intro p {
-  margin-top: var(--space-2);
-  color: var(--demo-muted);
-  font-size: var(--size-sm);
-}
-
-/* ---------- The call, inside the phone ---------- */
-
-/* The call is one white sheet; the page grey never shows through it. */
 .call {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  color: #ffffff;
 }
 
+/* Who is on the line, centred, as a phone shows it. */
 .call__header {
   position: relative;
   flex: none;
-  padding: var(--space-4) var(--pad-gutter) var(--space-3);
-  border-bottom: var(--border-thin) solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--g3) var(--g4);
   text-align: center;
 }
 
-/* The round back button from the app bar, in the same corner. */
 .call__back {
   position: absolute;
-  top: var(--space-3);
-  left: var(--pad-gutter);
-  margin-left: 0;
+  top: var(--g1);
+  left: var(--g1);
+  color: #ffffff;
+}
+
+.call__back:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.call__mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--g2);
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
 }
 
 .call__to {
-  color: var(--text-muted);
-  font-size: var(--size-sm);
+  font: 600 24px / 32px var(--font-sans);
+  letter-spacing: -0.015em;
 }
 
-/* Sized so the centred number clears a corner button; the card beside the
-   phone carries the number large. */
-.call__number {
-  font-size: var(--size-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-tight);
-}
-
-/* Connected state carries a dot and a word, never the dot alone. */
 .call__status {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  gap: var(--g1);
+  color: rgba(255, 255, 255, 0.64);
+  font: var(--t-meta);
+  font-variant-numeric: tabular-nums;
 }
 
-.call__status::before {
-  content: "";
-  width: var(--space-2);
-  height: var(--space-2);
-  border-radius: 50%;
-  background: currentColor;
-}
-
+/* Connected: the words turn green, as a phone's call timer does. */
 .call__status--on {
-  color: var(--green);
+  color: #7fd49c;
 }
 
-.call__empty {
+/* ---------- Live captions ---------- */
+
+.captions {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0 var(--g4);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.captions__empty {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6) var(--pad-gutter);
-  color: var(--text-muted);
-  font-size: var(--size-sm);
+  gap: var(--g3);
+  padding: 0 var(--g8);
+  color: rgba(255, 255, 255, 0.56);
+  font: var(--t-meta);
   text-align: center;
 }
 
-/* ---------- Call log ---------- */
-
 .log {
+  position: relative;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--pad-gutter);
+  gap: var(--g2);
+  padding: var(--g4);
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* A soft fade at the foot says there is more below. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+
+.log::-webkit-scrollbar {
+  display: none;
 }
 
 .log__line {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-  line-height: var(--leading-normal);
+  gap: var(--g1);
+  max-width: 88%;
 }
 
 .log__who {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.56);
+  font: 600 12px / 16px var(--font-sans);
 }
 
-/* The caller's own keypresses answer back from the other side. */
+/* Said earlier: quieter. */
+.log__text {
+  color: rgba(255, 255, 255, 0.56);
+  font: var(--t-meta);
+}
+
+/* The prompt still waiting for an answer: large and in full white. */
+.log__line--current .log__text {
+  color: #ffffff;
+  font: 500 18px / 28px var(--font-sans);
+}
+
+.log__line--operator .log__text {
+  color: #b9ecc9;
+}
+
+.log__line--operator.log__line--current .log__text {
+  color: #d9f7e3;
+}
+
+/* What the caller pressed: a small pill on the right. */
 .log__line--caller {
-  align-items: flex-end;
-  text-align: right;
+  align-self: flex-end;
 }
 
-/* The prompt still hanging in the air: full ink, larger, on the brand tint.
-   Everything above it has already been said. */
-.log__line--current {
-  padding: var(--space-3) var(--space-4);
-  background: var(--brand-soft);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: var(--size-md);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-tight);
+.log__line--caller .log__text {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--g3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font: 600 12px / 16px var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
-.log__line--current .log__who {
-  color: var(--text);
+.log__line--caller.log__line--current .log__text {
+  font: 600 12px / 16px var(--font-sans);
 }
 
-/* ---------- Digits entered so far ---------- */
+/* ---------- Family ID entry ---------- */
 
-.call__entry {
+/* Four boxes, filled left to right, like the ID on the printed card. */
+.idboxes {
   flex: none;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--pad-gutter);
-  background: var(--surface-sunken);
+  justify-content: center;
+  gap: var(--g2);
+  padding-top: var(--g3);
 }
 
-.call__entry-key {
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
+.idboxes__box {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  outline: 1px solid rgba(255, 255, 255, 0.24);
+  outline-offset: -1px;
+  font: 600 28px / 32px var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
-.call__digits {
-  font-size: var(--size-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.3em;
+.idboxes__box.is-next {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
 }
 
-/* ---------- Keypad ---------- */
+/* ---------- Dialer ---------- */
 
 .dialer {
   flex: none;
-  padding: var(--space-4) var(--pad-gutter);
-  border-top: var(--border-thin) solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--g3);
+  padding: var(--g3) var(--g4) var(--g4);
 }
 
+/* Three columns of round keys; 0 alone in the middle of the last row. */
 .keypad {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
-}
-
-/* Ten keys in a phone's three-column grid puts 0 alone: centre it. */
-.keypad > :last-child {
-  grid-column: 2;
+  grid-template-columns: repeat(3, 56px);
+  gap: var(--g2) var(--g10);
 }
 
 .key {
@@ -215,171 +244,215 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: var(--touch-lg);
-  padding: var(--space-2);
-  background: var(--surface-sunken);
-  border: var(--border-thin) solid transparent;
-  border-radius: var(--radius);
-  color: var(--text);
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
   cursor: pointer;
   transition: background-color var(--transition), transform var(--transition);
 }
 
+.key:last-child {
+  grid-column: 2;
+}
+
 .key:hover:not(:disabled) {
-  background: var(--stage);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .key:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.26);
 }
 
+/* Not on a call: the keys are there but asleep. */
 .key:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
+  cursor: default;
+  color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .key__num {
-  font-size: var(--size-lg);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
+  font: 500 24px / 28px var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
-/* The label row is always present, so a key with a hint is no taller. */
+/* What 9 and 0 do, under the digit, where letters sit on a phone key. */
 .key__label {
-  min-height: 1em;
-  color: var(--text-muted);
-  font-size: var(--size-xs);
-  line-height: var(--leading-tight);
+  color: rgba(255, 255, 255, 0.56);
+  font: 600 12px / 12px var(--font-sans);
 }
 
-/* ---------- Call and Hang up: not keys ---------- */
+.key:disabled .key__label {
+  color: rgba(255, 255, 255, 0.24);
+}
 
 .dialer__actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
+  display: flex;
+  justify-content: center;
 }
 
+/* One round button: green dials, red hangs up. */
 .callbtn {
-  padding: var(--space-3);
-  font-weight: var(--weight-bold);
-  white-space: nowrap;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  cursor: pointer;
+  transition: filter var(--transition), transform var(--transition);
 }
 
-.callbtn::before {
-  content: "";
-  width: var(--space-5);
-  height: var(--space-5);
-  background: currentColor;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+.callbtn:hover {
+  filter: brightness(1.08);
+}
+
+.callbtn:active {
+  transform: scale(0.94);
 }
 
 .callbtn--dial {
-  background: var(--green);
-  border-color: var(--green);
-  color: var(--text-inverse);
+  background: #1e8e4e;
 }
 
 .callbtn--hangup {
-  background: var(--red);
-  border-color: var(--red);
-  color: var(--text-inverse);
+  background: #d93025;
 }
 
-.callbtn--dial::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1Z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1Z'/%3E%3C/svg%3E");
+/* Hang up is the handset laid face down, as on every phone. */
+.callbtn__end {
+  transform: rotate(135deg);
 }
 
-.callbtn--hangup::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 6c-3 0-5.9.7-8.4 2A2.4 2.4 0 0 0 2.4 10v2.3a1.6 1.6 0 0 0 1.6 1.6h2.5a1.6 1.6 0 0 0 1.6-1.5l.13-1.8A13.6 13.6 0 0 1 12 10a13.6 13.6 0 0 1 3.7.5l.14 1.8a1.6 1.6 0 0 0 1.6 1.5H20a1.6 1.6 0 0 0 1.6-1.6V10a2.4 2.4 0 0 0-1.2-2A18.3 18.3 0 0 0 12 6Z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 6c-3 0-5.9.7-8.4 2A2.4 2.4 0 0 0 2.4 10v2.3a1.6 1.6 0 0 0 1.6 1.6h2.5a1.6 1.6 0 0 0 1.6-1.5l.13-1.8A13.6 13.6 0 0 1 12 10a13.6 13.6 0 0 1 3.7.5l.14 1.8a1.6 1.6 0 0 0 1.6 1.5H20a1.6 1.6 0 0 0 1.6-1.6V10a2.4 2.4 0 0 0-1.2-2A18.3 18.3 0 0 0 12 6Z'/%3E%3C/svg%3E");
+.voice :focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
-/* ---------- The printed card ---------- */
+.voice__side :focus-visible {
+  outline-color: var(--focus);
+}
 
+/* ---------- Beside the phone ---------- */
+
+.voice__side {
+  width: var(--phone-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g6);
+  padding-top: var(--g4);
+}
+
+.voice__intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.voice__intro h1 {
+  font: 600 20px / 28px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.voice__intro p {
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
+/* The printed card: white stock, the service's name, the number largest,
+   the ID in the boxes it is keyed into, the menu as keys. */
 .card {
-  overflow: hidden;
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-raised);
-}
-
-.card__band {
-  padding: var(--space-3) var(--space-5);
-  background: var(--brand);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g5);
+  padding: var(--g6);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 12px 32px rgba(29, 27, 24, 0.12);
+  color: var(--text);
 }
 
 .card__brand {
-  color: var(--text);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-.card__body {
-  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--g2);
+  color: var(--primary);
+  font: 700 16px / 24px var(--font-sans);
 }
 
 .card__key {
   color: var(--text-muted);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-}
-
-/* The two things a caller has to read off the card at arm's length. */
-.card__number,
-.card__id {
-  font-size: var(--size-xl);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
+  font: 600 12px / 16px var(--font-sans);
 }
 
 .card__number {
-  margin-bottom: var(--space-4);
+  margin-top: var(--g1);
+  font: 700 32px / 40px var(--font-sans);
   letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .card__id {
-  letter-spacing: 0.16em;
+  display: flex;
+  gap: var(--g2);
+  margin-top: var(--g2);
+}
+
+.card__id span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+  font: 700 28px / 32px var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 .card__holder {
+  margin-top: var(--g2);
   color: var(--text-muted);
-  font-size: var(--size-sm);
+  font: var(--t-meta);
+}
+
+.card__menu-block {
+  padding-top: var(--g5);
+  box-shadow: inset 0 1px 0 var(--border);
 }
 
 .card__menu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: var(--border-thin) dashed var(--border-strong);
-  font-size: var(--size-sm);
+  gap: var(--g3);
+  margin-top: var(--g3);
+}
+
+.card__menu li {
+  display: flex;
+  align-items: center;
+  gap: var(--g3);
+  font: 500 16px / 24px var(--font-sans);
+}
+
+.card__menu .icon {
+  color: var(--text-muted);
 }
 
 .card__digit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-5);
-  height: var(--space-5);
-  margin-right: var(--space-3);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--text);
-  color: var(--text-inverse);
-  font-size: var(--size-xs);
-  font-weight: var(--weight-bold);
+  color: #ffffff;
+  font: 700 16px / 24px var(--font-sans);
 }
 
 @media (max-width: 768px) {

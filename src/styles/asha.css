@@ -1195,6 +1195,19 @@ a:hover .person__head .row__chevron {
   text-wrap: pretty;
 }
 
+.verdict__kind {
+  margin-top: var(--g4);
+  color: var(--tri-text);
+  font: 600 12px / 16px var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The label belongs to the headline under it. */
+.verdict__kind + .verdict__headline {
+  margin-top: var(--g1);
+}
+
 .verdict__next {
   margin-top: var(--g1);
   color: var(--tri-text);

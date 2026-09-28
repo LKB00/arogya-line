@@ -49,8 +49,9 @@ export function rowsFor(family: Family, concerns: Concern[], bookings: Booking[]
       candidates.push({ ...base, kind: "visit", task: "PHC visit", day: dayLabel(booking.date), time: slotLabel(booking.slot), sync: booking.sync });
     } else if (booking.followUpStatus === "pending" && booking.followUpDue && booking.followUpDue <= today) {
       candidates.push({ ...base, kind: "call", task: "Follow-up call", day: "Today", sync: booking.sync });
-    } else if (booking.followUpStatus === "missed") {
-      candidates.push({ ...base, kind: "home", task: "Home visit", note: "Follow-up call was missed", day: "Today", sync: booking.sync });
+    } else if (booking.followUpStatus === "missed" && booking.ashaAsked) {
+      // Only when the doctor asked: a missed call alone commits nobody.
+      candidates.push({ ...base, kind: "home", task: "Follow up at home", note: "Doctor asked: the follow-up call was missed", day: "Today", sync: booking.sync });
     } else {
       candidates.push({ ...base, band: "done", kind: "done", task: "Seen at the PHC", day: dayLabel(booking.date), sync: booking.sync });
     }

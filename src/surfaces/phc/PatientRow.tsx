@@ -10,6 +10,15 @@ import { useStore } from "../../app/store";
 import type { Booking } from "../../app/types";
 import Icon from "../../shell/Icon";
 import { patientMeta, patientName, reportedBy, type BookingRow } from "./rows";
+import { consultState, type ConsultState } from "./selectors";
+
+/** The row's one action, by where the booking stands: nobody consults tomorrow's patient today. */
+const ACTION: Record<ConsultState, string> = {
+  future: "View booking",
+  today: "Start consult",
+  overdue: "Complete consult",
+  done: "Open consult",
+};
 
 /** How the booking reached the PHC, drawn: the ASHA, the phone line, the door. */
 const SOURCE_ICON = { ASHA: IconNurse, "Voice line": IconPhone, "Walk-in": IconWalk } as const;
@@ -33,9 +42,9 @@ export function AvoidableToggle({ booking }: { booking: Booking }) {
   );
 }
 
-type Props = { row: BookingRow; selected: boolean; onOpen: (bookingId: string) => void };
+type Props = { row: BookingRow; today: string; selected: boolean; onOpen: (bookingId: string) => void };
 
-export default function PatientRow({ row, selected, onOpen }: Props) {
+export default function PatientRow({ row, today, selected, onOpen }: Props) {
   const { booking, concern } = row;
   const source = reportedBy(row) as keyof typeof SOURCE_ICON;
   return (
@@ -64,9 +73,9 @@ export default function PatientRow({ row, selected, onOpen }: Props) {
       </td>
       <td className="cell cell--action">
         <button type="button" className="btn btn--compact btn--secondary" aria-expanded={selected} onClick={() => onOpen(booking.id)}>
-          {booking.advice ? "Open consult" : "Start consult"}
+          {ACTION[consultState(booking, today)]}
         </button>
-        {/* "Start consult" already says it has not happened; done says so. */}
+        {/* The action already says whether it has happened; done says so. */}
         {booking.advice && (
           <span className="saved">
             <Icon icon={IconCheck} size={16} />

@@ -107,6 +107,8 @@ export default function Result() {
             <Icon icon={VERDICT_ICON[urgency]} size={24} />
           </span>
           <UrgencyChip urgency={urgency} />
+          {/* What the answers suggest, by an illustrative protocol: a screening, never a diagnosis. */}
+          <p className="verdict__kind">Screening result</p>
           <h1 className="verdict__headline">{HEADLINE[urgency](member.name)}</h1>
           <p className="verdict__next">
             {urgency === "amber" && upcoming

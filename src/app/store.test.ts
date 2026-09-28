@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SYNC_DELAY_MS, adviceByPerson, useStore } from "./store";
-import { addDays } from "./seed";
+import { addDays, isoDate } from "./seed";
 
 const arjunConcern = {
   familyId: "4471",
@@ -156,6 +156,31 @@ describe("adviceByPerson", () => {
   it("a family with none has none", () => {
     useStore.getState().resetDemo();
     expect(adviceByPerson(useStore.getState(), "4471")).toEqual([]);
+  });
+});
+
+describe("after a missed call, the doctor decides", () => {
+  const get = (id: string) => useStore.getState().bookings.find((x) => x.id === id)!;
+
+  it("marking missed asks nobody to do anything", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUpStatus("b-2205", "missed");
+    expect(get("b-2205").ashaAsked).toBeUndefined();
+  });
+
+  it("asking the ASHA is an explicit step; calling again reopens today", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUpStatus("b-2205", "missed");
+    useStore.getState().askAshaToFollowUp("b-2205");
+    expect(get("b-2205").ashaAsked).toBe(true);
+    useStore.getState().callAgainToday("b-2205");
+    expect(get("b-2205")).toMatchObject({ followUpStatus: "pending", followUpDue: isoDate(0), ashaAsked: undefined });
+  });
+
+  it("the ASHA can only be asked about a missed call", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().askAshaToFollowUp("b-2205"); // pending, not missed
+    expect(get("b-2205").ashaAsked).toBeUndefined();
   });
 });
 

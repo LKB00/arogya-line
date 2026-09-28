@@ -17,6 +17,7 @@ Behaviour: [SPEC.md](../SPEC.md). Principles referred to below:
 | P5 | A shared decision | Results show what was found and what was ruled out. They are screening results, never a diagnosis. |
 | P6 | End on the family | A booking ends with what to tell them (peak–end rule). |
 | P7 | Every element earns its place | If it repeats what is already on screen, it goes. |
+| P8 | Every action creates a clear next action | Each step hands something to a named person, and nothing is handed over without someone deciding it (section 7). |
 
 ---
 
@@ -90,6 +91,7 @@ Answers her first question of the day: *who needs me first?*
 | Row icon circle | What she will do (visit, call, home visit), tinted with the urgency. | — | Colour + icon; the word is in the subhead. |
 | "Waiting to send" on a row | P4, at the record it concerns. | Sync in progress. | Stays until the store marks it sent; tested through the full offline → sending → sent cycle. |
 | Check someone (extended FAB) | The one way to start something new, always in reach. Named as care work, not data entry. | Covering the last row. | **Renamed from "New concern" after the second review.** The list reserves 104 px below it. |
+| Follow up at home (missed call) | The doctor asked her to follow up a missed call. | **A missed call alone became "Home visit": a commitment nobody made.** | **Fixed after the third review:** only when the doctor chooses "Ask the ASHA to follow up"; the row says so ("Doctor asked"). Unit-tested. |
 | Follow up (from the voice line) | A family that called and was told "your ASHA will follow up" must appear on her list. | Home-care result on the line with no booking. | **Added after the second review:** a "Follow up · Called the voice line" task for today. The line promises only what this row delivers. Unit-tested. |
 | Empty day | Good news, said plainly. | — | "No one is waiting on you today", with the next thing she might do. |
 
@@ -134,7 +136,7 @@ Answers her first question of the day: *who needs me first?*
 |---|---|---|---|
 | Verdict band | P2: colour, icon and word, seen before read. | **Opened without a finished check** (bookmark, link, lost answers). | **Fixed in this pass.** It used to say "can be cared for at home" from no answers: false reassurance about a sick person. Now redirects to the next unanswered question. Tested. |
 | Status bar tint | The verdict runs edge to edge. | — | Tints only while a verdict is on screen. |
-| Headline | Names the person and the action in plain words. A screening result, not a diagnosis. | Long names; over-certain wording. | Wraps. **Reworded after review:** green says "No urgent signs found for Arjun", not "can be cared for at home". |
+| Headline | Names the person and the action in plain words. A screening result, not a diagnosis, and labelled "Screening result" above the headline (third review). | Long names; over-certain wording. | Wraps. **Reworded after review:** green says "No urgent signs found for Arjun", not "can be cared for at home". |
 | Tell the family / Call again if | A home-care result must carry the advice she gives. | **"Save home-care advice" saved advice that was never on screen.** | **Added after review.** The advice comes from `triage.ts` (`HOME_CARE`), shared with the voice line, so both give the same words. Plain lines, no icon each (P7). Button: "Save this advice". **After the second review the advice is actually saved** (`Concern.homeCare`), so the family screen and the voice line can give it again. |
 | What you found | P5: found, danger sign, ruled out. | Danger sign present; nothing ruled out. | "Danger sign" tag in solid pink; "Ruled out" in green. |
 | Existing visit | Checked again while already booked: the likely intention is the visit she has. | Person already has a visit booked (needs a visit); home-care result with a visit booked. | **Changed after review:** the verdict says "A PHC visit is already booked: Tue 29 Sep, 9–10 am."; the primary action is "View existing visit", and "Book another visit" is the deliberate second choice. A home-care result keeps a one-line notice. Tested. |
@@ -182,6 +184,8 @@ ASHA's app.
 | Result spoken | The verdict in words. | **It said "Result: amber".** | **Fixed:** "Result: needs a visit." A home-care result says "No urgent signs found", then the same advice as the ASHA app. Unit-tested. |
 | Advice read back | The advice a person was given, from the PHC or a check. | **Dated in ISO; dated "tomorrow" when written ahead of a visit; read the family's latest, whoever it was for.** | **Fixed:** "yesterday", "Fri 25 Sep", or no date when the visit is still to come. **After the second review:** always named ("Advice for Shobha from Dr. Ramesh…"); with several people, "Whose advice would you like to hear? Press 1 for…". Unit-tested. |
 | Who needs help | Picks the person, and so the questions. | **"Pregnant woman" in a family with none ran pregnancy questions on a man; "child" could not tell two children apart.** | **Fixed after the second review:** "Press 1 for Lakshmi. Press 2 for Arjun." By name, never by kind; the question set follows the person. A key with nobody behind it asks again. Unit-tested. |
+| Spoken wording | A phone service, not a transcript of one. | **"Result: needs a visit"; "Advice for Arjun from Dr. Ramesh: …"; "Press 1 for the main menu".** | **Changed after the third review:** "Thank you. From your answers, Arjun should see the doctor."; "Dr. Ramesh has a message for Arjun." … "That's all from Dr. Ramesh. Press 1 to hear it again, or 2 for the main menu." Unit-tested. |
+| Health worker hand-off | A person never makes the caller start from zero. | Caller pressed 0 halfway through the questions. | **Added after the third review:** the health worker says what the line already heard ("I have Arjun's answers from the call: …"). Unit-tested. |
 | Home-care result spoken | The advice, as a person would say it on the phone. | **Read as a list ("At home: …; …"); promised "Your ASHA will visit tomorrow" with nothing behind it.** | **Fixed after the second review:** spoken sentences (`HOME_CARE.spoken`); "Your ASHA, Savitri, has been told and will follow up with you", which the saved concern makes true on her list. Unit-tested. |
 | Read-back before booking | Choosing a slot and committing to it are two steps; a voice interface has no screen to check. | **Pressing 1 once booked immediately.** | **Added after review:** "You are booking a visit for Arjun, tomorrow, Tue 29 Sep, 10–11 am, at PHC Tumkur. Press 1 to confirm, or 2 to choose another day." Nothing is written until the caller confirms. Unit-tested. |
 | Slot offered | The next free slot, to press 1 to choose. | **The slot fills while the caller listens; pressing 1 booked a different slot.** | **Fixed:** books exactly what was spoken, or says it was just taken and offers the next. Unit-tested. |
@@ -206,8 +210,9 @@ writes.
 | Navigation rail | Two views: the day and the follow-ups. | Follow-ups waiting. | A count badge on Follow-ups. |
 | Day | Which day's list. | **A nonsense day in the URL; the field cleared; opened on tomorrow, not today.** | **Fixed:** opens on today, what a doctor opens it for, with Today and Tomorrow one tap away and a date field for any day; a bad day falls back to today (unit-tested). The seed's bookings moved to today so the demo opens on work. |
 | Workload | What needs the doctor first: patients, urgent, advice still to record, follow-ups due today. | Empty day; no urgent; missed calls. | **Replaced the outcomes strip at the top after review:** reporting was sitting above operations. Urgent is the only figure in colour, and only when above zero; its detail reads "Danger sign found", not "seen first", now that the list is by time. Follow-ups due counts today's, overdue and missed (unit-tested). |
-| Across the service, to date | Whether the loop is working: booked ahead, could have been handled without a visit, follow-ups answered. | No data; **a day on screen above figures for every day.** | **Heading names the period after the second review.** **Moved below the list and made quieter** (no cards). "—", never a division by zero (unit-tested). Live as the doctor works (tested). |
+| Across the service, to date | Whether the loop is working: booked ahead, potential trips avoided, follow-ups answered. "Potential trips avoided" (renamed after the third review) is a learning signal about referrals, never a score for a doctor or a family. | No data; **a day on screen above figures for every day.** | **Heading names the period after the second review.** **Moved below the list and made quieter** (no cards). "—", never a division by zero (unit-tested). Live as the doctor works (tested). |
 | Counts by urgency (removed) | Was the day's weight. | Repeated the workload's patients and urgent figures. | Removed (P7); the list heading says the order instead: "Bookings, most urgent first". |
+| Row action | What the doctor can do with this booking now. | **Tomorrow's booking offered "Start consult": a consult could be recorded for a patient not yet in the room.** | **Fixed after the third review:** "View booking" (future; the sheet says "Not arrived yet"), "Start consult" (today), "Complete consult" (a past day), "Open consult" (done). The walkthrough uses a fenced-off "Demo only · Patient arrives now". Unit-tested. |
 | The list | By time, the order patients walk in; most urgent first within a slot. Urgency is a signal (pink time and edge), not the sort, so the doctor always knows who is next (**changed after the second review**, unit-tested). | Bookings still on an ASHA's phone; an empty day; a walk-in with nothing recorded. | Only synced bookings (unit-tested); an empty day explains why offline bookings may be missing; a walk-in reads "Nothing recorded before the visit". |
 | Patient cell | Who, and how they came (ASHA, voice line, walk-in). | — | Icon and words. |
 | What was found | The ASHA's or the family's answers. | — | Urgency word in the chart's colour, then the findings. |
@@ -217,6 +222,8 @@ writes.
 | Advice box | The words read to the family on the voice line. | Blank or spaces; unchanged; editing later. | Save disabled for blank or unchanged; "Saved" once saved; **editing no longer resets an answered follow-up** (store fixed and unit-tested). |
 | Follow-up call | Whether and when to call the family: a clinical decision, not a default. | **Every consult got a next-day call.** Changing the day; an answered call; none. | **Changed after review:** None, Next day, In 3 days, In a week. Picking the day already set keeps its outcome; a new day reopens it; None clears it. A pending call past its day reads "Overdue", and on the ASHA's list it stays a call to make (unit-tested). |
 | Mark answered / missed | Demo control for the outcome. | Which one is set. | The current one shows as pressed. |
+| After a missed call | Someone decides what happens next. | **Missed was read as "ASHA visit requested".** | **Fixed after the third review:** "Call again today" or "Ask the ASHA to follow up"; or leave it open, where it stays under Needs attention now. Unit-tested. |
+| Follow-ups view | Who acts on each call, and when. | **"Follow-ups: 5" beside "Follow-ups due: 1": open and due are different things.** | **Fixed after the third review:** grouped as Needs attention now, With the ASHA, Upcoming. The rail badge and "Follow-ups due" count only Needs attention now (unit-tested). |
 
 ---
 
@@ -251,6 +258,7 @@ writes.
 | Dashboard selectors (9 cases) | Unit tests, `selectors.test.ts` | Pass |
 | Advice edits keep the follow-up outcome; follow-up choice | Unit tests, `store.test.ts` | Pass |
 | Review fixes: per-person rows, voice read-back, workload, follow-up choice, green advice | Unit tests (73 in total) and in the running app | Pass |
+| Third review: consult only when the patient can be there; missed calls need a decision; follow-ups grouped by who acts; spoken wording; health-worker context | Unit tests (96 in total) and in the running app | Pass |
 | Second review: voice picks the person by name; advice per person; home-care advice saved; line's promise backed by an ASHA task; sync chip in visits; consult-only "handled without a visit"; list by time; opens on today; call ends on goodbye | Unit tests (83 in total) and the whole loop in the running app | Pass |
 | Voice line: dial, ID, menu, questions, advice, operator, hang up, Backspace, keys while idle, emergency handover | In the running app | Pass |
 | Dashboard: save, edit, answered, missed, avoidable, follow-up choice, Escape, bad day, empty day, missing booking, follow-ups | In the running app | Pass |
@@ -292,6 +300,27 @@ prototype; the second is what a real service would still have to design.
   Approved clinical protocol → Decision engine (triage.ts) → Interface → Human escalation (0, Call PHC now)
   ```
 
+**Production models to design** (not built; named so they are not missed)
+
+- *Identity and privacy.* The family ID alone opens a family's record on the
+  line. A real service needs verification before anything is read out,
+  consent for what is shared, and answers for shared phones, lost cards,
+  someone else learning the number, and medical details spoken aloud in a
+  crowded room.
+- *Clinical governance.* Questions, thresholds and home-care advice come from
+  an approved protocol with an owner and a review date, never from product
+  copy. The pipeline: approved protocol → approved advice → local wording →
+  voice rendering.
+- *Clinical result vs operational priority.* The prototype uses one scale
+  (urgent / needs a visit / home care) for both. A real service separates
+  the clinical result (no urgent signs / needs clinician review / emergency)
+  from priority (now / today / routine).
+- *Language.* One real flow in Kannada first, end to end on the voice line,
+  before any other language.
+- *Offline.* Local storage on the phone, a sync queue with retries and
+  conflict rules, and a clear record of what the PHC has and has not
+  received. The prototype only simulates this.
+
 **Product gaps** (the design work still to do)
 
 - Language: Kannada (and other languages) for the voice line and the ASHA app.
@@ -317,8 +346,11 @@ that, and where it does not yet:
 | A family's check on the line finds no urgent sign | Follow up with the family | ASHA | Today: "Follow up · Called the voice line" |
 | A family books on the line | See the patient | Doctor, and the ASHA can see it | PHC list; ASHA Today |
 | The doctor saves advice | Hear it | Family | Voice line, menu 3, named for the person |
-| The doctor chooses a follow-up call | Make the call | ASHA (today's list) and the PHC Follow-ups view | Today: "Follow-up call"; PHC Follow-ups |
-| A follow-up call is missed | Visit the home | ASHA | Today: "Home visit · Follow-up call was missed" |
+| The doctor chooses a follow-up call | Make the call | ASHA (today's list) and the PHC Follow-ups view | Today: "Follow-up call"; PHC Follow-ups, Upcoming until due |
+| A follow-up call is missed | Decide what happens next | Doctor | PHC Follow-ups: Needs attention now |
+| The doctor asks the ASHA to follow up | Follow up at home | ASHA | Today: "Follow up at home · Doctor asked" |
+| The family presses 0 | Talk to a person who already has the answers | Health worker | "I have Arjun's answers from the call" |
+| A patient booked for tomorrow | Wait; nothing to record yet | Doctor | "View booking" · "Not arrived yet" |
 | Urgent result | Come now | Family, health worker, doctor | Operator call; PHC list marked urgent |
 
 Not yet designed: a care timeline for one person (concern → screened →

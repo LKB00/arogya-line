@@ -29,11 +29,18 @@ describe("rowFor: what each family needs today", () => {
     expect(row.day).toBe("Today");
   });
 
-  it("a missed follow-up becomes a home visit, and says why", () => {
+  it("a missed follow-up the doctor handed to her becomes a home follow-up, and says why", () => {
     const s = seed();
     const row = rowFor(fam(s, "7809"), s.concerns, s.bookings, today)!;
     expect(row.kind).toBe("home");
-    expect(row.note).toMatch(/missed/i);
+    expect(row.note).toMatch(/doctor asked/i);
+  });
+
+  it("a missed follow-up nobody has decided on is not her task", () => {
+    const s = seed();
+    const undecided = s.bookings.map((b) => (b.id === "b-7809" ? { ...b, ashaAsked: undefined } : b));
+    const row = rowFor(fam(s, "7809"), s.concerns, undecided, today)!;
+    expect(row.band).toBe("done");
   });
 
   it("a concern with no booking yet is still on the list", () => {

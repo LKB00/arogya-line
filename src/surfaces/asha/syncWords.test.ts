@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waitingWords } from "./SyncBanner";
+import { waitingWords } from "./syncWords";
 
 describe("what is waiting to send, in her units", () => {
   it("a booking is one visit, not a concern plus a booking", () => {

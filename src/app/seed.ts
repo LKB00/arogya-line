@@ -215,6 +215,7 @@ export function createSeed(): Store {
       advice: "Paracetamol twice a day for three days. Drink plenty of water. No visit needed unless fever passes five days.",
       followUpDue: isoDate(-2),
       followUpStatus: "missed",
+      ashaAsked: true, // the doctor's decision after the missed call, recorded
     },
   ];
 

@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { IconCalendarEvent, IconPhoneCall, IconX } from "@tabler/icons-react";
 import { dayLabel, longDate } from "../../app/format";
 import { useStore } from "../../app/store";
+import { useToday } from "../../app/useToday";
 import { PHC, isoDate } from "../../app/seed";
 import Icon from "../../shell/Icon";
 import AfterConsult from "./AfterConsult";
@@ -41,7 +42,7 @@ export default function Dashboard() {
   const bookings = useStore((s) => s.bookings);
   const concerns = useStore((s) => s.concerns);
   const families = useStore((s) => s.families);
-  const today = isoDate(0);
+  const today = useToday();
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);

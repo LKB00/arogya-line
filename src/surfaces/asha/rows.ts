@@ -46,15 +46,19 @@ export type Row = {
  */
 type BookingTask = Pick<Row, "kind" | "task" | "date" | "slot"> & Partial<Pick<Row, "band" | "note" | "day" | "time">>;
 
-function bookingTask(booking: Booking, today: string): BookingTask {
+function bookingTask(booking: Booking, today: string, urgency: Urgency): BookingTask {
   const consulted = Boolean(booking.advice);
+  // After the consult, an urgent referral has been dealt with: its follow-up
+  // is care work, not an emergency, so it never carries the urgent colour or
+  // outranks work that is urgent now.
+  const afterConsult: Band = urgency === "red" ? "amber" : urgency;
   if (booking.followUpStatus === "missed" && booking.ashaAsked) {
     // Only when the doctor asked: a missed call alone commits nobody.
-    return { kind: "home", task: "Follow up at home", note: "Doctor asked: the follow-up call was missed", day: "Today", date: today, slot: "" };
+    return { band: afterConsult, kind: "home", task: "Follow up at home", note: "Doctor asked: the follow-up call was missed", day: "Today", date: today, slot: "" };
   }
   if (booking.followUpStatus === "pending" && booking.followUpDue && booking.followUpDue <= today) {
     const late = booking.followUpDue < today;
-    return { kind: "call", task: "Follow-up call", note: late ? `Was due ${dayLabel(booking.followUpDue).toLowerCase()}` : undefined, day: late ? "Late" : "Today", date: booking.followUpDue, slot: "" };
+    return { band: afterConsult, kind: "call", task: "Follow-up call", note: late ? `Was due ${dayLabel(booking.followUpDue).toLowerCase()}` : undefined, day: late ? "Late" : "Today", date: booking.followUpDue, slot: "" };
   }
   if (!consulted && booking.date >= today) {
     const task = booking.emergency ? "Emergency at the PHC" : "PHC visit";
@@ -81,6 +85,9 @@ export function isUpcoming(row: Row, today: string): boolean {
  * never decides: a yellow call due today comes before a green concern.
  */
 export function workRank(row: Row, today: string): number {
+  // Red here only ever means an urgent action still unresolved (a visit or
+  // emergency not yet consulted, a danger sign not yet acted on): follow-ups
+  // after a consult are never red, so "red first" is "unresolved urgency first".
   if (row.band === "red") return 0;
   if (row.date < today) return 1;
   if (row.kind === "call" || row.task.startsWith("Follow up")) return 2;
@@ -114,7 +121,7 @@ export function itemsFor(family: Family, concerns: Concern[], bookings: Booking[
       const green = concern.urgency === "green";
       candidates.push({ ...base, kind: green ? "home" : "concern", task: green ? "Home care" : "Concern noted", note: concern.reasons[0], sync: concern.sync });
     } else {
-      candidates.push({ ...base, ...bookingTask(booking, today), sync: booking.sync });
+      candidates.push({ ...base, ...bookingTask(booking, today, concern.urgency), sync: booking.sync });
     }
   }
   // A missing person is flagged on the row itself, whatever the task says.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking, Concern, Family } from "../../app/types";
-import { byWork, isUpcoming, personLabel, reasonFor, rowFor, rowsFor } from "./rows";
+import { byWork, isUpcoming, personLabel, reasonFor, rowFor, rowsFor, workRank } from "./rows";
 
 const today = isoDate(0);
 const seed = () => createSeed();
@@ -166,6 +166,23 @@ describe("rowFor: what each family needs today", () => {
     const rows = rowsFor(fam(s, "3120"), [orphan], s.bookings, today);
     expect(personLabel(rows[0])).toBe("Person not found");
     expect(rows[0].note).toMatch(/Record needs checking/);
+  });
+
+  it("an urgent case already seen does not outrank work due now: its follow-up is care work", () => {
+    const s = seed();
+    // Kavya (red) was seen yesterday; her follow-up call is due today.
+    const seen: Booking = { ...s.bookings[0], date: isoDate(-1), advice: "Steam.", followUpDue: today, followUpStatus: "pending" };
+    const row = rowFor(fam(s, "3120"), s.concerns, [seen, ...s.bookings.slice(1)], today)!;
+    expect(row.task).toBe("Follow-up call");
+    expect(row.band).toBe("amber");
+    expect(workRank(row, today)).toBe(2);
+  });
+
+  it("an urgent visit not yet consulted still leads", () => {
+    const s = seed();
+    const row = rowFor(fam(s, "3120"), s.concerns, s.bookings, today)!;
+    expect(row.band).toBe("red");
+    expect(workRank(row, today)).toBe(0);
   });
 });
 

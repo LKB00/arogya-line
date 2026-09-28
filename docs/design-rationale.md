@@ -415,3 +415,55 @@ Not yet designed: a care timeline for one person (concern → screened →
 booked → seen → advice → follow-up) shown on all three surfaces, and
 visible hand-off moments ("advice now available to the family by phone").
 
+---
+
+## 8. The bar for the record
+
+Five rules the whole prototype now holds to, and where each is enforced.
+
+| Rule | What it means here | Enforced in |
+|---|---|---|
+| Never infer a person | A missing or unknown person stays unknown: no fallback to the first member or the family head. | `memberOf` (voice) returns only the chosen person; `personLabel` says "Person not found" and flags the record; 0 never records anything. |
+| Never infer availability | A slot is offered, confirmed and written only if it is really free and not started. | `app/slots.ts` `isBookable`, used by the ASHA screen, the voice offer and confirm, and `createBooking`; a full diary says so instead of inventing a slot. |
+| Never infer responsibility | Someone explicitly owns each next action. | A missed call is the ASHA's only after "Ask the ASHA to follow up"; the line's home-care promise is backed by a Follow up task on her list; 0 hands over to a person and creates nothing. |
+| Never infer a clinical state from incomplete information | An unfinished check is never a result. | Result and booking screens send an unfinished check back to the next question; the health worker says "you started a health check" and treats it as unfinished. |
+| Never destroy history | The record says what happened, not only what is true now. | `followUpLog` (every call outcome), `adviceLog` (earlier wording), home-care advice saved exactly as spoken. |
+
+### The next action, as the ASHA sees it
+
+Each Today row is one next action for her: a kind (call, visit, home, check),
+a task in words, a date and time, the concern it comes from (`concernId`),
+and, implicitly, her as owner. Its colour is the urgency of the action, not of
+the history: once the doctor has seen an urgent case, its follow-up is care
+work in the "needs a visit" colour, so "red first" always means "an urgent
+action still unresolved first". A production model would make the owner
+explicit (ASHA, PHC, family) on one care episode (section 6).
+
+### Test matrix (the seventh review's attack list)
+
+| Case | Result |
+|---|---|
+| 0 from the main menu | Person, nothing recorded. Unit-tested. |
+| 0 during advice | Person, nothing recorded. Unit-tested. |
+| 0 during an unfinished check | Person; "you started a health check"; no inferred result. Unit-tested. |
+| Missing or invalid member id | Never guessed; "Person not found", flagged. Unit-tested. |
+| 30 days fully booked | "No appointments free in the next 30 days", a person offered. Unit-tested. |
+| Slot starts while confirming | Refused, told why, next slot offered. Unit-tested. |
+| Two bookings for one slot | The store accepts one. Unit-tested. |
+| Reset during the health worker | The call is keyed on the demo run and restarts; Reset also leaves the voice screen. Tested in the app. |
+| URL changes during a call | The call is keyed on family, person, mode and answers: a new link is a new call. |
+| Home-care result on the line | No fake promise: the ASHA gets a Follow up task. Unit-tested. |
+| ASHA emergency over the line | Recorded as the ASHA's (`initiatedBy`). Unit-tested. |
+| Urgent case already seen | Its follow-up is not red and does not outrank work due now. Unit-tested. |
+| One person, two concerns | Each row's reason from its own concern. Unit-tested. |
+| Follow-up changed after a missed call | History kept. Unit-tested. |
+| Follow-up handed to the ASHA | Only then on her list. Unit-tested. |
+| Future appointment | Viewed, not consulted; store refuses advice before arrival. Unit-tested. |
+| No-show | Partly: a passed visit with nothing recorded is "Check the visit happened" for the ASHA; an explicit no-show state is a production gap. |
+| Cancelled appointment | Not built: cancellation is a product gap (section 6). |
+| Empty family | "No one registered on this family card", a person offered. Unit-tested. |
+| 9+ family members | Names in pages, 8 for more. Unit-tested. |
+| Two tabs | Two separate in-memory demos, never one record: no shared state to contradict. |
+| Midnight | Today, the family picker and the dashboard re-read the date at midnight while open (`useToday`). Not unit-tested (no component test harness); the seed's dates are relative to page load. |
+| Shared phone | No name or village spoken on a card number alone; advice is still read after the card, so caller verification is a production requirement (section 6). |
+

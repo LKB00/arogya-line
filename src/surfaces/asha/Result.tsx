@@ -1,8 +1,9 @@
 // Triage outcome and next step (SPEC 6.1 Result).
 //
-// A shared decision: the verdict fills the top in the IMNCI chart's colour,
-// with an icon and the word, and names the person and the action in plain
-// words. Below it, what she found, each answer with its picture, and any
+// A screening result, not a diagnosis: the verdict fills the top in the IMNCI
+// chart's colour, with an icon and the word, and says what was (or was not)
+// found and the action in plain words. A home-care result carries the advice
+// itself, so "save" saves something she has given. Below it, what she found, each answer with its picture, and any
 // danger sign ruled out, so the call is hers and the PHC's together. The next
 // step is the one primary button, at the thumb.
 
@@ -11,6 +12,7 @@ import {
   IconAlertTriangle,
   IconArrowLeft,
   IconCalendarEvent,
+  IconCheck,
   IconInfoCircle,
   IconHomeHeart,
   IconPhone,
@@ -20,7 +22,7 @@ import {
 import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import { shortDate, slotLabel } from "../../app/format";
-import { decodeAnswers, evaluate, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
+import { HOME_CARE, decodeAnswers, evaluate, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
 import type { Urgency } from "../../app/types";
 import Icon from "../../shell/Icon";
 import UrgencyChip from "./UrgencyChip";
@@ -29,14 +31,14 @@ import { iconForReason } from "./pictograms";
 const VERDICT_ICON = { red: IconAlertTriangle, amber: IconStethoscope, green: IconHomeHeart } as const;
 
 const HEADLINE: Record<Urgency, (name: string) => string> = {
-  green: (n) => `${n} can be cared for at home`,
+  green: (n) => `No urgent signs found for ${n}`,
   amber: (n) => `${n} should see the doctor`,
   red: (n) => `${n} needs the PHC now`,
 };
 
 /** One line under the headline: what happens next, in her words. */
 const NEXT: Record<Urgency, string> = {
-  green: "Give the family home-care advice. No visit is needed now.",
+  green: "Home care can be given. Tell the family what to do, and when to call again.",
   amber: "Book a PHC visit in the next few days.",
   red: "This is a danger sign. Call the PHC before you do anything else.",
 };
@@ -85,6 +87,8 @@ export default function Result() {
     (b) => b.date >= isoDate(0) && concerns.some((c) => c.id === b.concernId && c.memberId === member.id),
   );
 
+  const homeCare = HOME_CARE[role];
+
   const saveHomeCare = () => {
     createConcern({ familyId: family.id, memberId: member.id, source: "asha", answers, urgency, reasons });
     navigate("/asha");
@@ -102,7 +106,11 @@ export default function Result() {
           </span>
           <UrgencyChip urgency={urgency} />
           <h1 className="verdict__headline">{HEADLINE[urgency](member.name)}</h1>
-          <p className="verdict__next">{NEXT[urgency]}</p>
+          <p className="verdict__next">
+            {urgency === "amber" && upcoming
+              ? `A PHC visit is already booked: ${shortDate(upcoming.date)}, ${slotLabel(upcoming.slot)}.`
+              : NEXT[urgency]}
+          </p>
         </header>
 
         {reasons.length > 0 && (
@@ -136,25 +144,67 @@ export default function Result() {
             </ul>
           </section>
         )}
+
+        {/* Plain lines, no icon each: the heading already says what they are. */}
+        {urgency === "green" && (
+          <>
+            <section className="block">
+              <h2 className="block__title">Tell the family</h2>
+              <ul className="listcard">
+                {homeCare.tell.map((t) => (
+                  <li key={t} className="finding">
+                    <span className="finding__text">{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="block">
+              <h2 className="block__title">Call again if</h2>
+              <ul className="listcard">
+                {homeCare.callIf.map((t) => (
+                  <li key={t} className="finding">
+                    <span className="finding__text">{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        )}
       </section>
 
       <div className="footbar footbar--plain">
-        {upcoming && urgency !== "red" && (
+        {/* Already booked and checked again: the likely intention is the visit
+            she has, so it leads; a second visit is the deliberate choice. */}
+        {upcoming && urgency === "green" && (
           <p className="notice">
             <Icon icon={IconInfoCircle} />
             <span>
               {member.name} already has a PHC visit on {shortDate(upcoming.date)}, {slotLabel(upcoming.slot)}.
-              {urgency === "amber" && " Booking again adds a second visit."}
             </span>
           </p>
         )}
         {urgency === "green" && (
           <button type="button" className="btn btn--primary btn--block btn--tall" onClick={saveHomeCare}>
-            <Icon icon={IconHomeHeart} />
-            Save home-care advice
+            <Icon icon={IconCheck} />
+            Save this advice
           </button>
         )}
-        {urgency === "amber" && (
+        {urgency === "amber" && upcoming && (
+          <>
+            <button type="button" className="btn btn--primary btn--block btn--tall" onClick={() => navigate(`/asha/booked/${upcoming.id}`)}>
+              <Icon icon={IconCalendarEvent} />
+              View existing visit
+            </button>
+            <button
+              type="button"
+              className="btn btn--secondary btn--block btn--tall"
+              onClick={() => navigate(`/asha/family/${familyId}/check/${memberId}/booking?${query}`)}
+            >
+              Book another visit
+            </button>
+          </>
+        )}
+        {urgency === "amber" && !upcoming && (
           <>
             <button
               type="button"

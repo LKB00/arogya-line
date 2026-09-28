@@ -2,23 +2,21 @@
 // so browser back closes the panel. Only synced ("sent") bookings are shown.
 //
 // A Material 3 list–detail layout: a navigation rail for the two views, the
-// outcomes across the top, the day's list, and the after-consult panel as a
-// side sheet beside the list, so the list never moves while the doctor writes.
+// day's workload across the top, the day's list, and the after-consult panel as
+// a side sheet beside the list, so the list never moves while the doctor
+// writes. How the loop is doing (outcomes) is reporting, so it sits below.
 
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { IconBuildingHospital, IconCalendarEvent, IconPhoneCall, IconStethoscope, IconX } from "@tabler/icons-react";
-import { URGENCY_LABEL, dayLabel, longDate } from "../../app/format";
+import { dayLabel, longDate } from "../../app/format";
 import { useStore } from "../../app/store";
 import { PHC, isoDate } from "../../app/seed";
-import type { Urgency } from "../../app/types";
 import Icon from "../../shell/Icon";
 import AfterConsult from "./AfterConsult";
 import FollowUpRow from "./FollowUpRow";
 import PatientRow from "./PatientRow";
-import { dayFromParam, dayRows, followUpRows, metrics, percent, sent, toRow } from "./selectors";
-
-const URGENCIES: Urgency[] = ["red", "amber", "green"];
+import { dayFromParam, dayRows, followUpRows, outcomes, percent, sent, toRow, workload } from "./selectors";
 
 /** "today", "tomorrow", "yesterday", or "on Wed 30 Sep". */
 function dayWords(day: string): string {
@@ -48,8 +46,8 @@ export default function Dashboard() {
 
   const rows = dayRows(bookings, concerns, families, day);
   const followUps = followUpRows(bookings, concerns, families);
-  const m = metrics(bookings);
-  const counts = URGENCIES.map((u) => ({ urgency: u, count: rows.filter((r) => r.concern?.urgency === u).length }));
+  const w = workload(rows, bookings, today);
+  const o = outcomes(bookings);
 
   const consultBooking = consultId ? sent(bookings).find((b) => b.id === consultId) : undefined;
   const consultRow = consultBooking ? toRow(consultBooking, concerns, families) : undefined;
@@ -122,44 +120,39 @@ export default function Dashboard() {
           )}
         </header>
 
-        {/* The outcome of the whole loop, in three figures. */}
-        <dl className="metrics" aria-label="Outcomes">
-          <div className="metric">
-            <dt className="metric__label">Visits booked ahead</dt>
-            <dd className="metric__value">{percent(m.preBooked, m.total)}</dd>
-            <dd className="metric__detail">
-              {m.preBooked} of {m.total} came through the ASHA or the line
-            </dd>
-          </div>
-          <div className="metric">
-            <dt className="metric__label">Visits not needed</dt>
-            <dd className="metric__value">{m.notNeeded}</dd>
-            <dd className="metric__detail">Advice given instead of a trip</dd>
-          </div>
-          <div className="metric">
-            <dt className="metric__label">Follow-ups answered</dt>
-            <dd className="metric__value">{percent(m.answered, m.followUps)}</dd>
-            <dd className="metric__detail">
-              {m.answered} of {m.followUps} so far
-            </dd>
-          </div>
-        </dl>
+        {/* What needs the doctor: the day's patients, and the follow-ups due now. */}
+        {view === "day" && (
+          <dl className="metrics" aria-label="Workload">
+            <div className="metric">
+              <dt className="metric__label">Patients</dt>
+              <dd className="metric__value">{w.patients}</dd>
+              <dd className="metric__detail">Booked {dayWords(day)}</dd>
+            </div>
+            <div className="metric">
+              <dt className="metric__label">Urgent</dt>
+              <dd className={w.urgent ? "metric__value urgency--red" : "metric__value"}>{w.urgent}</dd>
+              <dd className="metric__detail">Seen first</dd>
+            </div>
+            <div className="metric">
+              <dt className="metric__label">Advice to record</dt>
+              <dd className="metric__value">{w.toRecord}</dd>
+              <dd className="metric__detail">
+                {w.patients === 0 ? "No patients yet" : `Of ${w.patients} ${w.patients === 1 ? "patient" : "patients"}`}
+              </dd>
+            </div>
+            <div className="metric">
+              <dt className="metric__label">Follow-ups due</dt>
+              <dd className="metric__value">{w.followUpsDue}</dd>
+              <dd className="metric__detail">{w.missed > 0 ? `Today · ${w.missed} missed` : "Today"}</dd>
+            </div>
+          </dl>
+        )}
 
         {view === "day" ? (
           <section className="phc__list">
             <div className="phc__listhead">
-              <h2 className="phc__h2">
-                {rows.length} {rows.length === 1 ? "booking" : "bookings"} {dayWords(day)}
-              </h2>
-              {rows.length > 0 && (
-                <ul className="counts" aria-label="By urgency">
-                  {counts.map((c) => (
-                    <li key={c.urgency} className={c.count ? `count urgency--${c.urgency}` : "count count--zero"}>
-                      <b>{c.count}</b> {URGENCY_LABEL[c.urgency].toLowerCase()}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {/* The count and the urgent figure are in the workload above. */}
+              <h2 className="phc__h2">Bookings, most urgent first</h2>
             </div>
             {rows.length === 0 ? (
               <p className="phc__empty">
@@ -177,7 +170,9 @@ export default function Dashboard() {
                       <th className="th th--time">Time</th>
                       <th className="th">Patient</th>
                       <th className="th">What was found</th>
-                      <th className="th th--need">Visit needed</th>
+                      <th className="th th--need" title="Could this have been handled without a visit?">
+                        Avoidable?
+                      </th>
                       <th className="th th--action">
                         <span className="visually-hidden">Advice</span>
                       </th>
@@ -204,7 +199,7 @@ export default function Dashboard() {
                 <Icon icon={IconPhoneCall} size={24} />
                 <span>
                   No follow-ups are waiting.
-                  <span className="phc__empty-sub">A follow-up is set the day after a visit, when you save advice.</span>
+                  <span className="phc__empty-sub">A follow-up call is set from a patient's after-consult panel.</span>
                 </span>
               </p>
             ) : (
@@ -231,6 +226,34 @@ export default function Dashboard() {
             )}
           </section>
         )}
+
+        {/* Reporting, not workload: how the whole loop is doing. */}
+        <section className="outcomes" aria-labelledby="outcomes-heading">
+          <h2 id="outcomes-heading" className="outcomes__title">
+            Outcomes so far
+          </h2>
+          <dl className="outcomes__list">
+            <div className="outcome">
+              <dt className="outcome__label">Visits booked ahead</dt>
+              <dd className="outcome__value">{percent(o.preBooked, o.total)}</dd>
+              <dd className="outcome__detail">
+                {o.preBooked} of {o.total} came through the ASHA or the line
+              </dd>
+            </div>
+            <div className="outcome">
+              <dt className="outcome__label">Could have been handled without a visit</dt>
+              <dd className="outcome__value">{o.avoidable}</dd>
+              <dd className="outcome__detail">Advice could have replaced the trip</dd>
+            </div>
+            <div className="outcome">
+              <dt className="outcome__label">Follow-ups answered</dt>
+              <dd className="outcome__value">{percent(o.answered, o.followUps)}</dd>
+              <dd className="outcome__detail">
+                {o.answered} of {o.followUps} so far
+              </dd>
+            </div>
+          </dl>
+        </section>
       </main>
 
       {consultRow ? (

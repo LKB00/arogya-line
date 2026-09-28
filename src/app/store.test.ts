@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SYNC_DELAY_MS, useStore } from "./store";
+import { addDays } from "./seed";
 
 const arjunConcern = {
   familyId: "4471",
@@ -103,11 +104,39 @@ describe("saveAdvice edge cases", () => {
     expect(b.followUpStatus).toBe("missed");
   });
 
-  it("first advice sets a follow-up for the next day, pending", () => {
+  it("advice alone sets no follow-up: the doctor chooses one", () => {
     useStore.getState().resetDemo();
     useStore.getState().saveAdvice("b-3120", "Advice.");
     const b = useStore.getState().bookings.find((x) => x.id === "b-3120")!;
-    expect(b.followUpStatus).toBe("pending");
-    expect(b.followUpDue).toBeDefined();
+    expect(b.followUpDue).toBeUndefined();
+    expect(b.followUpStatus).toBeUndefined();
+  });
+});
+
+describe("setFollowUp", () => {
+  const get = (id: string) => useStore.getState().bookings.find((x) => x.id === id)!;
+
+  it("sets the call that many days after the visit, pending", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUp("b-3120", 3);
+    expect(get("b-3120").followUpDue).toBe(addDays(get("b-3120").date, 3));
+    expect(get("b-3120").followUpStatus).toBe("pending");
+  });
+
+  it("choosing the day already set keeps its outcome; a new day reopens it", () => {
+    useStore.getState().resetDemo();
+    const b = get("b-7809"); // missed, due the day after the visit
+    useStore.getState().setFollowUp("b-7809", 1);
+    expect(get("b-7809").followUpStatus).toBe("missed");
+    useStore.getState().setFollowUp("b-7809", 7);
+    expect(get("b-7809").followUpDue).toBe(addDays(b.date, 7));
+    expect(get("b-7809").followUpStatus).toBe("pending");
+  });
+
+  it("none clears it", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUp("b-2205", null);
+    expect(get("b-2205").followUpDue).toBeUndefined();
+    expect(get("b-2205").followUpStatus).toBeUndefined();
   });
 });

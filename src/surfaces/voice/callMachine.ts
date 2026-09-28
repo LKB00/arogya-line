@@ -9,7 +9,7 @@
 import { ASHA, PHC, SLOTS, addDays } from "../../app/seed";
 import type { ConcernInput } from "../../app/store";
 import { latestAdviceFor } from "../../app/store";
-import { evaluate, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
+import { HOME_CARE, evaluate, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
 import { URGENCY_LABEL, dayLabel, shortDate, slotLabel } from "../../app/format";
 
@@ -22,6 +22,7 @@ export type CallState =
   | "resultGreen"
   | "resultAmber"
   | "offerBooking"
+  | "confirmBooking"
   | "resultRed"
   | "operator"
   | "readAdvice"
@@ -46,7 +47,7 @@ export type Call = {
   result: TriageResult | null;
   /** Date currently offered in offerBooking. */
   offerDate: string | null;
-  /** The exact slot spoken in offerBooking, so pressing 1 books what was offered. */
+  /** The exact slot spoken in offerBooking, so confirming books what was offered. */
   offerSlot: string | null;
   /** How far the scripted operator exchange has got (advanced by tick). */
   operatorStep: number;
@@ -108,14 +109,15 @@ const YES_NO = "Press 1 for yes, 2 for no, or 9 to hear the question again.";
 const NOT_UNDERSTOOD = "Sorry, I did not understand that.";
 const GOODBYE = "Thank you for calling Arogya Line. Goodbye.";
 
-const HOME_CARE: Record<TriageRole, string> = {
-  child: "Give small sips of fluid often, keep the child cool and lightly dressed, and keep feeding as usual.",
-  adult: "Rest, drink plenty of water, and take paracetamol if the fever is high.",
-  pregnant: "Rest lying on your left side, drink plenty of water, and keep taking your iron tablets.",
-};
+/** The shared home-care advice, as the line says it. */
+function homeCareLines(role: TriageRole): string[] {
+  const { tell, callIf } = HOME_CARE[role];
+  const lower = (t: string) => t[0].toLowerCase() + t.slice(1);
+  return [`At home: ${tell.map(lower).join("; ")}.`, `Call again if: ${callIf.map(lower).join("; or ")}.`];
+}
 
 const RESULT_HEADLINE: Record<Urgency, string> = {
-  green: "Care at home.",
+  green: "No urgent signs found.",
   amber: "Should see the doctor.",
   red: "Needs the PHC now.",
 };
@@ -232,8 +234,7 @@ function enterResult(call: Call, env: Env): Step {
       { ...withResult, state: "resultGreen" },
       headline,
       reasonsLine(result.reasons),
-      HOME_CARE[call.role],
-      "Call again if a new sign appears.",
+      ...homeCareLines(call.role),
       "Your ASHA will visit tomorrow.",
       "Press 9 to hear this again, or hang up.",
     );
@@ -256,6 +257,17 @@ function offerSlot(call: Call, env: Env, from: string): Call {
     `The next available slot is ${when === "on" ? "on " : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, ` +
     `at ${PHC.facility} with ${PHC.doctor}. Press 1 to book it, or 2 for another day.`;
   return prompt({ ...call, state: "offerBooking", offerDate: date, offerSlot: slot }, text);
+}
+
+/** Read the choice back before anything is booked: who, when, where. */
+function confirmBooking(call: Call, env: Env): Call {
+  const member = memberOf(call, env);
+  const date = call.offerDate ?? env.today;
+  const when = dayWord(date, env.today);
+  const text =
+    `You are booking a visit for ${member?.name ?? "the patient"}, ${when === "on" ? "on " : `${when}, `}${shortDate(date)}, ` +
+    `${slotLabel(call.offerSlot ?? "")}, at ${PHC.facility}. Press 1 to confirm, or 2 to choose another day.`;
+  return prompt({ ...call, state: "confirmBooking" }, text);
 }
 
 function enterOperator(call: Call): Call {
@@ -378,7 +390,13 @@ export function press(call: Call, key: Key, env: Env): Step {
       break;
     }
 
-    case "offerBooking": {
+    case "offerBooking":
+      // 1 chooses the slot; nothing is booked until the caller confirms it.
+      if (key === "1" && pressed.offerDate && pressed.offerSlot) return none(confirmBooking(pressed, env));
+      if (key === "2" && pressed.offerDate) return none(offerSlot(pressed, env, addDays(pressed.offerDate, 1)));
+      break;
+
+    case "confirmBooking": {
       if (key === "1" && pressed.offerDate && pressed.offerSlot) {
         const date = pressed.offerDate;
         const slot = pressed.offerSlot;

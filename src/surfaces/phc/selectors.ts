@@ -58,11 +58,27 @@ export function percent(part: number, whole: number): string {
   return whole === 0 ? "—" : `${Math.round((part / whole) * 100)}%`;
 }
 
-export function metrics(bookings: Booking[]) {
+/** The doctor's workload for the day on screen: what needs them, not reporting. */
+export function workload(rows: BookingRow[], bookings: Booking[], today: string) {
+  const due = sent(bookings).filter((b) => {
+    const state = followUpState(b, today);
+    return state === "missed" || state === "overdue" || (state === "pending" && b.followUpDue === today);
+  });
+  return {
+    patients: rows.length,
+    urgent: rows.filter((r) => r.concern?.urgency === "red").length,
+    toRecord: rows.filter((r) => !r.booking.advice).length,
+    followUpsDue: due.length,
+    missed: due.filter((b) => b.followUpStatus === "missed").length,
+  };
+}
+
+/** How the whole loop is doing, across every booking that reached the PHC. */
+export function outcomes(bookings: Booking[]) {
   const all = sent(bookings);
   const preBooked = all.filter((b) => !b.walkIn).length;
-  const notNeeded = all.filter((b) => b.visitNeeded === false).length;
+  const avoidable = all.filter((b) => b.avoidable === true).length;
   const withFollowUp = all.filter((b) => b.followUpStatus !== undefined);
   const answered = withFollowUp.filter((b) => b.followUpStatus === "answered").length;
-  return { total: all.length, preBooked, notNeeded, followUps: withFollowUp.length, answered };
+  return { total: all.length, preBooked, avoidable, followUps: withFollowUp.length, answered };
 }

@@ -1,6 +1,7 @@
-// What each family needs from the ASHA today, worked out once and read by
-// both Today and the family picker. Display only: it reads the store and
-// decides nothing about triage.
+// What each person needs from the ASHA today, worked out once and read by
+// both Today and the family picker. The person is the work item; the family
+// is where she finds them. Display only: it reads the store and decides
+// nothing about triage.
 
 import { dayLabel, slotLabel } from "../../app/format";
 import type { Booking, Concern, Family, Member, SyncStatus, Urgency } from "../../app/types";
@@ -28,7 +29,8 @@ export type Row = {
   sync: SyncStatus;
 };
 
-export function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today: string): Row | null {
+/** One row per person with something open or done, most urgent first. */
+export function rowsFor(family: Family, concerns: Concern[], bookings: Booking[], today: string): Row[] {
   const candidates: Row[] = [];
 
   for (const concern of concerns.filter((c) => c.familyId === family.id)) {
@@ -41,7 +43,7 @@ export function rowFor(family: Family, concerns: Concern[], bookings: Booking[],
       candidates.push({ ...base, kind: green ? "home" : "concern", task: green ? "Home care" : "Concern noted", note: concern.reasons[0], sync: concern.sync });
     } else if (booking.date >= today) {
       candidates.push({ ...base, kind: "visit", task: "PHC visit", day: dayLabel(booking.date), time: slotLabel(booking.slot), sync: booking.sync });
-    } else if (booking.followUpStatus === "pending" && booking.followUpDue === today) {
+    } else if (booking.followUpStatus === "pending" && booking.followUpDue && booking.followUpDue <= today) {
       candidates.push({ ...base, kind: "call", task: "Follow-up call", day: "Today", sync: booking.sync });
     } else if (booking.followUpStatus === "missed") {
       candidates.push({ ...base, kind: "home", task: "Home visit", note: "Follow-up call was missed", day: "Today", sync: booking.sync });
@@ -50,9 +52,20 @@ export function rowFor(family: Family, concerns: Concern[], bookings: Booking[],
     }
   }
 
-  if (candidates.length === 0) return null;
   candidates.sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
-  return candidates[0];
+  // A person with several concerns shows once, under the most urgent.
+  const seen = new Set<string | undefined>();
+  return candidates.filter((r) => {
+    const key = r.member?.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** The family's most urgent row, for places that list families (the picker). */
+export function rowFor(family: Family, concerns: Concern[], bookings: Booking[], today: string): Row | null {
+  return rowsFor(family, concerns, bookings, today)[0] ?? null;
 }
 
 /** "Kavya, 5": the person first, as the ASHA would say it. */

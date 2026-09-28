@@ -63,9 +63,25 @@ describe("triage over the keypad", () => {
     expect(after.effects).toHaveLength(0); // nothing written until the caller books
   });
 
-  it("1 books the offered slot as an ivr concern plus booking", () => {
+  it("1 reads the choice back and books nothing until it is confirmed", () => {
     const e = env();
-    const after = type(startCall(e), "4471" + "1" + "1" + "1122" + "1", e);
+    const chosen = type(startCall(e), "4471" + "1" + "1" + "1122" + "1", e);
+    expect(chosen.call.state).toBe("confirmBooking");
+    expect(said(chosen.call)).toContain("You are booking a visit for Arjun, tomorrow");
+    expect(chosen.effects).toHaveLength(0);
+  });
+
+  it("2 at the read-back offers another day instead of booking", () => {
+    const e = env();
+    const back = type(startCall(e), "4471" + "1" + "1" + "1122" + "1" + "2", e);
+    expect(back.call.state).toBe("offerBooking");
+    expect(back.call.offerDate).toBe(isoDate(2));
+    expect(back.effects).toHaveLength(0);
+  });
+
+  it("1 then 1 books the offered slot as an ivr concern plus booking", () => {
+    const e = env();
+    const after = type(startCall(e), "4471" + "1" + "1" + "1122" + "11", e);
     expect(after.call.state).toBe("ended");
     expect(after.effects).toEqual([
       expect.objectContaining({ type: "book", date: isoDate(1), concern: expect.objectContaining({ source: "ivr", urgency: "amber" }) }),
@@ -92,6 +108,9 @@ describe("triage over the keypad", () => {
     const e = env();
     const after = type(startCall(e), "4471" + "1" + "1" + "2222", e);
     expect(after.call.state).toBe("resultGreen");
+    expect(said(after.call)).toContain("No urgent signs found.");
+    expect(said(after.call)).toContain("At home: give small sips of fluid often");
+    expect(said(after.call)).toContain("Call again if: breathing becomes fast or difficult");
     expect(said(after.call)).toContain("Your ASHA will visit tomorrow.");
     expect(after.effects).toEqual([expect.objectContaining({ type: "concern", concern: expect.objectContaining({ urgency: "green" }) })]);
   });
@@ -192,7 +211,7 @@ describe("edge cases found in the design pass", () => {
     const e = env();
     const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
     const { offerDate, offerSlot } = offered.call;
-    const booked = type(offered, "1", e);
+    const booked = type(offered, "11", e);
     const book = booked.effects.find((x) => x.type === "book");
     expect(book).toMatchObject({ date: offerDate, slot: offerSlot });
   });
@@ -204,7 +223,8 @@ describe("edge cases found in the design pass", () => {
       ...e,
       bookings: [...e.bookings, { ...e.bookings[0], id: "b-x", date: offered.call.offerDate!, slot: offered.call.offerSlot! }],
     };
-    const after = press(offered.call, "1", taken);
+    const confirming = press(offered.call, "1", taken);
+    const after = press(confirming.call, "1", taken);
     expect(after.effects).toHaveLength(0);
     expect(said(after.call)).toContain("Sorry, that slot has just been taken.");
     expect(after.call.state).toBe("offerBooking");

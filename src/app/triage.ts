@@ -129,6 +129,26 @@ const SETS: Record<TriageRole, Question[]> = {
   pregnant: PREGNANT,
 };
 
+/**
+ * What the family is told when no urgent sign is found: what to do at home,
+ * and the signs that mean they should call again. Shown by the ASHA app on a
+ * home-care result and spoken by the voice line, so both give the same advice.
+ */
+export const HOME_CARE: Record<TriageRole, { tell: string[]; callIf: string[] }> = {
+  child: {
+    tell: ["Give small sips of fluid often", "Keep the child cool and lightly dressed", "Keep feeding as usual"],
+    callIf: ["Breathing becomes fast or difficult", "The child stops drinking or feeding", "The fever lasts 2 more days"],
+  },
+  adult: {
+    tell: ["Rest", "Drink plenty of water", "Take paracetamol if the fever is high"],
+    callIf: ["Chest pain, or breathless while resting", "Too weak to do daily work", "The fever lasts 2 more days"],
+  },
+  pregnant: {
+    tell: ["Rest lying on the left side", "Drink plenty of water", "Keep taking the iron tablets"],
+    callIf: ["Any bleeding, or the waters break", "Severe headache or blurred vision", "The baby moves less than usual"],
+  },
+};
+
 /** Map a family member's role onto a question set. Mothers use the adult set. */
 export function toTriageRole(role: Member["role"]): TriageRole {
   return role === "mother" ? "adult" : role;

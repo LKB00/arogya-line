@@ -5,8 +5,8 @@
  */
 
 :root {
-  /* ---- Typeface: Inter, variable, self-hosted. One family, four weights. ---- */
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* ---- Typeface: Figtree, variable, self-hosted. The only family. ---- */
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
@@ -53,17 +53,6 @@
   --brand-strong: #edbe0b;
   --brand-soft: #fef6d6;
 
-  /* ---- Triage colour. Always paired with an icon and a word, never alone. ---- */
-  --red: #b3261e;
-  --red-soft: #fbeae8;
-  --red-border: #e7bcb8;
-  --amber: #96490a;
-  --amber-soft: #fdeee2;
-  --amber-border: #f0c9a8;
-  --green: #1e6b3a;
-  --green-soft: #e6f0e8;
-  --green-border: #b6d3c0;
-
   /* ---- ASHA app. Its own palette, mapped onto the roles above inside the
      phone only (asha.css), so the voice line and dashboard keep theirs. ----
      A warm off-white ground, white cards, ink text and ink actions. */
@@ -81,11 +70,6 @@
   --asha-primary-soft: #e0e3ff;
   --asha-marigold: #e5a00d;
   --asha-marigold-soft: #fdf4df;
-  /* Triage signals, tuned to sit together at small sizes (dots, rules). */
-  --asha-red-solid: #b42b5e;
-  --asha-amber-solid: #6b4e00;
-  --asha-amber-bright: #f2b705;
-  --asha-green-solid: #2f7d4f;
   --asha-toast: #26231f;
   /* Triage, in the colours of the IMNCI chart the ASHA trained on:
      pink = refer urgently, yellow = treat at a facility, green = home care.

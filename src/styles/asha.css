@@ -1085,27 +1085,6 @@ a:hover .person__head .row__chevron {
   text-wrap: pretty;
 }
 
-/* Material 3 assist chip. */
-.assist {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--g2);
-  height: 40px;
-  margin-top: calc(var(--g2) * -1);
-  padding: 0 var(--g4) 0 var(--g3);
-  border-radius: 20px;
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--text);
-  font: 600 14px / 20px var(--font-sans);
-  cursor: pointer;
-  transition: background-color var(--transition);
-}
-
-.assist:hover {
-  background: var(--container);
-}
-
 /* Yes and No: same size, colour and weight. A tick and a cross tell them
    apart; neither is nudged. */
 .answers {

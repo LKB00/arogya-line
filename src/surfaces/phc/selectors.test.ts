@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking } from "../../app/types";
-import { dayFromParam, dayRows, followUpRows, followUpState, metrics, percent } from "./selectors";
+import { dayFromParam, dayRows, followUpRows, followUpState, outcomes, percent, workload } from "./selectors";
 
 describe("dayFromParam", () => {
   it("keeps a real date", () => expect(dayFromParam("2026-09-30")).toBe("2026-09-30"));
@@ -53,14 +53,30 @@ describe("follow-ups", () => {
   });
 });
 
-describe("metrics", () => {
+describe("outcomes", () => {
   it("never divides by zero", () => {
     expect(percent(0, 0)).toBe("—");
-    expect(metrics([]).total).toBe(0);
+    expect(outcomes([]).total).toBe(0);
   });
 
   it("counts from the seed", () => {
-    const m = metrics(createSeed().bookings);
-    expect(m).toMatchObject({ total: 4, preBooked: 3, notNeeded: 1, followUps: 2, answered: 0 });
+    const o = outcomes(createSeed().bookings);
+    expect(o).toMatchObject({ total: 4, preBooked: 3, avoidable: 1, followUps: 2, answered: 0 });
+  });
+});
+
+describe("workload", () => {
+  it("tomorrow in the seed: 2 patients, 1 urgent, 2 with advice to record", () => {
+    const s = createSeed();
+    const rows = dayRows(s.bookings, s.concerns, s.families, isoDate(1));
+    expect(workload(rows, s.bookings, isoDate(0))).toMatchObject({ patients: 2, urgent: 1, toRecord: 2 });
+  });
+
+  it("follow-ups due: today's, overdue and missed, not later ones", () => {
+    const s = createSeed();
+    const later: Booking = { ...s.bookings[2], id: "b-later", followUpDue: isoDate(2) };
+    const w = workload([], [...s.bookings, later], isoDate(0));
+    expect(w.followUpsDue).toBe(2); // b-2205 due today, b-7809 missed
+    expect(w.missed).toBe(1);
   });
 });

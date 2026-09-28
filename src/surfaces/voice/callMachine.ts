@@ -11,7 +11,7 @@ import type { ConcernInput } from "../../app/store";
 import { adviceByPerson, type PersonAdvice } from "../../app/store";
 import { HOME_CARE, evaluate, homeCareFor, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
-import { URGENCY_LABEL, dayLabel, shortDate, slotLabel } from "../../app/format";
+import { dayLabel, shortDate, slotLabel } from "../../app/format";
 
 export type CallState =
   | "idle"
@@ -109,10 +109,11 @@ const YES_NO = "Press 1 for yes, 2 for no, or 9 to hear the question again.";
 const NOT_UNDERSTOOD = "Sorry, I did not understand that.";
 const GOODBYE = "Thank you for calling Arogya Line. Goodbye.";
 
+/** The result as a person says it on the phone: from the answers, never a verdict or a code. */
 const RESULT_HEADLINE: Record<Urgency, (who: string) => string> = {
-  green: (who) => `No urgent signs found for ${who}.`,
-  amber: (who) => `${who} should see the doctor.`,
-  red: (who) => `${who} needs the PHC now.`,
+  green: (who) => `Thank you. From your answers, there are no urgent signs for ${who}.`,
+  amber: (who) => `Thank you. From your answers, ${who} should see the doctor.`,
+  red: (who) => `From your answers, ${who} needs the PHC now.`,
 };
 
 function dayWord(date: string, today: string): string {
@@ -232,7 +233,7 @@ function enterResult(call: Call, env: Env): Step {
   const member = memberOf(call, env);
   const who = member ? `${member.name}` : "The patient";
   // Spoken in words the caller knows, never the internal colour name.
-  const headline = `Result: ${URGENCY_LABEL[result.urgency].toLowerCase()}. ${RESULT_HEADLINE[result.urgency](who)}`;
+  const headline = RESULT_HEADLINE[result.urgency](who);
   const withResult = { ...call, result };
 
   if (result.urgency === "green") {
@@ -286,29 +287,34 @@ function enterOperator(call: Call): Call {
   return prompt({ ...call, state: "operator", operatorStep: 0 }, text);
 }
 
-/** One person's advice, said the way a person says it, from its first word. */
-function adviceWords(a: PersonAdvice, env: Env, member: Member | undefined): string {
+/**
+ * One person's advice, said the way a person would: who it is from and for,
+ * the words, then a clear end, so the caller knows the message is over.
+ */
+function adviceLines(a: PersonAdvice, env: Env, member: Member | undefined): string[] {
   const name = member?.name ?? "you";
   if (a.from === "doctor" && a.booking) {
-    // The date as a person says it ("yesterday", "Fri 25 Sep"), never ISO, and
+    // The day as a person says it ("yesterday", "Fri 25 Sep"), never ISO, and
     // never a day still to come: advice written ahead of a visit has no "when".
-    const when = a.date <= env.today ? `, ${dayLabel(a.date).toLowerCase()}` : "";
-    return `Advice for ${name} from ${a.booking.doctor}${when}: ${a.booking.advice}`;
+    const when = a.date <= env.today ? `, from ${dayLabel(a.date).toLowerCase()}` : "";
+    return [`${a.booking.doctor} has a message for ${name}${when}.`, a.booking.advice ?? "", `That's all from ${a.booking.doctor}.`];
   }
   const role = member ? toTriageRole(member.role) : "adult";
-  return `Advice for ${name} from the check ${dayLabel(a.date).toLowerCase()}. ${HOME_CARE[role].spoken.join(" ")}`;
+  return [`Here is the advice from ${name}'s check ${dayLabel(a.date).toLowerCase()}.`, ...HOME_CARE[role].spoken, "That's all."];
 }
+
+const AFTER_ADVICE = "Press 1 to hear it again, or 2 for the main menu.";
 
 function readAdvice(call: Call, env: Env, a: PersonAdvice): Call {
   const member = familyOf(call, env)?.members.find((m) => m.id === a.memberId);
-  return prompt({ ...call, state: "readAdvice" }, adviceWords(a, env, member), "Press 1 for the main menu, 9 to hear this again, or hang up.");
+  return prompt({ ...call, state: "readAdvice" }, ...adviceLines(a, env, member), AFTER_ADVICE);
 }
 
 /** Advice is a person's: one person is read at once, several are chosen by name. */
 function enterReadAdvice(call: Call, env: Env): Call {
   const advice = call.familyId ? adviceByPerson(env, call.familyId) : [];
   if (advice.length === 0) {
-    return prompt({ ...call, state: "readAdvice" }, "No advice yet.", "Press 1 for the main menu, or hang up.");
+    return prompt({ ...call, state: "readAdvice" }, "There is no advice for your family yet.", "Press 2 for the main menu, or hang up.");
   }
   if (advice.length === 1) return readAdvice(call, env, advice[0]);
   const people = advice.map((a) => familyOf(call, env)?.members.find((m) => m.id === a.memberId)).filter((m): m is Member => Boolean(m));
@@ -448,7 +454,8 @@ export function press(call: Call, key: Key, env: Env): Step {
     }
 
     case "readAdvice":
-      if (key === "1") return none(enterMainMenu(pressed));
+      if (key === "1") return none(say(pressed, "line", ...call.lastPrompt));
+      if (key === "2") return none(enterMainMenu(pressed));
       break;
 
     case "resultGreen":
@@ -472,7 +479,14 @@ export function tick(call: Call, env: Env): Step {
     const text = call.emergency
       ? `Namaste, Arogya Line. I have your emergency call for ${who}. I am alerting ${PHC.doctor} at ${PHC.facility} and your ASHA, ${ASHA.name}.`
       : `Namaste, Arogya Line. I can see ${who}. Let me get you seen today.`;
-    return { call: { ...say(call, "operator", text), operatorStep: 1 }, effects: [] };
+    // The caller never starts from zero with a person: what the line already
+    // heard is passed on and said back.
+    const heard = call.role && call.answers.length > 0 ? evaluate(call.role, call.answers).reasons : [];
+    const context =
+      member && call.memberId && heard.length > 0
+        ? [`I have ${member.name}'s answers from the call: ${heard.map((r) => r[0].toLowerCase() + r.slice(1)).join(", ")}. You won't need to repeat them.`]
+        : [];
+    return { call: { ...say(call, "operator", text, ...context), operatorStep: 1 }, effects: [] };
   }
 
   const { date, slot } = operatorSlot(env);

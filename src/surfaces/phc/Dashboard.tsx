@@ -16,7 +16,15 @@ import Icon from "../../shell/Icon";
 import AfterConsult from "./AfterConsult";
 import FollowUpRow from "./FollowUpRow";
 import PatientRow from "./PatientRow";
-import { dayFromParam, dayRows, followUpRows, outcomes, percent, sent, toRow, workload } from "./selectors";
+import { dayFromParam, dayRows, followUpGroup, followUpRows, outcomes, percent, sent, toRow, workload, type FollowUpGroup } from "./selectors";
+import type { BookingRow } from "./rows";
+
+/** Follow-ups by who acts and when, so "open" never reads as "due". */
+const FOLLOW_UP_GROUPS: { group: FollowUpGroup; title: string }[] = [
+  { group: "now", title: "Needs attention now" },
+  { group: "asha", title: "With the ASHA" },
+  { group: "upcoming", title: "Upcoming" },
+];
 
 /** "today", "tomorrow", "yesterday", or "on Wed 30 Sep". */
 function dayWords(day: string): string {
@@ -46,6 +54,8 @@ export default function Dashboard() {
 
   const rows = dayRows(bookings, concerns, families, day);
   const followUps = followUpRows(bookings, concerns, families);
+  const grouped = (g: FollowUpGroup): BookingRow[] => followUps.filter((r) => followUpGroup(r.booking, today) === g);
+  const needsNow = grouped("now").length;
   const w = workload(rows, bookings, today);
   const o = outcomes(bookings);
 
@@ -84,15 +94,16 @@ export default function Dashboard() {
           type="button"
           className="rail__item"
           aria-pressed={view === "followups"}
-          aria-label={`Follow-ups, ${followUps.length} open`}
+          aria-label={`Follow-ups, ${needsNow} need attention now`}
           title="Follow-ups"
           onClick={() => update({ view: "followups" })}
         >
           <span className="rail__pill">
             <Icon icon={IconPhoneCall} size={24} />
-            {followUps.length > 0 && (
+            {/* Only what needs the doctor now: upcoming calls are not a to-do. */}
+            {needsNow > 0 && (
               <span className="rail__badge" aria-hidden="true">
-                {followUps.length}
+                {needsNow}
               </span>
             )}
           </span>
@@ -148,7 +159,11 @@ export default function Dashboard() {
               <dt className="metric__label">Advice to record</dt>
               <dd className="metric__value">{w.toRecord}</dd>
               <dd className="metric__detail">
-                {w.patients === 0 ? "No patients yet" : `Of ${w.patients} ${w.patients === 1 ? "patient" : "patients"}`}
+                {w.patients === 0
+                  ? "No patients yet"
+                  : w.notArrived === w.patients
+                    ? "Not arrived yet"
+                    : `Of ${w.patients} ${w.patients === 1 ? "patient" : "patients"}`}
               </dd>
             </div>
             <div className="metric">
@@ -189,7 +204,7 @@ export default function Dashboard() {
                   </thead>
                   <tbody>
                     {rows.map((row) => (
-                      <PatientRow key={row.booking.id} row={row} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
+                      <PatientRow key={row.booking.id} row={row} today={today} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
                     ))}
                   </tbody>
                 </table>
@@ -197,43 +212,49 @@ export default function Dashboard() {
             )}
           </section>
         ) : (
-          <section className="phc__list">
-            <div className="phc__listhead">
-              <h2 className="phc__h2">
-                {followUps.length} open {followUps.length === 1 ? "follow-up" : "follow-ups"}
-              </h2>
-            </div>
-            {followUps.length === 0 ? (
+          <>
+            {followUps.length === 0 && (
               <p className="phc__empty">
                 <Icon icon={IconPhoneCall} size={24} />
                 <span>
                   No follow-ups are waiting.
-                  <span className="phc__empty-sub">A follow-up call is set from a patient's after-consult panel.</span>
+                  <span className="phc__empty-sub">A follow-up call is set from a patient's consult.</span>
                 </span>
               </p>
-            ) : (
-              <div className="tablewrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th className="th">Patient</th>
-                      <th className="th">Seen</th>
-                      <th className="th">Follow-up</th>
-                      <th className="th">Status</th>
-                      <th className="th th--action">
-                        <span className="visually-hidden">Open</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {followUps.map((row) => (
-                      <FollowUpRow key={row.booking.id} row={row} today={today} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             )}
-          </section>
+            {FOLLOW_UP_GROUPS.map(({ group, title }) => {
+              const list = grouped(group);
+              if (list.length === 0) return null;
+              return (
+                <section className="phc__list" key={group}>
+                  <div className="phc__listhead">
+                    <h2 className="phc__h2">{title}</h2>
+                    <span className="phc__count">{list.length}</span>
+                  </div>
+                  <div className="tablewrap">
+                    <table className="table table--fixed">
+                      <thead>
+                        <tr>
+                          <th className="th">Patient</th>
+                          <th className="th th--date">Seen</th>
+                          <th className="th th--date">Follow-up</th>
+                          <th className="th th--status">Status</th>
+                          <th className="th th--action">
+                            <span className="visually-hidden">Open</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {list.map((row) => (
+                          <FollowUpRow key={row.booking.id} row={row} today={today} selected={row.booking.id === consultId} onOpen={(id) => update({ consult: id })} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            })}
+          </>
         )}
 
         {/* Reporting, not workload: how the whole loop is doing. Every
@@ -251,9 +272,10 @@ export default function Dashboard() {
               </dd>
             </div>
             <div className="outcome">
-              <dt className="outcome__label">Could have been handled without a visit</dt>
+              {/* A learning signal about referrals, never a score for a doctor or a family. */}
+              <dt className="outcome__label">Potential trips avoided</dt>
               <dd className="outcome__value">{o.avoidable}</dd>
-              <dd className="outcome__detail">Advice could have replaced the trip</dd>
+              <dd className="outcome__detail">Visits the doctor judged advice could have handled</dd>
             </div>
             <div className="outcome">
               <dt className="outcome__label">Follow-ups answered</dt>

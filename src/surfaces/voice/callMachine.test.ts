@@ -108,7 +108,7 @@ describe("triage over the keypad", () => {
     const e = env();
     const after = type(startCall(e), "4471" + "1" + "2" + "2222", e);
     expect(after.call.state).toBe("resultGreen");
-    expect(said(after.call)).toContain("No urgent signs found for Arjun.");
+    expect(said(after.call)).toContain("From your answers, there are no urgent signs for Arjun.");
     // Spoken as a person says it, not a list read aloud.
     expect(said(after.call)).toContain("At home, give small sips of fluid often, keep the child cool");
     expect(said(after.call)).toContain("Call us again if the breathing becomes fast or difficult");
@@ -150,7 +150,7 @@ describe("menu 3, hear the doctor's advice", () => {
     const e = env();
     const after = type(startCall(e), "4471" + "3", e);
     expect(after.call.state).toBe("readAdvice");
-    expect(said(after.call)).toContain("No advice yet.");
+    expect(said(after.call)).toContain("There is no advice for your family yet.");
   });
 
   it("reads back the saved advice for a family that has one", () => {
@@ -186,14 +186,15 @@ describe("edge cases found in the design pass", () => {
   it("speaks the result in words, never the colour code", () => {
     const e = env();
     const after = type(startCall(e), "4471" + "1" + "2" + "1122", e);
-    expect(said(after.call)).toContain("Result: needs a visit.");
+    expect(said(after.call)).toContain("From your answers, Arjun should see the doctor.");
+    expect(said(after.call)).not.toMatch(/amber|Result:/);
     expect(said(after.call)).not.toMatch(/Result: (amber|red|green)/);
   });
 
   it("reads the advice date the way a person says it", () => {
     const e = env();
     const after = type(startCall(e), "2205" + "3", e);
-    expect(said(after.call)).toContain("from Dr. Ramesh, yesterday:");
+    expect(said(after.call)).toContain("Dr. Ramesh has a message for Shobha, from yesterday.");
     expect(said(after.call)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 
@@ -201,7 +202,7 @@ describe("edge cases found in the design pass", () => {
     const e = env();
     const bookings = e.bookings.map((b) => (b.id === "b-3120" ? { ...b, date: isoDate(1), advice: "Keep her upright." } : b));
     const after = type(startCall({ ...e, bookings }, { familyId: "3120" }), "3", { ...e, bookings });
-    expect(said(after.call)).toContain("Advice for Kavya from Dr. Ramesh: Keep her upright.");
+    expect(said(after.call)).toContain("Dr. Ramesh has a message for Kavya. | Keep her upright. | That's all from Dr. Ramesh.");
   });
 
   it("names each person, so two children are never confused", () => {
@@ -235,7 +236,7 @@ describe("edge cases found in the design pass", () => {
     expect(said(menu.call)).toContain("Whose advice would you like to hear?");
     const heard = type(menu, "2", e2);
     const names = said(menu.call).match(/Press 2 for (\w+)/)![1];
-    expect(said(heard.call)).toContain(`Advice for ${names}`);
+    expect(said(heard.call)).toContain(`Dr. Ramesh has a message for ${names}`);
     expect(said(heard.call)).toContain(names === "Kavya" ? "Steam twice a day." : "Rest for two days.");
   });
 
@@ -244,7 +245,7 @@ describe("edge cases found in the design pass", () => {
     const green = { ...e.concerns[0], id: "c-g", familyId: "4471", memberId: "4471-2", urgency: "green" as const, homeCare: { tell: ["x"], callIf: ["y"] } };
     const e2 = { ...e, concerns: [...e.concerns, green] };
     const heard = type(startCall(e2, { familyId: "4471" }), "3", e2);
-    expect(said(heard.call)).toContain("Advice for Arjun from the check today. At home, give small sips");
+    expect(said(heard.call)).toContain("Here is the advice from Arjun's check today. | At home, give small sips");
   });
 
   it("the end of a call says goodbye and nothing more", () => {
@@ -295,4 +296,21 @@ describe("edge cases found in the design pass", () => {
     step = tick(step.call, e);
     expect(said(step.call)).toContain("now; you will be seen as an emergency");
   });
+
+  it("after advice, 1 hears it again and 2 goes back to the menu", () => {
+    const e = env();
+    const heard = type(startCall(e, { familyId: "2205" }), "3", e);
+    const again = type(heard, "1", e);
+    expect(said(again.call).split("Take the iron tablet").length - 1).toBe(2);
+    expect(type(heard, "2", e).call.state).toBe("mainMenu");
+  });
+
+  it("the health worker picks up with what the line already heard", () => {
+    const e = env();
+    const mid = type(startCall(e), "4471" + "1" + "2" + "11", e); // two yeses, then 0
+    const op = press(mid.call, "0", e);
+    const first = tick(op.call, e);
+    expect(said(first.call)).toContain("I have Arjun's answers from the call: fever more than 2 days, vomiting more than 3 times today.");
+  });
 });
+

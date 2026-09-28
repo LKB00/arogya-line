@@ -3,7 +3,7 @@
 
 import { create } from "zustand";
 import type { Booking, Concern, Store, Surface } from "./types";
-import { addDays, createSeed } from "./seed";
+import { addDays, createSeed, isoDate } from "./seed";
 
 /** Advice someone in a family has been given: by the doctor, or with a home-care result. */
 export type PersonAdvice = {
@@ -62,6 +62,12 @@ export type Actions = {
   setFollowUp: (bookingId: string, days: number | null) => void;
   /** Demo control for the follow-up outcome. */
   setFollowUpStatus: (bookingId: string, status: NonNullable<Booking["followUpStatus"]>) => void;
+  /** After a missed call, the doctor decides: ask the ASHA to follow up… */
+  askAshaToFollowUp: (bookingId: string) => void;
+  /** …or call again today. */
+  callAgainToday: (bookingId: string) => void;
+  /** Demo control: a future booking's patient has arrived, so it can be consulted. */
+  markArrived: (bookingId: string) => void;
   /** Which surface is showing (used when one surface hands off to another). */
   setActiveSurface: (surface: Surface) => void;
   /** Restore seed data and clear any pending sync. */
@@ -161,6 +167,24 @@ export const useStore = create<StoreState>()((set, get) => ({
     set((s) => ({
       bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, followUpStatus: status } : b)),
     }));
+  },
+
+  askAshaToFollowUp: (bookingId) => {
+    set((s) => ({
+      bookings: s.bookings.map((b) => (b.id === bookingId && b.followUpStatus === "missed" ? { ...b, ashaAsked: true } : b)),
+    }));
+  },
+
+  callAgainToday: (bookingId) => {
+    set((s) => ({
+      bookings: s.bookings.map((b) =>
+        b.id === bookingId ? { ...b, followUpDue: isoDate(0), followUpStatus: "pending", ashaAsked: undefined } : b,
+      ),
+    }));
+  },
+
+  markArrived: (bookingId) => {
+    set((s) => ({ bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, arrived: true } : b)) }));
   },
 
   setActiveSurface: (surface) => set({ activeSurface: surface }),

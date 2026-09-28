@@ -122,6 +122,8 @@ type Booking = {
   advice?: string;            // doctor's note text (stands in for the voice note)
   followUpDue?: string;       // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
+  ashaAsked?: boolean;        // after a missed call, the doctor asked the ASHA to follow up
+  arrived?: boolean;          // demo only: a future booking marked as arrived
 };
 
 type Store = {
@@ -169,6 +171,7 @@ Linear path. Each step is its own route so back works.
 **TodayList**
 - Lists the people (not families) with an open concern, booking, or follow-up due today or overdue, sorted red → amber → green → done. One row per person; a person with several concerns shows once, under the most urgent.
 - Each row: person, task, village, one-line reason, sync tag if waiting, and "+N other people in this family" when others in the same household also need her.
+- A missed follow-up call is her task only when the doctor asks ("Follow up at home · Doctor asked: the follow-up call was missed"); a missed call alone commits nobody.
 - A home-care concern from the voice line (no booking) is a "Follow up" task for today: the line told the family their ASHA will follow up, and this row is that promise.
 - "Up next": the most urgent person, in the order person → task and time → reason → village and card.
 - Primary action: "Check someone" → Which family? → FamilyDetail.
@@ -207,14 +210,16 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 - Result green → "No urgent signs found for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
 - Result amber → offers the next available slot; 1 = choose it, 2 = another day. Choosing reads the booking back ("You are booking a visit for {name}, {day}, {slot}, at {facility}.") and asks 1 = confirm, 2 = choose another day. Only confirming creates the Booking. The new row appears immediately in the PHC dashboard and in the ASHA TodayList.
 - Result red → operator state: transcript shows the operator connecting and alerting the ASHA. Creates a red Concern.
-- 3 → advice is a person's, never the family's. One person with advice: read at once, named ("Advice for Shobha from Dr. Ramesh, yesterday: …"). Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
+- Results are said from the answers, never as a code: "Thank you. From your answers, Arjun should see the doctor."
+- 3 → advice is a person's, never the family's. One person with advice: read at once as a message ("Dr. Ramesh has a message for Shobha, from yesterday." … "That's all from Dr. Ramesh."), then 1 = hear it again, 2 = main menu. Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
 - A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
-- 0 → operator state: a short scripted exchange, then a booking is created for the same day.
+- 0 → operator state: a short scripted exchange, then a booking is created for the same day. The health worker picks up with what the line already heard ("I have Arjun's answers from the call: …"), so the caller never starts from zero.
 
 ### 6.3 PHC dashboard (desktop-sized)
 
 - Header: selected day (default: today), with Today and Tomorrow one tap away and a date field for any other day.
 - Workload strip for that day: patients, urgent, advice still to record, follow-ups due today (overdue and missed included).
+- Where a booking stands: tomorrow's is "View booking" (not arrived; nothing after the consult can be recorded), today's "Start consult", a past day's unresolved one "Complete consult", with advice "Open consult". A demo-only "Patient arrives now" marks a future booking `arrived` so the walkthrough can consult it honestly.
 - Table: all bookings for that day in time order (most urgent first within a slot); urgent rows are marked with the chart's pink on their time and edge. Columns: time, patient (name, age, family ID), reported by (ASHA / Voice line), symptoms captured (`reasons[]` joined), consult ("Start consult" / "Open consult", "Advice saved"). Nothing decided after the consult is editable from the table.
 - Rows created offline in the ASHA app only appear once synced (drives the demo story).
 - **Consult sheet** (opens from a row), in the order the work is done:
@@ -223,8 +228,9 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
   - `avoidable` toggle (Yes / No): "Could this have been handled without a visit?", answered with the patient seen.
   - Follow-up call choice: None, Next day, In 3 days, In a week (days after the visit). Choosing sets `followUpDue` and `followUpStatus = "pending"`; choosing the day already set keeps its outcome; None clears it.
   - "Mark follow-up answered / missed" buttons for demo purposes.
-- A second tab or filter: "Follow-ups" – bookings with `followUpStatus` pending or missed. Missed ones show "ASHA visit requested".
-- "Across the service, to date", below the list and quieter than the workload (every booking so far, not the day on screen): bookings pre-booked (%), visits that could have been handled without a visit (count), follow-ups answered (%). These update live as the demo is used. This is the "outcomes" moment of the prototype.
+  - A missed call needs a decision: "Call again today" or "Ask the ASHA to follow up" (`ashaAsked`), or leave it open. Nothing is asked of the ASHA automatically.
+- A second view: "Follow-ups", grouped by who acts: Needs attention now (due today, overdue, missed and undecided), With the ASHA (missed, ASHA asked), Upcoming (due later). The rail badge and the "Follow-ups due" figure count only Needs attention now.
+- "Across the service, to date", below the list and quieter than the workload (every booking so far, not the day on screen): bookings pre-booked (%), potential trips avoided (count of "could have been handled without a visit"; a learning signal, not a score), follow-ups answered (%). These update live as the demo is used. This is the "outcomes" moment of the prototype.
 
 ---
 
@@ -241,7 +247,7 @@ Seed data (`seed.ts`):
 **Guided walkthrough** (optional but valuable): a small step indicator in the shell that suggests the order:
 1. ASHA app, offline: check Arjun → amber → book → see "waiting to send".
 2. Toggle signal on → watch it sync.
-3. PHC dashboard: Tomorrow → Arjun appears → start the consult → enter advice → say whether it could have been handled without a visit → choose the follow-up.
+3. PHC dashboard: Tomorrow → Arjun's booking → (demo) patient arrives → start the consult → enter advice → say whether it could have been handled without a visit → choose the follow-up.
 4. Voice line: enter 4471 → press 3 → hear the advice back.
 
 "Reset demo" restores seed data.

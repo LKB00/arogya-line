@@ -49,13 +49,43 @@ export function followUpRows(bookings: Booking[], concerns: Concern[], families:
     .sort((a, b) => (a.booking.followUpDue ?? "").localeCompare(b.booking.followUpDue ?? ""));
 }
 
-export type FollowUpState = "pending" | "overdue" | "missed" | "answered" | "none";
+export type FollowUpState = "pending" | "overdue" | "missed" | "handed" | "answered" | "none";
 
-/** A pending follow-up whose day has passed is overdue, not merely pending. */
+/**
+ * A pending follow-up whose day has passed is overdue, not merely pending. A
+ * missed call is only the ASHA's once the doctor has asked her ("handed");
+ * until then someone at the PHC still has to decide what happens next.
+ */
 export function followUpState(b: Booking, today: string): FollowUpState {
   if (!b.followUpStatus) return "none";
   if (b.followUpStatus === "pending" && b.followUpDue && b.followUpDue < today) return "overdue";
+  if (b.followUpStatus === "missed" && b.ashaAsked) return "handed";
   return b.followUpStatus;
+}
+
+/** Who has to act on an open follow-up, and when: the doctor now, the ASHA, or later. */
+export type FollowUpGroup = "now" | "asha" | "upcoming";
+
+export function followUpGroup(b: Booking, today: string): FollowUpGroup | null {
+  const state = followUpState(b, today);
+  if (state === "overdue" || state === "missed" || (state === "pending" && b.followUpDue === today)) return "now";
+  if (state === "handed") return "asha";
+  if (state === "pending") return "upcoming";
+  return null;
+}
+
+/**
+ * Where a booking stands for the doctor. A consult can only be recorded for a
+ * patient who can be in the room: today's booking, one whose day has passed,
+ * or (demo only) a future one marked as arrived. Tomorrow's is a booking to
+ * view, never a consult to record.
+ */
+export type ConsultState = "future" | "today" | "overdue" | "done";
+
+export function consultState(b: Booking, today: string): ConsultState {
+  if (b.advice) return "done";
+  if (b.date > today && !b.arrived) return "future";
+  return b.date < today ? "overdue" : "today";
 }
 
 export function percent(part: number, whole: number): string {
@@ -64,14 +94,14 @@ export function percent(part: number, whole: number): string {
 
 /** The doctor's workload for the day on screen: what needs them, not reporting. */
 export function workload(rows: BookingRow[], bookings: Booking[], today: string) {
-  const due = sent(bookings).filter((b) => {
-    const state = followUpState(b, today);
-    return state === "missed" || state === "overdue" || (state === "pending" && b.followUpDue === today);
-  });
+  // The same "now" group the Follow-ups view leads with, so the two never disagree.
+  const due = sent(bookings).filter((b) => followUpGroup(b, today) === "now");
   return {
     patients: rows.length,
     urgent: rows.filter((r) => r.concern?.urgency === "red").length,
-    toRecord: rows.filter((r) => !r.booking.advice).length,
+    // Only patients who can be in the room: tomorrow's are not advice to record.
+    toRecord: rows.filter((r) => ["today", "overdue"].includes(consultState(r.booking, today))).length,
+    notArrived: rows.filter((r) => consultState(r.booking, today) === "future").length,
     followUpsDue: due.length,
     missed: due.filter((b) => b.followUpStatus === "missed").length,
   };
@@ -81,6 +111,7 @@ export function workload(rows: BookingRow[], bookings: Booking[], today: string)
 export function outcomes(bookings: Booking[]) {
   const all = sent(bookings);
   const preBooked = all.filter((b) => !b.walkIn).length;
+  // "Potential trips avoided": a learning signal about referrals, not a score.
   const avoidable = all.filter((b) => b.avoidable === true).length;
   const withFollowUp = all.filter((b) => b.followUpStatus !== undefined);
   const answered = withFollowUp.filter((b) => b.followUpStatus === "answered").length;

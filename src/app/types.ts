@@ -52,6 +52,10 @@ export type Booking = {
   advice?: string; // doctor's note text (stands in for the voice note)
   followUpDue?: string; // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
+  /** The doctor, after a missed call, asked the ASHA to follow up. Never automatic. */
+  ashaAsked?: boolean;
+  /** Demo only: a future booking marked as arrived, so it can be consulted today. */
+  arrived?: boolean;
   walkIn?: boolean; // came without a booking; only the PHC metrics strip reads this
 };
 

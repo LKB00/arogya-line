@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking } from "../../app/types";
-import { dayFromParam, dayRows, followUpRows, followUpState, outcomes, percent, workload } from "./selectors";
+import { consultState, dayFromParam, dayRows, followUpGroup, followUpRows, followUpState, outcomes, percent, workload } from "./selectors";
 
 describe("dayFromParam", () => {
   it("keeps a real date", () => expect(dayFromParam("2026-09-30")).toBe("2026-09-30"));
@@ -80,11 +80,42 @@ describe("workload", () => {
     expect(workload(rows, s.bookings, isoDate(0))).toMatchObject({ patients: 2, urgent: 1, toRecord: 2 });
   });
 
-  it("follow-ups due: today's, overdue and missed, not later ones", () => {
+  it("follow-ups due: today's, overdue and undecided missed calls; not later ones or ones handed to the ASHA", () => {
     const s = createSeed();
     const later: Booking = { ...s.bookings[2], id: "b-later", followUpDue: isoDate(2) };
-    const w = workload([], [...s.bookings, later], isoDate(0));
-    expect(w.followUpsDue).toBe(2); // b-2205 due today, b-7809 missed
+    const undecided: Booking = { ...s.bookings[3], id: "b-undecided", ashaAsked: undefined };
+    const w = workload([], [...s.bookings, later, undecided], isoDate(0));
+    expect(w.followUpsDue).toBe(2); // b-2205 due today, b-undecided missed
     expect(w.missed).toBe(1);
   });
 });
+
+describe("consultState: nobody consults tomorrow's patient today", () => {
+  const today = isoDate(0);
+  const b = (over: Partial<Booking>) => ({ ...createSeed().bookings[0], ...over }) as Booking;
+  it("tomorrow is a booking to view", () => expect(consultState(b({ date: isoDate(1) }), today)).toBe("future"));
+  it("unless (demo) the patient has arrived", () => expect(consultState(b({ date: isoDate(1), arrived: true }), today)).toBe("today"));
+  it("today is a consult to start; a past day one to complete", () => {
+    expect(consultState(b({ date: today }), today)).toBe("today");
+    expect(consultState(b({ date: isoDate(-1) }), today)).toBe("overdue");
+  });
+  it("advice saved is done", () => expect(consultState(b({ advice: "x" }), today)).toBe("done"));
+});
+
+describe("followUpGroup: who acts, and when", () => {
+  const today = isoDate(0);
+  const b = (over: Partial<Booking>) => ({ ...createSeed().bookings[0], ...over }) as Booking;
+  it("due today, overdue and undecided missed calls need the doctor now", () => {
+    expect(followUpGroup(b({ followUpStatus: "pending", followUpDue: today }), today)).toBe("now");
+    expect(followUpGroup(b({ followUpStatus: "pending", followUpDue: isoDate(-1) }), today)).toBe("now");
+    expect(followUpGroup(b({ followUpStatus: "missed" }), today)).toBe("now");
+  });
+  it("a missed call the doctor handed over is with the ASHA", () => {
+    expect(followUpGroup(b({ followUpStatus: "missed", ashaAsked: true }), today)).toBe("asha");
+  });
+  it("a later call is upcoming; answered is nobody's", () => {
+    expect(followUpGroup(b({ followUpStatus: "pending", followUpDue: isoDate(3) }), today)).toBe("upcoming");
+    expect(followUpGroup(b({ followUpStatus: "answered" }), today)).toBeNull();
+  });
+});
+

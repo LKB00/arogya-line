@@ -11,7 +11,7 @@ import { useStore } from "../../app/store";
 import Icon from "../../shell/Icon";
 import { addDays } from "../../app/seed";
 import { AvoidableToggle } from "./PatientRow";
-import { followUpState } from "./selectors";
+import { consultState, followUpState } from "./selectors";
 import { patientMeta, patientName, reportedBy, type BookingRow } from "./rows";
 
 type Props = { row: BookingRow; today: string; onClose: () => void };
@@ -27,7 +27,8 @@ const FOLLOW_UP_CHOICES = [
 const FOLLOW_UP_WORDS = {
   pending: "Pending",
   overdue: "Overdue",
-  missed: "Missed · the ASHA has been asked to visit",
+  missed: "Missed · needs a decision",
+  handed: "Missed · the ASHA has been asked to follow up",
   answered: "Answered",
   none: "",
 } as const;
@@ -37,6 +38,10 @@ export default function AfterConsult({ row, today, onClose }: Props) {
   const saveAdvice = useStore((s) => s.saveAdvice);
   const setFollowUpStatus = useStore((s) => s.setFollowUpStatus);
   const setFollowUp = useStore((s) => s.setFollowUp);
+  const askAsha = useStore((s) => s.askAshaToFollowUp);
+  const callAgain = useStore((s) => s.callAgainToday);
+  const markArrived = useStore((s) => s.markArrived);
+  const consult = consultState(booking, today);
   const [text, setText] = useState(booking.advice ?? "");
   const trimmed = text.trim();
   const unchanged = trimmed === (booking.advice ?? "");
@@ -48,7 +53,7 @@ export default function AfterConsult({ row, today, onClose }: Props) {
     <aside className="sheet" aria-labelledby="after-consult-heading">
       <header className="sheet__head">
         <div className="sheet__who">
-          <p className="sheet__eyebrow">Consult</p>
+          <p className="sheet__eyebrow">{consult === "future" ? "Booking" : "Consult"}</p>
           <h2 id="after-consult-heading" className="sheet__name">
             {patientName(row)}
           </h2>
@@ -81,77 +86,113 @@ export default function AfterConsult({ row, today, onClose }: Props) {
         )}
       </section>
 
-      <section className="sheet__block">
-        <label className="sheet__label" htmlFor="advice-text">
-          Advice for the family
-        </label>
-        <textarea
-          id="advice-text"
-          className="textarea"
-          rows={5}
-          value={text}
-          placeholder="What the family should do, in the words you would say to them"
-          onChange={(e) => setText(e.target.value)}
-        />
-        <p className="sheet__hint">
-          <Icon icon={IconVolume} size={16} />
-          Read to the family on the voice line when they press 3. Stands in for a 20-second voice note.
-        </p>
-        <div className="sheet__actions">
-          <button type="button" className="btn btn--primary" disabled={!canSave} onClick={() => saveAdvice(booking.id, trimmed)}>
-            <Icon icon={IconCheck} />
-            {booking.advice ? "Save changes" : "Save advice"}
-          </button>
-          {booking.advice && unchanged && (
-            <span className="saved">
-              <Icon icon={IconCheck} size={16} />
-              Saved
-            </span>
-          )}
-        </div>
-      </section>
-
-      <section className="sheet__block">
-        <h3 className="sheet__label">Could this have been handled without a visit?</h3>
-        <AvoidableToggle booking={booking} />
-        {booking.avoidable === undefined && (
-          <p className="sheet__hint">Not set yet. A “Yes” counts towards visits that advice could have replaced.</p>
-        )}
-      </section>
-
-      <section className="sheet__block">
-        <h3 className="sheet__label">Follow-up call</h3>
-        <span className="seg" role="group" aria-label="Follow-up call">
-          {FOLLOW_UP_CHOICES.map((c) => (
-            <button
-              key={c.label}
-              type="button"
-              className="seg__btn"
-              aria-pressed={c.days === null ? !hasFollowUp : booking.followUpDue === addDays(booking.date, c.days)}
-              onClick={() => setFollowUp(booking.id, c.days)}
-            >
-              {c.label}
+      {consult === "future" ? (
+        // Tomorrow's patient is not in the room: nothing after the consult can
+        // be recorded yet. The demo can say they have arrived; the product
+        // would learn it from the PHC's front desk.
+        <section className="sheet__block">
+          <h3 className="sheet__label">Not arrived yet</h3>
+          <p className="sheet__value">
+            Booked for {dayLabel(booking.date).toLowerCase()}, {slotLabel(booking.slot)}. The consult opens when the patient arrives.
+          </p>
+          <div className="democtl">
+            <span className="democtl__tag">Demo only</span>
+            <button type="button" className="btn btn--compact btn--secondary" onClick={() => markArrived(booking.id)}>
+              Patient arrives now
             </button>
-          ))}
-        </span>
-        {hasFollowUp ? (
-          <>
-            <p className="sheet__value">
-              {booking.followUpDue && dayLabel(booking.followUpDue)} · <span className={`status status--${state}`}>{FOLLOW_UP_WORDS[state]}</span>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="sheet__block">
+            <label className="sheet__label" htmlFor="advice-text">
+              Advice for the family
+            </label>
+            <textarea
+              id="advice-text"
+              className="textarea"
+              rows={5}
+              value={text}
+              placeholder="What the family should do, in the words you would say to them"
+              onChange={(e) => setText(e.target.value)}
+            />
+            <p className="sheet__hint">
+              <Icon icon={IconVolume} size={16} />
+              Read to the family on the voice line when they press 3. Stands in for a 20-second voice note.
             </p>
             <div className="sheet__actions">
-              <button type="button" className="btn btn--compact btn--secondary" aria-pressed={booking.followUpStatus === "answered"} onClick={() => setFollowUpStatus(booking.id, "answered")}>
-                Mark answered
+              <button type="button" className="btn btn--primary" disabled={!canSave} onClick={() => saveAdvice(booking.id, trimmed)}>
+                <Icon icon={IconCheck} />
+                {booking.advice ? "Save changes" : "Save advice"}
               </button>
-              <button type="button" className="btn btn--compact btn--secondary" aria-pressed={booking.followUpStatus === "missed"} onClick={() => setFollowUpStatus(booking.id, "missed")}>
-                Mark missed
-              </button>
+              {booking.advice && unchanged && (
+                <span className="saved">
+                  <Icon icon={IconCheck} size={16} />
+                  Saved
+                </span>
+              )}
             </div>
-          </>
-        ) : (
-          <p className="sheet__hint">No call planned. Choose a day if the family should be checked on.</p>
-        )}
-      </section>
+          </section>
+
+          <section className="sheet__block">
+            <h3 className="sheet__label">Could this have been handled without a visit?</h3>
+            <AvoidableToggle booking={booking} />
+            {booking.avoidable === undefined && (
+              <p className="sheet__hint">Not set yet. A “Yes” counts towards potential trips avoided: a signal for improving referrals, not a score.</p>
+            )}
+          </section>
+
+          <section className="sheet__block">
+            <h3 className="sheet__label">Follow-up call</h3>
+            <span className="seg" role="group" aria-label="Follow-up call">
+              {FOLLOW_UP_CHOICES.map((c) => (
+                <button
+                  key={c.label}
+                  type="button"
+                  className="seg__btn"
+                  aria-pressed={c.days === null ? !hasFollowUp : booking.followUpDue === addDays(booking.date, c.days)}
+                  onClick={() => setFollowUp(booking.id, c.days)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </span>
+            {hasFollowUp ? (
+              <>
+                <p className="sheet__value">
+                  {booking.followUpDue && dayLabel(booking.followUpDue)} · <span className={`status status--${state}`}>{FOLLOW_UP_WORDS[state]}</span>
+                </p>
+                {state === "missed" ? (
+                  // A missed call commits nobody to anything: the doctor decides
+                  // what happens next, and leaving it open is a choice too.
+                  <>
+                    <div className="sheet__actions">
+                      <button type="button" className="btn btn--compact btn--secondary" onClick={() => callAgain(booking.id)}>
+                        Call again today
+                      </button>
+                      <button type="button" className="btn btn--compact btn--secondary" onClick={() => askAsha(booking.id)}>
+                        Ask the ASHA to follow up
+                      </button>
+                    </div>
+                    <p className="sheet__hint">Or leave it open: it stays under Needs attention now.</p>
+                  </>
+                ) : state !== "handed" ? (
+                  <div className="sheet__actions">
+                    <button type="button" className="btn btn--compact btn--secondary" aria-pressed={booking.followUpStatus === "answered"} onClick={() => setFollowUpStatus(booking.id, "answered")}>
+                      Mark answered
+                    </button>
+                    <button type="button" className="btn btn--compact btn--secondary" onClick={() => setFollowUpStatus(booking.id, "missed")}>
+                      Mark missed
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="sheet__hint">No call planned. Choose a day if the family should be checked on.</p>
+            )}
+          </section>
+        </>
+      )}
     </aside>
   );
 }

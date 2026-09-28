@@ -1,5 +1,6 @@
 // One open follow-up (SPEC 6.3 Follow-ups). A pending call whose day has
-// passed reads "Overdue"; a missed one says the ASHA has been asked to visit.
+// passed reads "Overdue"; a missed one needs the doctor's decision until the
+// ASHA has been asked to follow up.
 
 import { dayLabel } from "../../app/format";
 import { followUpState } from "./selectors";
@@ -8,7 +9,8 @@ import { patientMeta, patientName, type BookingRow } from "./rows";
 const STATUS = {
   pending: { label: "Pending", tone: "pending" },
   overdue: { label: "Overdue", tone: "overdue" },
-  missed: { label: "Missed · ASHA visit requested", tone: "missed" },
+  missed: { label: "Missed · needs a decision", tone: "missed" },
+  handed: { label: "Missed · ASHA asked to follow up", tone: "pending" },
   answered: { label: "Answered", tone: "answered" },
   none: { label: "—", tone: "pending" },
 } as const;

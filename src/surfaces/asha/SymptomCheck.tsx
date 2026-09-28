@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { IconCheck, IconVolume, IconX } from "@tabler/icons-react";
+import { IconCheck, IconX } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
 import { decodeAnswers, encodeAnswers, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
 import type { TriageAnswer } from "../../app/types";
@@ -88,10 +88,6 @@ export default function SymptomCheck() {
             <Icon icon={iconFor(question.id)} size={40} />
           </span>
           <h1 className="ask__question">{question.text}</h1>
-          <button type="button" className="assist" aria-label="Read aloud">
-            <Icon icon={IconVolume} />
-            Read aloud
-          </button>
         </div>
       </section>
       <div className="answers">

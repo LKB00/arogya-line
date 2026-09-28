@@ -1,8 +1,10 @@
 // ASHA home screen (SPEC 6.1 TodayList). It answers her first question of the
 // day, "who needs me first?": the most urgent person leads as one large card
 // with one action, and everyone else follows in order of urgency, sorted
-// red → amber → green → done. The village stays on every row so she can still
-// plan her walk.
+// red → amber → green → done. One row per person: the person is the work, the
+// family is where she finds them, and a row says when someone else in the same
+// family also needs her. The village stays on every row so she can still plan
+// her walk.
 
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
@@ -18,6 +20,7 @@ import {
   IconPlus,
   IconReportMedical,
   IconStethoscope,
+  IconUsers,
   type TablerIcon,
 } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
@@ -26,7 +29,7 @@ import { URGENCY_LABEL, longDate } from "../../app/format";
 import Icon from "../../shell/Icon";
 import SyncBanner from "./SyncBanner";
 import UrgencyChip from "./UrgencyChip";
-import { BANDS, BAND_ORDER, personLabel, reasonFor, rowFor, type Kind, type Row } from "./rows";
+import { BANDS, BAND_ORDER, personLabel, reasonFor, rowsFor, type Kind, type Row } from "./rows";
 
 /** What she will do, drawn: see the doctor, phone, go to the home, note it, done. */
 const KIND_ICON: Record<Kind, TablerIcon> = {
@@ -41,6 +44,13 @@ function when(row: Row): string {
   return [row.day, row.time].filter(Boolean).join(", ");
 }
 
+/** "+1 other in this family": others in the same household who also need her. */
+function othersLine(row: Row, open: Row[]): string | undefined {
+  const n = open.filter((r) => r.family.id === row.family.id && r !== row).length;
+  if (n === 0) return undefined;
+  return `+${n} other ${n === 1 ? "person" : "people"} in this family`;
+}
+
 export default function TodayList() {
   const families = useStore((s) => s.families);
   const concerns = useStore((s) => s.concerns);
@@ -49,8 +59,7 @@ export default function TodayList() {
 
   const rows = families
     .filter((f) => f.ashaId === ASHA.id)
-    .map((f) => rowFor(f, concerns, bookings, today))
-    .filter((r): r is Row => r !== null)
+    .flatMap((f) => rowsFor(f, concerns, bookings, today))
     .sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
 
   const open = rows.filter((r) => r.band !== "done");
@@ -74,7 +83,7 @@ export default function TodayList() {
           <h1 className="home__title">Namaste, {ASHA.name}</h1>
           {open.length > 0 && (
             <p className="home__sub">
-              {open.length} {open.length === 1 ? "family needs" : "families need"} you today
+              {open.length} {open.length === 1 ? "person needs" : "people need"} you today
               {urgent > 0 && <span className="home__urgent tri--red">{urgent} urgent</span>}
             </p>
           )}
@@ -107,6 +116,12 @@ export default function TodayList() {
                   {next.task}
                   {when(next) && ` · ${when(next)}`}
                 </li>
+                {othersLine(next, open) && (
+                  <li>
+                    <Icon icon={IconUsers} />
+                    {othersLine(next, open)}
+                  </li>
+                )}
               </ul>
               {next.sync === "saved_offline" && (
                 <p className="hero__pending">
@@ -139,7 +154,7 @@ export default function TodayList() {
             <h2 className="block__title">
               {sec.title}
               <span className="block__aside">
-                {sec.rows.length} {sec.rows.length === 1 ? "family" : "families"}
+                {sec.rows.length} {sec.rows.length === 1 ? "person" : "people"}
               </span>
             </h2>
             <div className="listcard">
@@ -151,7 +166,7 @@ export default function TodayList() {
                     {band !== "done" && <h3 className={`subhead tri--${band}`}>{URGENCY_LABEL[band]}</h3>}
                     <ul>
                       {group.map((r) => (
-                        <li key={r.family.id}>
+                        <li key={`${r.family.id}-${r.member?.id ?? ""}`}>
                           <Link className={`row tri--${r.band}`} to={`/asha/family/${r.family.id}`}>
                             <span className="row__disc">
                               <Icon icon={KIND_ICON[r.kind]} />
@@ -162,6 +177,7 @@ export default function TodayList() {
                                 {r.task} · {r.family.village}
                               </span>
                               {r.note && <span className="row__note">{r.note}</span>}
+                              {r.band !== "done" && othersLine(r, open) && <span className="row__note">{othersLine(r, open)}</span>}
                               {r.sync === "saved_offline" && (
                                 <span className="row__pending">
                                   <Icon icon={IconCloudOff} size={16} />

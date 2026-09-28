@@ -43,7 +43,8 @@ export type Booking = {
   facility: string; // "PHC Tumkur"
   doctor: string;
   sync: SyncStatus;
-  visitNeeded?: boolean; // set by doctor after consult
+  /** Doctor, after the consult: could this have been handled without a visit? */
+  avoidable?: boolean;
   advice?: string; // doctor's note text (stands in for the voice note)
   followUpDue?: string; // ISO date
   followUpStatus?: "pending" | "answered" | "missed";

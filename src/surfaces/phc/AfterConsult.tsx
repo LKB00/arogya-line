@@ -1,18 +1,28 @@
 // Doctor's after-consult panel (SPEC 6.3 AfterConsult), as a side sheet beside
 // the list. Everything the doctor needs for this one patient, in the order it
-// is done: what was found, whether the visit was needed, the advice (read back
-// to the family on the voice line), then the follow-up.
+// is done: what was found, whether it could have been handled without a visit,
+// the advice (read back to the family on the voice line), then whether and
+// when to call the family again.
 
 import { useState } from "react";
 import { IconCheck, IconNurse, IconPhoneCall, IconVolume, IconX } from "@tabler/icons-react";
 import { URGENCY_LABEL, dayLabel, slotLabel } from "../../app/format";
 import { useStore } from "../../app/store";
 import Icon from "../../shell/Icon";
-import { VisitNeededToggle } from "./PatientRow";
+import { addDays } from "../../app/seed";
+import { AvoidableToggle } from "./PatientRow";
 import { followUpState } from "./selectors";
 import { patientMeta, patientName, reportedBy, type BookingRow } from "./rows";
 
 type Props = { row: BookingRow; today: string; onClose: () => void };
+
+/** When to call the family again: a decision, not a default. Days after the visit. */
+const FOLLOW_UP_CHOICES = [
+  { days: null, label: "None" },
+  { days: 1, label: "Next day" },
+  { days: 3, label: "In 3 days" },
+  { days: 7, label: "In a week" },
+] as const;
 
 const FOLLOW_UP_WORDS = {
   pending: "Pending",
@@ -26,6 +36,7 @@ export default function AfterConsult({ row, today, onClose }: Props) {
   const { booking, concern } = row;
   const saveAdvice = useStore((s) => s.saveAdvice);
   const setFollowUpStatus = useStore((s) => s.setFollowUpStatus);
+  const setFollowUp = useStore((s) => s.setFollowUp);
   const [text, setText] = useState(booking.advice ?? "");
   const trimmed = text.trim();
   const unchanged = trimmed === (booking.advice ?? "");
@@ -71,9 +82,11 @@ export default function AfterConsult({ row, today, onClose }: Props) {
       </section>
 
       <section className="sheet__block">
-        <h3 className="sheet__label">Was the visit needed?</h3>
-        <VisitNeededToggle booking={booking} />
-        {booking.visitNeeded === undefined && <p className="sheet__hint">Not set yet. A “No” here counts towards visits not needed.</p>}
+        <h3 className="sheet__label">Could this have been handled without a visit?</h3>
+        <AvoidableToggle booking={booking} />
+        {booking.avoidable === undefined && (
+          <p className="sheet__hint">Not set yet. A “Yes” counts towards visits that advice could have replaced.</p>
+        )}
       </section>
 
       <section className="sheet__block">
@@ -108,6 +121,19 @@ export default function AfterConsult({ row, today, onClose }: Props) {
 
       <section className="sheet__block">
         <h3 className="sheet__label">Follow-up call</h3>
+        <span className="seg" role="group" aria-label="Follow-up call">
+          {FOLLOW_UP_CHOICES.map((c) => (
+            <button
+              key={c.label}
+              type="button"
+              className="seg__btn"
+              aria-pressed={c.days === null ? !hasFollowUp : booking.followUpDue === addDays(booking.date, c.days)}
+              onClick={() => setFollowUp(booking.id, c.days)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </span>
         {hasFollowUp ? (
           <>
             <p className="sheet__value">
@@ -123,7 +149,7 @@ export default function AfterConsult({ row, today, onClose }: Props) {
             </div>
           </>
         ) : (
-          <p className="sheet__hint">Set for the day after the visit once you save advice.</p>
+          <p className="sheet__hint">No call planned. Choose a day if the family should be checked on.</p>
         )}
       </section>
     </aside>

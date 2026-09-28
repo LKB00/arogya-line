@@ -11,9 +11,9 @@ type Step = { path: string; text: string };
 const STEPS: Step[] = [
   { path: "/asha", text: "ASHA app, offline: tap New concern, choose family 4471, check Arjun's symptoms, book a PHC visit. Notice it says waiting to send." },
   { path: "/asha", text: "Turn the signal on with the toggle. Watch the booking sync." },
-  { path: "/phc", text: "PHC dashboard: find Arjun for tomorrow. Mark the visit as needed and save advice." },
+  { path: "/phc", text: "PHC dashboard: find Arjun for tomorrow. Say whether it could have been handled without a visit, save advice, and choose when to call the family." },
   { path: "/voice", text: "Voice line: call, enter 4471, press 3. Hear the doctor's advice read back." },
-  { path: "/phc", text: "Done. Look at the metrics strip on the dashboard. Reset to try again." },
+  { path: "/phc", text: "Done. Look at Outcomes so far at the foot of the dashboard. Reset to try again." },
 ];
 
 export default function GuidedWalkthrough() {

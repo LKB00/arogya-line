@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking, Concern, Family } from "../../app/types";
-import { personLabel, reasonFor, rowFor } from "./rows";
+import { personLabel, reasonFor, rowFor, rowsFor } from "./rows";
 
 const today = isoDate(0);
 const seed = () => createSeed();
@@ -62,5 +62,27 @@ describe("rowFor: what each family needs today", () => {
     const s = seed();
     const row = rowFor(fam(s, "3120"), s.concerns, s.bookings, today)!;
     expect(reasonFor(row, s.concerns)).toBe("Breathing fast");
+  });
+
+  it("two people with open concerns in one family are two rows, most urgent first", () => {
+    const s = seed();
+    const dad: Concern = { ...s.concerns[0], id: "c-dad", familyId: "3120", memberId: "3120-1", urgency: "amber", reasons: ["Fever more than 2 days"] };
+    const rows = rowsFor(fam(s, "3120"), [...s.concerns, dad], s.bookings, today);
+    expect(rows.map((r) => r.member?.name)).toEqual(["Kavya", "Manjunath"]);
+  });
+
+  it("one person with two concerns is one row, under the most urgent", () => {
+    const s = seed();
+    const green: Concern = { ...s.concerns[0], id: "c-g2", familyId: "3120", memberId: "3120-2", urgency: "green" };
+    const rows = rowsFor(fam(s, "3120"), [green, ...s.concerns], s.bookings, today);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].band).toBe("red");
+  });
+
+  it("an overdue follow-up call is still a call today, not seen", () => {
+    const s = seed();
+    const late: Booking = { ...s.bookings[2], followUpDue: isoDate(-1) };
+    const row = rowFor(fam(s, "2205"), s.concerns, [s.bookings[0], s.bookings[1], late, s.bookings[3]], today)!;
+    expect(row.kind).toBe("call");
   });
 });

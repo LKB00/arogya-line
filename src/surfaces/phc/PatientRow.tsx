@@ -1,6 +1,6 @@
 // One row of the day's list (SPEC 6.3 table): time; who, and how they came;
-// what was found, in the IMNCI chart's colours; visit needed; advice. The
-// Yes/No toggle writes through setVisitNeeded.
+// what was found, in the IMNCI chart's colours; could it have been handled
+// without a visit; advice. The Yes/No toggle writes through setAvoidable.
 
 import { IconCheck, IconNurse, IconPhone, IconWalk } from "@tabler/icons-react";
 import { URGENCY_LABEL, slotLabel } from "../../app/format";
@@ -12,16 +12,19 @@ import { patientMeta, patientName, reportedBy, type BookingRow } from "./rows";
 /** How the booking reached the PHC, drawn: the ASHA, the phone line, the door. */
 const SOURCE_ICON = { ASHA: IconNurse, "Voice line": IconPhone, "Walk-in": IconWalk } as const;
 
-/** Yes / No, shared by the row and the panel. Neither is set until the doctor sets it. */
-export function VisitNeededToggle({ booking }: { booking: Booking }) {
-  const setVisitNeeded = useStore((s) => s.setVisitNeeded);
-  const current = booking.visitNeeded;
+/**
+ * "Could this have been handled without a visit?" Yes / No, shared by the row
+ * and the panel. Neither is set until the doctor sets it.
+ */
+export function AvoidableToggle({ booking }: { booking: Booking }) {
+  const setAvoidable = useStore((s) => s.setAvoidable);
+  const current = booking.avoidable;
   return (
-    <span className="seg" role="group" aria-label="Visit needed">
-      <button type="button" className="seg__btn" aria-pressed={current === true} onClick={() => setVisitNeeded(booking.id, true)}>
+    <span className="seg" role="group" aria-label="Could this have been handled without a visit?">
+      <button type="button" className="seg__btn" aria-pressed={current === true} onClick={() => setAvoidable(booking.id, true)}>
         Yes
       </button>
-      <button type="button" className="seg__btn" aria-pressed={current === false} onClick={() => setVisitNeeded(booking.id, false)}>
+      <button type="button" className="seg__btn" aria-pressed={current === false} onClick={() => setAvoidable(booking.id, false)}>
         No
       </button>
     </span>
@@ -55,7 +58,7 @@ export default function PatientRow({ row, selected, onOpen }: Props) {
         )}
       </td>
       <td className="cell">
-        <VisitNeededToggle booking={booking} />
+        <AvoidableToggle booking={booking} />
       </td>
       <td className="cell cell--action">
         <button type="button" className="btn btn--compact btn--secondary" aria-expanded={selected} onClick={() => onOpen(booking.id)}>

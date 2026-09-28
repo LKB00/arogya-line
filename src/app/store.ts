@@ -31,10 +31,12 @@ export type Actions = {
   setOnline: (online: boolean) => void;
   /** After SYNC_DELAY_MS, flip every "saved_offline" item to "sent" (if still online). */
   syncPending: () => Promise<void>;
-  /** Doctor marks whether a physical visit is needed. */
-  setVisitNeeded: (bookingId: string, visitNeeded: boolean) => void;
-  /** Doctor saves advice; schedules a follow-up for the day after the booking. */
+  /** Doctor answers "Could this have been handled without a visit?". */
+  setAvoidable: (bookingId: string, avoidable: boolean) => void;
+  /** Doctor saves advice. The follow-up is a separate choice (setFollowUp). */
   saveAdvice: (bookingId: string, advice: string) => void;
+  /** Doctor sets the follow-up call `days` after the visit, or none (null). */
+  setFollowUp: (bookingId: string, days: number | null) => void;
   /** Demo control for the follow-up outcome. */
   setFollowUpStatus: (bookingId: string, status: NonNullable<Booking["followUpStatus"]>) => void;
   /** Which surface is showing (used when one surface hands off to another). */
@@ -106,21 +108,29 @@ export const useStore = create<StoreState>()((set, get) => ({
     });
   },
 
-  setVisitNeeded: (bookingId, visitNeeded) => {
+  setAvoidable: (bookingId, avoidable) => {
     set((s) => ({
-      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, visitNeeded } : b)),
+      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, avoidable } : b)),
     }));
   },
 
+  // Advice never touches the follow-up: correcting a word must not reopen an
+  // answered call, and not every consult needs one.
   saveAdvice: (bookingId, advice) => {
     set((s) => ({
-      bookings: s.bookings.map((b) =>
-        b.id === bookingId
-          ? // Editing advice keeps a follow-up that is already set, and its
-            // outcome: correcting a word must not reopen an answered call.
-            { ...b, advice, followUpDue: b.followUpDue ?? addDays(b.date, 1), followUpStatus: b.followUpStatus ?? "pending" }
-          : b,
-      ),
+      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, advice } : b)),
+    }));
+  },
+
+  setFollowUp: (bookingId, days) => {
+    set((s) => ({
+      bookings: s.bookings.map((b) => {
+        if (b.id !== bookingId) return b;
+        if (days === null) return { ...b, followUpDue: undefined, followUpStatus: undefined };
+        const due = addDays(b.date, days);
+        // Choosing the day already set keeps its outcome; a new day reopens it.
+        return due === b.followUpDue ? b : { ...b, followUpDue: due, followUpStatus: "pending" };
+      }),
     }));
   },
 

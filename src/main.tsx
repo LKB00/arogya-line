@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 // Self-hosted, bundled as a static asset: no runtime request to a third party.
-import "@fontsource-variable/inter";
 import "@fontsource-variable/figtree";
 import "./styles/tokens.css";
 import "./styles/base.css";

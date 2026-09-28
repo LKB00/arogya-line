@@ -7,6 +7,9 @@ import type { Booking, Concern, Family, Store } from "./types";
 export const ASHA = { id: "asha-savitri", name: "Savitri" } as const;
 export const PHC = { facility: "PHC Tumkur", doctor: "Dr. Ramesh" } as const;
 
+/** An emergency arrival's "slot": it comes now, not at a booked time. */
+export const EMERGENCY_SLOT = "Now";
+
 /** Fixed slot list used by Booking (ASHA app) and the Voice line. */
 export const SLOTS = [
   "09:00–10:00",

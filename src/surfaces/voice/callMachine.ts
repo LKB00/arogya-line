@@ -9,7 +9,7 @@
 import { ASHA, PHC, SLOTS, addDays } from "../../app/seed";
 import type { ConcernInput } from "../../app/store";
 import { adviceByPerson, type PersonAdvice } from "../../app/store";
-import { HOME_CARE, evaluate, homeCareFor, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
+import { HOME_CARE, evaluate, getQuestions, homeCareFor, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
 import { dayLabel, shortDate, slotLabel } from "../../app/format";
 
@@ -67,7 +67,9 @@ export type Env = {
 /** Store writes for CallSimulator to run. "book" creates the concern and a booking on it. */
 export type Effect =
   | { type: "concern"; concern: ConcernInput }
-  | { type: "book"; concern: ConcernInput; date: string; slot: string };
+  | { type: "book"; concern: ConcernInput; date: string; slot: string }
+  /** Coming to the PHC now: an emergency arrival, never an appointment slot. */
+  | { type: "emergency"; concern: ConcernInput };
 
 export type Step = { call: Call; effects: Effect[] };
 
@@ -186,8 +188,22 @@ function operatorSlot(env: Env): { date: string; slot: string } {
   return nextAvailable(env, env.today);
 }
 
-function reasonsLine(reasons: string[]): string {
-  return reasons.length ? `Noted: ${reasons.join("; ")}.` : "Nothing specific was noted.";
+/** ["fever", "vomiting"] → "fever and vomiting"; three or more take commas. */
+function spokenList(items: string[], joiner: "and" | "or"): string {
+  return items.length > 1 ? `${items.slice(0, -1).join(", ")} ${joiner} ${items.at(-1)}` : (items[0] ?? "");
+}
+
+/**
+ * What the caller told the line, said back the way a person would: what they
+ * reported, then the danger sign they did not. Never a written list read out.
+ */
+function heardLine(role: TriageRole, answers: TriageAnswer[]): string {
+  const lower = (t: string) => t[0].toLowerCase() + t.slice(1);
+  const yes = getQuestions(role).filter((q) => answers.some((a) => a.questionId === q.id && a.answer === "yes"));
+  const clear = getQuestions(role).filter((q) => q.dangerSign && q.notFound && answers.some((a) => a.questionId === q.id && a.answer === "no"));
+  const told = yes.length ? `You told us about ${spokenList(yes.map((q) => lower(q.label)), "and")}.` : "You did not report any of the signs I asked about.";
+  const notReported = clear.map((q) => `You did not report ${lower((q.notFound ?? "").replace(/^No /, ""))}.`);
+  return [told, ...notReported].join(" ");
 }
 
 /** Build the concern for whatever the call has gathered so far. */
@@ -242,7 +258,7 @@ function enterResult(call: Call, env: Env): Step {
     const next = prompt(
       { ...withResult, state: "resultGreen" },
       headline,
-      reasonsLine(result.reasons),
+      heardLine(call.role, call.answers),
       ...HOME_CARE[call.role].spoken,
       `Your ASHA, ${ASHA.name}, has been told and will follow up with you.`,
       "Press 9 to hear this again, or hang up.",
@@ -252,11 +268,11 @@ function enterResult(call: Call, env: Env): Step {
   }
 
   if (result.urgency === "amber") {
-    const spoken = say({ ...withResult, state: "resultAmber" }, "line", headline, reasonsLine(result.reasons));
+    const spoken = say({ ...withResult, state: "resultAmber" }, "line", headline, heardLine(call.role, call.answers));
     return { call: offerSlot(spoken, env, addDays(env.today, 1)), effects: [] };
   }
 
-  const spoken = say({ ...withResult, state: "resultRed" }, "line", headline, reasonsLine(result.reasons));
+  const spoken = say({ ...withResult, state: "resultRed" }, "line", headline, heardLine(call.role, call.answers));
   return { call: enterOperator(spoken), effects: [] };
 }
 
@@ -300,7 +316,10 @@ function adviceLines(a: PersonAdvice, env: Env, member: Member | undefined): str
     return [`${a.booking.doctor} has a message for ${name}${when}.`, a.booking.advice ?? "", `That's all from ${a.booking.doctor}.`];
   }
   const role = member ? toTriageRole(member.role) : "adult";
-  return [`Here is the advice from ${name}'s check ${dayLabel(a.date).toLowerCase()}.`, ...HOME_CARE[role].spoken, "That's all."];
+  // Exactly what was said at the time, from the record; the protocol's
+  // current wording only if an older record has no spoken form.
+  const words = a.concern?.homeCare?.spoken ?? HOME_CARE[role].spoken;
+  return [`Here is the advice from ${name}'s check ${dayLabel(a.date).toLowerCase()}.`, ...words, "That's all."];
 }
 
 const AFTER_ADVICE = "Press 1 to hear it again, or 2 for the main menu.";
@@ -478,7 +497,10 @@ export function tick(call: Call, env: Env): Step {
   if (call.operatorStep === 0) {
     const text = call.emergency
       ? `Namaste, Arogya Line. I have your emergency call for ${who}. I am alerting ${PHC.doctor} at ${PHC.facility} and your ASHA, ${ASHA.name}.`
-      : `Namaste, Arogya Line. I can see ${who}. Let me get you seen today.`;
+      : call.result?.urgency === "red"
+        ? `Namaste, Arogya Line. I can see ${who}. From the answers, this is urgent.`
+        : // Never promise "today" before a slot is found.
+          `Namaste, Arogya Line. I can see ${who}. Let me find the next available time.`;
     // The caller never starts from zero with a person: what the line already
     // heard is passed on and said back.
     const heard = call.role && call.answers.length > 0 ? evaluate(call.role, call.answers).reasons : [];
@@ -489,25 +511,36 @@ export function tick(call: Call, env: Env): Step {
     return { call: { ...say(call, "operator", text, ...context), operatorStep: 1 }, effects: [] };
   }
 
-  const { date, slot } = operatorSlot(env);
-  const day = date === env.today ? "today" : dayWord(date, env.today) === "on" ? "on" : dayWord(date, env.today);
   const urgency: Urgency = call.emergency || call.result?.urgency === "red" ? "red" : "amber";
-  const reason = call.emergency
-    ? "Emergency call from the ASHA app"
-    : call.result?.urgency === "red"
-      ? undefined
-      : "Asked to talk to a person";
-  const concern = concernFor(call, env, urgency, reason);
+  // Only the person the caller actually chose is named: never guess the head.
+  const who2 = call.memberId && member ? member.name : "the patient";
+
+  // An emergency is not an appointment: come now, the PHC and the ASHA are
+  // told, and the PHC expects an emergency arrival today. No slot is booked.
+  if (urgency === "red") {
+    const concern = concernFor(call, env, "red", call.emergency ? "Emergency call from the ASHA app" : undefined);
+    const done = end(
+      say(
+        call,
+        "operator",
+        `Please bring ${who2} to ${PHC.facility} now. You will be seen as an emergency; there is no need to wait for a time.`,
+        `${PHC.doctor} is expecting ${who2}, and your ASHA, ${ASHA.name}, has been told.`,
+      ),
+    );
+    return { call: done, effects: [{ type: "emergency", concern }] };
+  }
+
+  // Otherwise the next real slot, said with its day, so nothing was promised
+  // that the diary could not keep.
+  const { date, slot } = operatorSlot(env);
+  const when = dayWord(date, env.today);
+  const concern = concernFor(call, env, urgency, "Asked to talk to a person");
   const done = end(
     say(
       call,
       "operator",
-      urgency === "red"
-        ? // Urgent: "come now" comes first; the booked slot is the record, not the wait.
-          `Please bring ${member?.name ?? "the patient"} to ${PHC.facility} now; you will be seen as an emergency. ` +
-            `A visit is also booked ${day}, ${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor}. Your ASHA, ${ASHA.name}, has been told.`
-        : `${member?.name ?? "The patient"} is booked at ${PHC.facility} ${day}, ${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor}. ` +
-          `Your ASHA, ${ASHA.name}, has been told.`,
+      `The next available time is ${when === "on" ? "" : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor} at ${PHC.facility}.`,
+      `I have booked ${who2} in. Your ASHA, ${ASHA.name}, has been told.`,
     ),
   );
   return { call: done, effects: [{ type: "book", concern, date, slot }] };

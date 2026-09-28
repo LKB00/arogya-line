@@ -37,7 +37,10 @@ export function dayRows(bookings: Booking[], concerns: Concern[], families: Fami
     .sort((a, b) => {
       const ua = a.concern ? URGENCY_ORDER[a.concern.urgency] : 3;
       const ub = b.concern ? URGENCY_ORDER[b.concern.urgency] : 3;
-      return a.booking.slot.localeCompare(b.booking.slot) || ua - ub;
+      // An emergency arrival has no slot: it is first, whatever the time.
+      const ea = a.booking.emergency ? 0 : 1;
+      const eb = b.booking.emergency ? 0 : 1;
+      return ea - eb || a.booking.slot.localeCompare(b.booking.slot) || ua - ub;
     });
 }
 

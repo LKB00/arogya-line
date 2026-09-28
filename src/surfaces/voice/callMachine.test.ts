@@ -240,7 +240,7 @@ describe("edge cases found in the design pass", () => {
     expect(said(heard.call)).toContain(names === "Kavya" ? "Steam twice a day." : "Rest for two days.");
   });
 
-  it("home-care advice from a check can be heard again", () => {
+  it("home-care advice from an older record without its spoken form still plays", () => {
     const e = env();
     const green = { ...e.concerns[0], id: "c-g", familyId: "4471", memberId: "4471-2", urgency: "green" as const, homeCare: { tell: ["x"], callIf: ["y"] } };
     const e2 = { ...e, concerns: [...e.concerns, green] };
@@ -289,12 +289,41 @@ describe("edge cases found in the design pass", () => {
     expect(book).toMatchObject({ date: isoDate(1) });
   });
 
-  it("an emergency says come now first, with the booking as the record", () => {
+  it("an emergency is come now, not an appointment: no slot is booked", () => {
     const e = { ...env(), hour: 22 };
     let step = startCall(e, { familyId: "3120", emergency: true });
     step = tick(step.call, e);
     step = tick(step.call, e);
-    expect(said(step.call)).toContain("now; you will be seen as an emergency");
+    expect(said(step.call)).toContain("Please bring the patient to PHC Tumkur now. You will be seen as an emergency");
+    expect(said(step.call)).not.toMatch(/also booked|next available/);
+    expect(step.effects).toEqual([expect.objectContaining({ type: "emergency", concern: expect.objectContaining({ urgency: "red" }) })]);
+  });
+
+  it("the health worker never promises today before finding a time", () => {
+    const e = { ...env(), hour: 22 }; // nothing left today
+    const op = press(type(startCall(e), "4471", e).call, "0", e);
+    const first = tick(op.call, e);
+    expect(said(first.call)).toContain("Let me find the next available time.");
+    expect(said(first.call)).not.toContain("today");
+    const second = tick(first.call, e);
+    expect(said(second.call)).toContain("The next available time is tomorrow");
+    expect(second.effects).toEqual([expect.objectContaining({ type: "book", date: isoDate(1) })]);
+  });
+
+  it("says back what the caller reported, as speech, not a list", () => {
+    const e = env();
+    const after = type(startCall(e), "4471" + "1" + "2" + "1122", e);
+    expect(said(after.call)).toContain("You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing.");
+    expect(said(after.call)).not.toContain("Noted:");
+  });
+
+  it("replays the advice exactly as it was given, from the record", () => {
+    const e = env();
+    const given = { tell: ["x"], callIf: ["y"], spoken: ["At home, rest in the shade.", "Call us again if it gets worse."] };
+    const green = { ...e.concerns[0], id: "c-g", familyId: "4471", memberId: "4471-2", urgency: "green" as const, homeCare: given };
+    const e2 = { ...e, concerns: [...e.concerns, green] };
+    const heard = type(startCall(e2, { familyId: "4471" }), "3", e2);
+    expect(said(heard.call)).toContain("At home, rest in the shade. | Call us again if it gets worse.");
   });
 
   it("after advice, 1 hears it again and 2 goes back to the menu", () => {

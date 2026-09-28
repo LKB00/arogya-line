@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking, Concern, Family } from "../../app/types";
-import { personLabel, reasonFor, rowFor, rowsFor } from "./rows";
+import { byWork, isUpcoming, personLabel, reasonFor, rowFor, rowsFor } from "./rows";
 
 const today = isoDate(0);
 const seed = () => createSeed();
@@ -100,6 +100,32 @@ describe("rowFor: what each family needs today", () => {
     expect(row.task).toBe("Follow up");
     expect(row.note).toBe("Called the voice line");
     expect(row.day).toBe("Today");
+  });
+
+  it("a visit tomorrow is upcoming, never today's work", () => {
+    const s = seed();
+    const tomorrow: Booking = { ...s.bookings[0], date: isoDate(1) };
+    const row = rowFor(fam(s, "3120"), s.concerns, [tomorrow, ...s.bookings.slice(1)], today)!;
+    expect(isUpcoming(row, today)).toBe(true);
+  });
+
+  it("up next is the work that is due, not the brightest colour", () => {
+    const s = seed();
+    // Kavya: red, but her visit is tomorrow. Shobha: a follow-up call due today.
+    const tomorrow: Booking = { ...s.bookings[0], date: isoDate(1) };
+    const bookings = [tomorrow, ...s.bookings.slice(1)];
+    const rows = s.families.flatMap((f) => rowsFor(f, s.concerns, bookings, today)).filter((r) => r.band !== "done").sort(byWork(today));
+    const todays = rows.filter((r) => !isUpcoming(r, today));
+    expect(todays[0].member?.name).not.toBe("Kavya");
+    expect(rows.at(-1)?.member?.name).toBe("Kavya"); // upcoming, last
+  });
+
+  it("a person with two open items shows once, with the other counted", () => {
+    const s = seed();
+    const second: Concern = { ...s.concerns[0], id: "c-k2", source: "ivr", urgency: "green" }; // Kavya again, from the line
+    const rows = rowsFor(fam(s, "3120"), [...s.concerns, second], s.bookings, today);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].more).toBe(1);
   });
 });
 

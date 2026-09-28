@@ -9,6 +9,7 @@
 import { ASHA, PHC, SLOTS, addDays } from "../../app/seed";
 import type { ConcernInput } from "../../app/store";
 import { adviceByPerson, type PersonAdvice } from "../../app/store";
+import { isBookable, slotTaken } from "../../app/slots";
 import { HOME_CARE, evaluate, getQuestions, homeCareFor, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
 import { dayLabel, shortDate, slotLabel } from "../../app/format";
@@ -184,8 +185,7 @@ function hourOf(env: Env): number {
 
 /** First slot on `date` that nobody holds and, today, that has not started. */
 function freeSlot(env: Env, date: string): string | undefined {
-  const taken = new Set(env.bookings.filter((b) => b.date === date).map((b) => b.slot));
-  return SLOTS.find((s) => !taken.has(s) && (date !== env.today || Number(s.slice(0, 2)) > hourOf(env)));
+  return SLOTS.find((s) => isBookable(env.bookings, date, s, env.today, hourOf(env)));
 }
 
 /** How far ahead the line looks for a free slot. */
@@ -380,7 +380,10 @@ function connectFamily(call: Call, familyId: string, env: Env): Call {
   if (!family) {
     return enterFamilyId(say(call, "line", `Sorry, family ID ${familyId} was not found.`));
   }
-  const connected = say({ ...call, familyId }, "line", `Family ${family.id}, ${family.head}, ${family.village}.`);
+  // Nothing identifying is said aloud on a card number alone (a shared phone,
+  // a crowded room, a found card): no name, no village. A real service would
+  // verify the caller before reading any name or advice.
+  const connected = say({ ...call, familyId }, "line", "Thank you. We have found your family card.");
   return call.emergency ? enterOperator(connected) : enterMainMenu(connected);
 }
 
@@ -479,10 +482,13 @@ export function press(call: Call, key: Key, env: Env): Step {
       if (key === "1" && pressed.offerDate && pressed.offerSlot) {
         const date = pressed.offerDate;
         const slot = pressed.offerSlot;
-        // Taken while the caller listened: say so and offer the next one,
-        // never book a different slot than the one spoken.
-        if (freeSlot(env, date) === undefined || env.bookings.some((b) => b.date === date && b.slot === slot)) {
-          return none(offerSlot(say(pressed, "line", "Sorry, that slot has just been taken."), env, date));
+        // Checked again at the moment of confirming, with the same rule used
+        // to offer it: taken while the caller listened, or its hour started
+        // (offered at 9:58, confirmed at 10:02). Say which, and offer the next
+        // one; never book a different slot than the one spoken.
+        if (!isBookable(env.bookings, date, slot, env.today, hourOf(env))) {
+          const why = slotTaken(env.bookings, date, slot) ? "Sorry, that slot has just been taken." : "Sorry, that time has just started, so it can no longer be booked.";
+          return none(offerSlot(say(pressed, "line", why), env, date));
         }
         const member = memberOf(pressed, env);
         const concern = concernFor(pressed, env, pressed.result?.urgency ?? "amber");
@@ -525,15 +531,16 @@ export function tick(call: Call, env: Env): Step {
   if (call.state !== "operator") return { call, effects: [] };
   const family = familyOf(call, env);
   const member = memberOf(call, env);
-  const who = family ? `family ${family.id}, ${family.head} in ${family.village}` : "your family";
+  // The health worker sees the record; they do not read the household out.
+  const record = family ? "your family's record" : "your call";
   const urgent = call.emergency || call.result?.urgency === "red";
 
   if (call.operatorStep === 0) {
     const text = call.emergency
-      ? `Namaste, Arogya Line. I have your emergency call for ${who}. I am alerting ${PHC.doctor} at ${PHC.facility} and your ASHA, ${ASHA.name}.`
+      ? `Namaste, Arogya Line. I have your emergency call and ${record} in front of me. I am alerting ${PHC.doctor} at ${PHC.facility} and your ASHA, ${ASHA.name}.`
       : urgent
-        ? `Namaste, Arogya Line. I can see ${who}. From the answers, this is urgent.`
-        : `Namaste, Arogya Line. I can see ${who}.`;
+        ? `Namaste, Arogya Line. I have ${record} in front of me. From the answers, this is urgent.`
+        : `Namaste, Arogya Line. I have ${record} in front of me.`;
     return { call: { ...say(call, "operator", text, ...handOffLines(call, member)), operatorStep: 1 }, effects: [] };
   }
 
@@ -549,7 +556,9 @@ export function tick(call: Call, env: Env): Step {
   // told, and the PHC expects an emergency arrival today. No slot is booked.
   // Only the person the caller actually chose is named.
   const name = member?.name ?? "the patient";
-  const concern = concernFor(call, env, "red", call.emergency ? "Emergency call from the ASHA app" : undefined);
+  // Emergency mode is only ever opened by the ASHA's "Call PHC now": the
+  // record says so, so the doctor never reads it as a family's own call.
+  const concern = { ...concernFor(call, env, "red", call.emergency ? "Emergency call from the ASHA app" : undefined), ...(call.emergency ? { initiatedBy: "asha" as const } : {}) };
   const done = end(
     say(
       call,

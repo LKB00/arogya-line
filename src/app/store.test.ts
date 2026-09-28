@@ -27,7 +27,7 @@ describe("syncPending", () => {
     const concern = s.createConcern(arjunConcern);
     const booking = s.createBooking({
       concernId: concern.id,
-      date: "2026-01-02",
+      date: isoDate(3),
       slot: "10:00–11:00",
       facility: "PHC Tumkur",
       doctor: "Dr. Ramesh",
@@ -207,8 +207,11 @@ describe("booking invariants, enforced by the store", () => {
     useStore.getState().resetDemo();
     const s = useStore.getState();
     const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "ivr", answers: [], urgency: "red", reasons: [] });
-    expect(s.createBooking({ ...input(c.id, "Now"), emergency: true })).toBeDefined();
-    expect(useStore.getState().createBooking({ ...input(c.id, "Now"), emergency: true })).toBeDefined();
+    const now = { ...input(c.id, "Now"), date: isoDate(0), emergency: true };
+    expect(s.createBooking(now)).toBeDefined();
+    expect(useStore.getState().createBooking(now)).toBeDefined();
+    // …and an emergency is only ever today.
+    expect(useStore.getState().createBooking({ ...now, date: isoDate(1) })).toBeUndefined();
   });
 });
 
@@ -236,3 +239,71 @@ describe("reset starts a new run", () => {
     expect(useStore.getState().demoRun).toBe(before + 1);
   });
 });
+
+describe("conflicts: time", () => {
+  it("the store refuses a slot on a past day, whatever a screen offered", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "asha", answers: [], urgency: "amber", reasons: [] });
+    expect(s.createBooking({ concernId: c.id, date: isoDate(-1), slot: "10:00–11:00", facility: "PHC Tumkur", doctor: "Dr. Ramesh" })).toBeUndefined();
+  });
+});
+
+describe("history is kept, contradictions are refused", () => {
+  const get = (id: string) => useStore.getState().bookings.find((x) => x.id === id)!;
+
+  it("a missed call stays on record after the follow-up is cleared or moved", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    s.setFollowUpStatus("b-2205", "missed");
+    useStore.getState().setFollowUp("b-2205", null);
+    expect(get("b-2205").followUpStatus).toBeUndefined();
+    expect(get("b-2205").followUpLog).toEqual([expect.objectContaining({ outcome: "missed", due: isoDate(0) })]);
+  });
+
+  it("marking the same outcome twice logs it once", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUpStatus("b-2205", "answered");
+    useStore.getState().setFollowUpStatus("b-2205", "answered");
+    expect(get("b-2205").followUpLog).toHaveLength(1);
+  });
+
+  it("an outcome needs a planned call", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().setFollowUpStatus("b-3120", "answered"); // no follow-up planned
+    expect(get("b-3120").followUpStatus).toBeUndefined();
+  });
+
+  it("editing advice keeps the earlier words, with their time", () => {
+    useStore.getState().resetDemo();
+    useStore.getState().saveAdvice("b-2205", "New words.");
+    expect(get("b-2205").advice).toBe("New words.");
+    expect(get("b-2205").adviceLog?.[0].text).toMatch(/Rest with feet raised/);
+  });
+
+  it("no advice or 'avoidable' for a patient who has not arrived", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "asha", answers: [], urgency: "amber", reasons: [] });
+    const b = s.createBooking({ concernId: c.id, date: isoDate(2), slot: "10:00–11:00", facility: "PHC Tumkur", doctor: "Dr. Ramesh" })!;
+    useStore.getState().saveAdvice(b.id, "Too early.");
+    useStore.getState().setAvoidable(b.id, true);
+    expect(get(b.id).advice).toBeUndefined();
+    expect(get(b.id).avoidable).toBeUndefined();
+    useStore.getState().markArrived(b.id);
+    useStore.getState().saveAdvice(b.id, "Seen now.");
+    expect(get(b.id).advice).toBe("Seen now.");
+  });
+});
+
+describe("conflicts: the doctor moves a follow-up while the ASHA's list shows it", () => {
+  it("the call leaves today's work the moment it is moved, with nothing lost", () => {
+    useStore.getState().resetDemo();
+    const due = () => useStore.getState().bookings.find((b) => b.id === "b-2205")!;
+    expect(due().followUpDue).toBe(isoDate(0));
+    useStore.getState().setFollowUp("b-2205", 7);
+    expect((due().followUpDue ?? "") > isoDate(0)).toBe(true);
+    expect(due().followUpStatus).toBe("pending");
+  });
+});
+

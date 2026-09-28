@@ -40,6 +40,11 @@ export type Concern = {
   urgency: Urgency;
   reasons: string[]; // plain-text reasons shown to the user
   homeCare?: HomeCare; // the advice given, saved with a home-care result
+  /**
+   * Who started it, when that differs from the channel: the ASHA's "Call PHC
+   * now" travels over the voice line (source "ivr") but was the ASHA's call.
+   */
+  initiatedBy?: "asha";
   createdAt: string;
   sync: SyncStatus;
 };
@@ -58,6 +63,10 @@ export type Booking = {
   adviceAt?: string; // ISO timestamp the advice was last saved, so "latest" is exact
   followUpDue?: string; // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
+  /** Every call outcome, kept even when the current follow-up is changed or cleared. */
+  followUpLog?: { due: string; outcome: "answered" | "missed"; at: string }[];
+  /** Earlier wording of the advice, kept when it is edited: what the family was told stays on record. */
+  adviceLog?: { text: string; at: string }[];
   /** The doctor, after a missed call, asked the ASHA to follow up. Never automatic. */
   ashaAsked?: boolean;
   /** An emergency: the patient is coming now, not to a slot. `slot` is "Now". */

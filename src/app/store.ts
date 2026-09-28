@@ -4,6 +4,7 @@
 import { create } from "zustand";
 import type { Booking, Concern, Store, Surface } from "./types";
 import { addDays, createSeed, isoDate } from "./seed";
+import { isBookable } from "./slots";
 
 /** Advice someone in a family has been given: by the doctor, or with a home-care result. */
 export type PersonAdvice = {
@@ -46,13 +47,11 @@ function localDay(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/**
- * Is this slot already held? The one rule every booking obeys, checked by the
- * store at the moment of writing, so no screen (and no sync arriving between
- * a render and a tap) can double-book it. An emergency arrival holds no slot.
- */
-export function slotTaken(bookings: Booking[], date: string, slot: string): boolean {
-  return bookings.some((b) => !b.emergency && b.date === date && b.slot === slot);
+export { slotTaken } from "./slots";
+
+/** A consult can be recorded only for a patient who can be in the room: today, a past day, or (demo) arrived. */
+function canConsult(b: Booking): boolean {
+  return b.date <= isoDate(0) || Boolean(b.arrived);
 }
 
 export const SYNC_DELAY_MS = 1500;
@@ -126,7 +125,11 @@ export const useStore = create<StoreState>()((set, get) => ({
     const concern = concerns.find((c) => c.id === input.concernId);
     // The data layer enforces the invariants; screens only warn.
     if (!concern) return undefined;
-    if (!input.emergency && slotTaken(get().bookings, input.date, input.slot)) return undefined;
+    // An emergency is an arrival today, never a booking for another day.
+    if (input.emergency && input.date !== isoDate(0)) return undefined;
+    // The same rule every screen uses, against the clock now: never a slot
+    // that is taken, on a past day, or already started today.
+    if (!input.emergency && !isBookable(get().bookings, input.date, input.slot, isoDate(0), new Date().getHours())) return undefined;
     const fromIvr = concern.source === "ivr";
     const booking: Booking = {
       ...input,
@@ -158,17 +161,24 @@ export const useStore = create<StoreState>()((set, get) => ({
     });
   },
 
+  // Decided with the patient seen: refused for a booking not yet arrived.
   setAvoidable: (bookingId, avoidable) => {
     set((s) => ({
-      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, avoidable } : b)),
+      bookings: s.bookings.map((b) => (b.id === bookingId && canConsult(b) ? { ...b, avoidable } : b)),
     }));
   },
 
   // Advice never touches the follow-up: correcting a word must not reopen an
   // answered call, and not every consult needs one.
+  // Only for a patient who can have been seen. An edit keeps the words it
+  // replaces, with their time: what the family was told is part of the record.
   saveAdvice: (bookingId, advice) => {
     set((s) => ({
-      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, advice, adviceAt: new Date().toISOString() } : b)),
+      bookings: s.bookings.map((b) => {
+        if (b.id !== bookingId || !canConsult(b) || b.advice === advice) return b;
+        const adviceLog = b.advice ? [...(b.adviceLog ?? []), { text: b.advice, at: b.adviceAt ?? `${b.date}T12:00:00` }] : b.adviceLog;
+        return { ...b, advice, adviceAt: new Date().toISOString(), adviceLog };
+      }),
     }));
   },
 
@@ -184,9 +194,16 @@ export const useStore = create<StoreState>()((set, get) => ({
     }));
   },
 
+  // An outcome needs a planned call, and every outcome is logged, so clearing
+  // or moving the follow-up later never erases that a call was missed.
   setFollowUpStatus: (bookingId, status) => {
     set((s) => ({
-      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, followUpStatus: status } : b)),
+      bookings: s.bookings.map((b) => {
+        if (b.id !== bookingId || !b.followUpDue || b.followUpStatus === status) return b;
+        const followUpLog =
+          status === "pending" ? b.followUpLog : [...(b.followUpLog ?? []), { due: b.followUpDue, outcome: status, at: new Date().toISOString() }];
+        return { ...b, followUpStatus: status, followUpLog };
+      }),
     }));
   },
 

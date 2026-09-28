@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createSeed, isoDate } from "../../app/seed";
 import type { Booking } from "../../app/types";
+import { reportedBy } from "./rows";
 import { consultState, dayFromParam, dayRows, followUpGroup, followUpRows, followUpState, outcomes, percent, workload } from "./selectors";
 
 describe("dayFromParam", () => {
@@ -116,6 +117,15 @@ describe("followUpGroup: who acts, and when", () => {
   it("a later call is upcoming; answered is nobody's", () => {
     expect(followUpGroup(b({ followUpStatus: "pending", followUpDue: isoDate(3) }), today)).toBe("upcoming");
     expect(followUpGroup(b({ followUpStatus: "answered" }), today)).toBeNull();
+  });
+});
+
+describe("reportedBy", () => {
+  it("an ASHA emergency over the line reads as the ASHA's", () => {
+    const s = createSeed();
+    const concern = { ...s.concerns[0], source: "ivr" as const, initiatedBy: "asha" as const };
+    expect(reportedBy({ booking: { ...s.bookings[0], emergency: true }, concern })).toBe("ASHA");
+    expect(reportedBy({ booking: s.bookings[1], concern: s.concerns[1] })).toBe("Voice line");
   });
 });
 

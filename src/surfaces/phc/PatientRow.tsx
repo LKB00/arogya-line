@@ -59,7 +59,9 @@ export default function PatientRow({ row, today, selected, onOpen }: Props) {
         <span className="who__source">
           <Icon icon={SOURCE_ICON[source] ?? IconWalk} size={16} />
           {booking.emergency
-            ? "Emergency, coming now"
+            ? source === "ASHA"
+              ? "Emergency called in by the ASHA"
+              : "Emergency from the voice line"
             : source === "ASHA"
               ? "Booked by the ASHA"
               : source === "Voice line"

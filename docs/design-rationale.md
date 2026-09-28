@@ -83,6 +83,8 @@ Answers her first question of the day: *who needs me first?*
 | "n people need you today · n urgent" | The size of the day in people, the unit of care, and the one number that cannot wait. | Nothing open; no urgent. | Hidden on an empty day (the empty state says it). Urgent count only shown when above zero, in pink text, no dot (P7). |
 | Day strip (removed) | Was meant as progress. | Nothing marks a visit done, so it never filled and repeated the list. | Removed (P7). Returns only if visits can be marked done. |
 | Up next card | P1: the person who needs her first, with the one action. **Fourth review:** ranked by what is due (danger, late calls, calls due today, today's visits by time, undated concerns), not by colour alone; never tomorrow's work. | No open work; most urgent is yellow or green; record not yet sent; no member recorded on the concern; no note and no findings. | **Simplified after the second review:** person, then what to do and when (the heaviest line), then why, then village and card; the family head's name and the card number at the top are gone. Hidden when nothing is open. Takes the colour of whatever leads. Shows "Waiting to send" when unsent (P4). Falls back to the family head and "Open the family". Reason line hidden when there is no reason. Tested. |
+| Task from where the visit stands | A booking's task comes from its lifecycle, not its date. | **Sixth review: a visit consulted this morning hid the call due this afternoon; a past visit with nothing recorded was called "seen".** | Owed follow-ups first, then a visit still ahead; a passed visit with no record is "Check the visit happened". Unit-tested. |
+| Missing person | A concern whose person left the card. | **The row fell back to the family head's name.** | "Person not found" and "Record needs checking" (sixth review). Unit-tested. |
 | Reason line | Why this row, in a few words. | **The reason was looked up by person, so a row about a new urgent concern could show an old concern's fever.** | **Fixed after the fifth review:** every row carries its `concernId`; an urgent row shows the danger sign that made it urgent, otherwise the first finding, and only then what the family said. Unit-tested. |
 | Person first ("Kavya, 5") | The concern is about Kavya, not about Manjunath. | Concern without member. | Falls back to the family head. Unit-tested. |
 | Card number | Ties the screen to the printed family card. | — | Quiet, tabular. |
@@ -154,7 +156,7 @@ Answers her first question of the day: *who needs me first?*
 | Time slots, morning / afternoon | Grouped the way she would say it. | **Today's slots already past; a slot filling while she chooses; a day with nothing left.** | **Fixed:** past slots say "Already past", full ones "Full"; both stay in place so nothing jumps. A day with nothing left says "No times left today. Choose another day." A slot that fills after she picked it is unselected and cannot be booked over. Unit-tested and tested live at 10 pm. |
 | Offline note | P4, before she commits. | Online. | Only shown offline. |
 | Reservation bar | The choice read back beside the button (Airbnb, Uber). | Nothing chosen. | "Choose a time", button disabled. |
-| Book visit (the write) | Never two visits in one slot. | **The screen checked its last render; the store accepted anything, so a booking syncing in between render and tap could double-book.** | **Fixed after the fifth review:** the store refuses a taken slot or a booking with no concern (`slotTaken`, one rule for every surface); the screen re-checks the live store at the tap, writes nothing if taken, and says "10–11 am was just taken. Nothing was booked." Unit-tested. |
+| Book visit (the write) | Never two visits in one slot, never a slot already started. **Sixth review:** one rule (`isBookable`) for the screen, the voice line's offer and confirm, and the store, including "its hour has started". | **The screen checked its last render; the store accepted anything, so a booking syncing in between render and tap could double-book.** | **Fixed after the fifth review:** the store refuses a taken slot or a booking with no concern (`slotTaken`, one rule for every surface); the screen re-checks the live store at the tap, writes nothing if taken, and says "10–11 am was just taken. Nothing was booked." Unit-tested. |
 
 ### 2.7 Visit booked
 
@@ -193,7 +195,8 @@ ASHA's app.
 | Advice replayed | What the family was told, as a record. | **The line rebuilt home-care advice from today's protocol, not what was said at the time.** | **Fixed after the fourth review:** the spoken words are saved with the concern and replayed exactly. Unit-tested. |
 | Emergency | Come now, and everyone is told. | **An emergency also booked an ordinary slot; a call with no person chosen named the family head.** | **Fixed after the fourth review:** an emergency arrival for today ("Now"), first on the PHC list, no slot; "the patient" unless a person was chosen. Unit-tested. |
 | "Next available time" | Promise only what the diary can keep. | **"Let me get you seen today" before a slot was found; late at night the slot was tomorrow.** | **Fixed after the fourth review:** "Let me find the next available time." then the time with its day. Unit-tested. |
-| Health worker hand-off (0) | A person, and only a person. | **Fifth review, reproduced: 0 from the menu booked a visit for the family head, a patient nobody chose; 0 after "no urgent signs" booked a visit; 0 while hearing advice booked one; 0 halfway through the questions turned a half-finished check into a referral.** | **Fixed:** 0 never creates a booking, concern or referral. The health worker says what the line knows (a finished result, or "you started a health check… I'll help you from here") and asks "How can I help you today?". Only an emergency acts. Keys are off while a person talks. Unit-tested for each path. |
+| Family card found | Confirm the card without disclosing anything. | **Sixth review: "Family 4471, Lakshmi, Hebbur" was read aloud on a card number alone (shared phone, crowded room, found card).** | "Thank you. We have found your family card." The health worker says "I have your family's record in front of me", never the household. Verifying the caller is a production requirement (section 6). Unit-tested. |
+| Health worker hand-off (0) | A person, and only a person. "How can I help you today?" is asked by a person in their own words; putting a key menu inside a human conversation would turn it back into a machine. | **Fifth review, reproduced: 0 from the menu booked a visit for the family head, a patient nobody chose; 0 after "no urgent signs" booked a visit; 0 while hearing advice booked one; 0 halfway through the questions turned a half-finished check into a referral.** | **Fixed:** 0 never creates a booking, concern or referral. The health worker says what the line knows (a finished result, or "you started a health check… I'll help you from here") and asks "How can I help you today?". Only an emergency acts. Keys are off while a person talks. Unit-tested for each path. |
 | No free slot | Never offer a time that does not exist. | **After 30 full days the line offered the last slot of the first day anyway.** | **Fixed after the fifth review:** "There are no appointments free in the next 30 days", and a person. Unit-tested. |
 | Big and empty families | Everyone can be chosen. | **A ninth member was silently dropped; a card with nobody on it answered every key with "I did not understand".** | **Fixed after the fifth review:** names read in pages with 8 for more; an empty card says so and offers a person. Unit-tested. |
 | Call session | A call belongs to one family, person and demo run. | **A new handover link could keep the old call; a timer from before Reset could, in principle, write into the new demo.** | **Fixed after the fifth review:** the call is keyed on family, person, mode, answers and the demo run; any change ends it and its timers. (Reset also leaves the voice screen, which already ended the call.) |
@@ -223,6 +226,7 @@ writes.
 | Workload | What needs the doctor: for the day on screen (patients, urgent, consults remaining) and, separately, what needs attention now (follow-ups due). **Fourth review:** the two groups are captioned apart, so "Tomorrow" never sits beside "due today"; "Advice to record" renamed "Consults remaining". | Empty day; no urgent; missed calls. | **Replaced the outcomes strip at the top after review:** reporting was sitting above operations. Urgent is the only figure in colour, and only when above zero; its detail reads "Danger sign found", not "seen first", now that the list is by time. Follow-ups due counts today's, overdue and missed (unit-tested). |
 | Across the service, to date | Whether the loop is working: booked ahead, potential trips avoided, follow-ups answered. "Potential trips avoided" (renamed after the third review) is a learning signal about referrals, never a score for a doctor or a family. | No data; **a day on screen above figures for every day.** | **Heading names the period after the second review.** **Moved below the list and made quieter** (no cards). "—", never a division by zero (unit-tested). Live as the doctor works (tested). |
 | Counts by urgency (removed) | Was the day's weight. | Repeated the workload's patients and urgent figures. | Removed (P7); the list heading says the order instead: "Bookings, most urgent first". |
+| Reported by | Who the record came from. | **Sixth review: the ASHA's "Call PHC now" travels over the voice line and read as "Booked on the voice line".** | `initiatedBy: "asha"`: "Emergency called in by the ASHA"; the sheet says "Checked by the ASHA, who called it in as an emergency". Unit-tested. |
 | Row action | What the doctor can do with this booking now. | **Tomorrow's booking offered "Start consult": a consult could be recorded for a patient not yet in the room.** | **Fixed after the third review:** "View booking" (future; the sheet says "Not arrived yet"), "Start consult" (today), "Complete consult" (a past day), "Open consult" (done). The walkthrough uses a fenced-off "Demo only · Patient arrives now". Unit-tested. |
 | The list | By time, the order patients walk in; most urgent first within a slot. Urgency is a signal (pink time and edge), not the sort, so the doctor always knows who is next (**changed after the second review**, unit-tested). | Bookings still on an ASHA's phone; an empty day; a walk-in with nothing recorded. | Only synced bookings (unit-tested); an empty day explains why offline bookings may be missing; a walk-in reads "Nothing recorded before the visit". |
 | Patient cell | Who, and how they came (ASHA, voice line, walk-in). | — | Icon and words. |
@@ -233,6 +237,8 @@ writes.
 | Advice box | The words read to the family on the voice line. | Blank or spaces; unchanged; editing later. | Save disabled for blank or unchanged; "Saved" once saved; **editing no longer resets an answered follow-up** (store fixed and unit-tested). |
 | Follow-up call | Whether and when to call the family: a clinical decision, not a default. | **Every consult got a next-day call.** Changing the day; an answered call; none. | **Changed after review:** None, Next day, In 3 days, In a week. Picking the day already set keeps its outcome; a new day reopens it; None clears it. A pending call past its day reads "Overdue", and on the ASHA's list it stays a call to make (unit-tested). |
 | Mark answered / missed | Demo control for the outcome. | Which one is set. | The current one shows as pressed. |
+| Call history | Every outcome stays on record. | **Sixth review: choosing "None" after a missed call erased that it was missed.** | Outcomes are logged (`followUpLog`); earlier calls are listed in the sheet, the current one once, in its status line. Unit-tested. |
+| Advice edits | What the family was told is part of the record. | **Editing replaced the only copy.** | Earlier words kept with their time (`adviceLog`); the sheet says it was edited; the family hears the latest. Unit-tested. |
 | After a missed call | Someone decides what happens next. | **Missed was read as "ASHA visit requested".** | **Fixed after the third review:** "Call again today" or "Ask the ASHA to follow up"; or leave it open, where it stays under Needs attention now. Unit-tested. |
 | Follow-ups view | Who acts on each call, and when. | **"Follow-ups: 5" beside "Follow-ups due: 1": open and due are different things.** | **Fixed after the third review:** grouped as Needs attention now, With the ASHA, Upcoming. The rail badge and "Follow-ups due" count only Needs attention now (unit-tested). |
 
@@ -271,6 +277,7 @@ writes.
 | Dashboard selectors (9 cases) | Unit tests, `selectors.test.ts` | Pass |
 | Advice edits keep the follow-up outcome; follow-up choice | Unit tests, `store.test.ts` | Pass |
 | Review fixes: per-person rows, voice read-back, workload, follow-up choice, green advice | Unit tests (73 in total) and in the running app | Pass |
+| Sixth review, conflicts: slot taken or started between offer and confirm; follow-up moved while the ASHA's list shows it; two concerns for one person; two people in one family; booking without a concern; person removed from the card; Reset during a call (session key); plus task lifecycle, provenance, call and advice history, store guards, no names spoken on a card number | Unit tests (126 in total) and in the running app | Pass |
 | Fifth review: 0 never books; store refuses double-booking and orphan bookings; honest no-availability; paging and empty families; row reason from its own concern; advice by timestamp; call sessions | Unit tests (112 in total) and in the running app | Pass |
 | Fourth review: today vs upcoming; up next by work; items per person; spoken "you told us"; exact advice replay; emergency as come-now; no early promise; day vs now figures | Unit tests (102 in total) and in the running app | Pass |
 | Third review: consult only when the patient can be there; missed calls need a decision; follow-ups grouped by who acts; spoken wording; health-worker context | Unit tests (96 in total) and in the running app | Pass |
@@ -335,6 +342,27 @@ prototype; the second is what a real service would still have to design.
 - *Offline.* Local storage on the phone, a sync queue with retries and
   conflict rules, and a clear record of what the PHC has and has not
   received. The prototype only simulates this.
+
+*One care episode instead of flags.* Today a concern, its booking, advice
+and follow-up are separate records linked by ids, with flags (`arrived`,
+`emergency`, `ashaAsked`, `avoidable`) and the store refusing the obvious
+contradictions. The production model is one episode per concern, with
+explicit states and an owner at each step:
+
+```
+Concern → Screened → Home care | Clinician review | Emergency
+Booking: Scheduled → Arrived | No-show | Cancelled → Consulted
+Advice (versioned) → Follow-up: Scheduled → Due → Answered | Missed → Handed to ASHA | Resolved
+Owner of the next action: ASHA | PHC | Family      Channel: ASHA | Voice line | Walk-in | Health worker
+```
+
+*Walk-ins.* Shown gracefully ("Nothing recorded before the visit") but not a
+full workflow: who registers the person, how they are identified, and how
+the visit joins their record are not designed.
+
+*Two tabs.* Each browser tab holds its own in-memory store, so two tabs are
+two separate demos, not a shared record; conflicts between people are tested
+in the store instead (section 4).
 
 **Product gaps** (the design work still to do)
 

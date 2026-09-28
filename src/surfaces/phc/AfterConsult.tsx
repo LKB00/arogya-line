@@ -42,6 +42,7 @@ export default function AfterConsult({ row, today, onClose }: Props) {
   const callAgain = useStore((s) => s.callAgainToday);
   const markArrived = useStore((s) => s.markArrived);
   const consult = consultState(booking, today);
+  const earlier = (booking.followUpLog ?? []).filter((h) => !(h.due === booking.followUpDue && h.outcome === booking.followUpStatus));
   const [text, setText] = useState(booking.advice ?? "");
   const trimmed = text.trim();
   const unchanged = trimmed === (booking.advice ?? "");
@@ -78,7 +79,11 @@ export default function AfterConsult({ row, today, onClose }: Props) {
             </ul>
             <p className="sheet__source">
               <Icon icon={reportedBy(row) === "Voice line" ? IconPhoneCall : IconNurse} size={16} />
-              {reportedBy(row) === "Voice line" ? "Answered by the family on the voice line" : "Checked by the ASHA at home"}
+              {reportedBy(row) === "Voice line"
+                ? "Answered by the family on the voice line"
+                : row.concern?.initiatedBy === "asha"
+                  ? "Checked by the ASHA, who called it in as an emergency"
+                  : "Checked by the ASHA at home"}
             </p>
           </>
         ) : (
@@ -116,6 +121,12 @@ export default function AfterConsult({ row, today, onClose }: Props) {
               placeholder="What the family should do, in the words you would say to them"
               onChange={(e) => setText(e.target.value)}
             />
+            {booking.adviceLog && booking.adviceLog.length > 0 && (
+              <p className="sheet__hint">
+                Edited {booking.adviceLog.length === 1 ? "once" : `${booking.adviceLog.length} times`}. The earlier words stay on the record with
+                their time; the family hears the latest.
+              </p>
+            )}
             <p className="sheet__hint">
               <Icon icon={IconVolume} size={16} />
               Read to the family on the voice line when they press 3. Stands in for a 20-second voice note.
@@ -144,6 +155,17 @@ export default function AfterConsult({ row, today, onClose }: Props) {
 
           <section className="sheet__block">
             <h3 className="sheet__label">Follow-up call</h3>
+            {/* Earlier outcomes, kept even after the current call is changed or
+                cleared. The current one is said once, in the status line below. */}
+            {earlier.length > 0 && (
+              <ul className="sheet__history" aria-label="Earlier calls">
+                {earlier.map((h) => (
+                  <li key={h.at}>
+                    {dayLabel(h.due)} · {h.outcome === "missed" ? "Missed" : "Answered"}
+                  </li>
+                ))}
+              </ul>
+            )}
             <span className="seg" role="group" aria-label="Follow-up call">
               {FOLLOW_UP_CHOICES.map((c) => (
                 <button

@@ -220,6 +220,7 @@ export function createSeed(): Store {
       adviceAt: at(-3, 15),
       followUpDue: isoDate(-2),
       followUpStatus: "missed",
+      followUpLog: [{ due: isoDate(-2), outcome: "missed", at: at(-2, 17) }],
       ashaAsked: true, // the doctor's decision after the missed call, recorded
     },
   ];

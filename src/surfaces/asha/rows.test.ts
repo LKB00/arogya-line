@@ -58,11 +58,27 @@ describe("rowFor: what each family needs today", () => {
     expect(row.band).toBe("red");
   });
 
-  it("a past visit with no follow-up counts as seen, not open", () => {
+  it("a past visit with advice and no follow-up counts as seen", () => {
+    const s = seed();
+    const past: Booking = { ...s.bookings[0], date: isoDate(-2), advice: "Rest." };
+    const row = rowFor(fam(s, "3120"), s.concerns, [past, ...s.bookings.slice(1)], today)!;
+    expect(row.band).toBe("done");
+    expect(row.task).toBe("Seen at the PHC");
+  });
+
+  it("a past visit with nothing recorded is never called seen: she checks it happened", () => {
     const s = seed();
     const past: Booking = { ...s.bookings[0], date: isoDate(-2) };
     const row = rowFor(fam(s, "3120"), s.concerns, [past, ...s.bookings.slice(1)], today)!;
-    expect(row.band).toBe("done");
+    expect(row.band).not.toBe("done");
+    expect(row.task).toBe("Check the visit happened");
+  });
+
+  it("seen this morning with a call due today: the call, not the visit", () => {
+    const s = seed();
+    const seenToday: Booking = { ...s.bookings[0], date: today, advice: "Steam twice a day.", followUpDue: today, followUpStatus: "pending" };
+    const row = rowFor(fam(s, "3120"), s.concerns, [seenToday, ...s.bookings.slice(1)], today)!;
+    expect(row.task).toBe("Follow-up call");
   });
 
   it("an urgent row's reason is the danger sign that made it urgent", () => {
@@ -142,6 +158,14 @@ describe("rowFor: what each family needs today", () => {
     const rows = rowsFor(fam(s, "3120"), [...s.concerns, second], s.bookings, today);
     expect(rows).toHaveLength(1);
     expect(rows[0].more).toBe(1);
+  });
+
+  it("a concern whose person is no longer on the card is never pinned on the family head", () => {
+    const s = seed();
+    const orphan: Concern = { ...s.concerns[0], id: "c-orphan", memberId: "3120-gone" };
+    const rows = rowsFor(fam(s, "3120"), [orphan], s.bookings, today);
+    expect(personLabel(rows[0])).toBe("Person not found");
+    expect(rows[0].note).toMatch(/Record needs checking/);
   });
 });
 

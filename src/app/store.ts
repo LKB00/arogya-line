@@ -9,6 +9,7 @@ import { addDays, createSeed, isoDate } from "./seed";
 export type PersonAdvice = {
   memberId: string;
   date: string; // ISO date it was given
+  at: number; // when, to the millisecond: "latest" compares this, never the day
   from: "doctor" | "check";
   booking?: Booking; // doctor's advice: the visit it came from
   concern?: Concern; // home-care advice: the check it came with
@@ -24,12 +25,17 @@ export function adviceByPerson(state: Pick<Store, "concerns" | "bookings">, fami
   const all: PersonAdvice[] = [
     ...state.bookings.flatMap((b) => {
       const c = concerns.find((x) => x.id === b.concernId);
-      return c && b.advice ? [{ memberId: c.memberId, date: b.date, from: "doctor" as const, booking: b }] : [];
+      // Advice saved without a time (older records) counts from midday of the visit.
+      const at = Date.parse(b.adviceAt ?? `${b.date}T12:00:00`);
+      return c && b.advice ? [{ memberId: c.memberId, date: b.date, at, from: "doctor" as const, booking: b }] : [];
     }),
-    ...concerns.filter((c) => c.homeCare).map((c) => ({ memberId: c.memberId, date: localDay(c.createdAt), from: "check" as const, concern: c })),
+    ...concerns
+      .filter((c) => c.homeCare)
+      .map((c) => ({ memberId: c.memberId, date: localDay(c.createdAt), at: Date.parse(c.createdAt), from: "check" as const, concern: c })),
   ];
-  // Newest first; on the same day the doctor's word outranks the check's.
-  all.sort((a, b) => (a.date === b.date ? (a.from === "doctor" ? -1 : 1) : a.date < b.date ? 1 : -1));
+  // Newest first, by the moment it was given: a check at 3 pm is newer than
+  // the doctor's advice at 9 am the same day.
+  all.sort((a, b) => b.at - a.at);
   const seen = new Set<string>();
   return all.filter((a) => (seen.has(a.memberId) ? false : (seen.add(a.memberId), true)));
 }
@@ -40,6 +46,15 @@ function localDay(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Is this slot already held? The one rule every booking obeys, checked by the
+ * store at the moment of writing, so no screen (and no sync arriving between
+ * a render and a tap) can double-book it. An emergency arrival holds no slot.
+ */
+export function slotTaken(bookings: Booking[], date: string, slot: string): boolean {
+  return bookings.some((b) => !b.emergency && b.date === date && b.slot === slot);
+}
+
 export const SYNC_DELAY_MS = 1500;
 
 export type ConcernInput = Omit<Concern, "id" | "createdAt" | "sync">;
@@ -48,8 +63,11 @@ export type BookingInput = Omit<Booking, "id" | "sync">;
 export type Actions = {
   /** Create a concern. IVR concerns are always "sent"; ASHA concerns respect `online`. */
   createConcern: (input: ConcernInput) => Concern;
-  /** Create a booking. Sync follows the linked concern's source and `online`. */
-  createBooking: (input: BookingInput) => Booking;
+  /**
+   * Create a booking. Sync follows the linked concern's source and `online`.
+   * Refused (undefined) if the concern does not exist or the slot is taken.
+   */
+  createBooking: (input: BookingInput) => Booking | undefined;
   /** Set ASHA connectivity. Turning it on starts syncPending. */
   setOnline: (online: boolean) => void;
   /** After SYNC_DELAY_MS, flip every "saved_offline" item to "sent" (if still online). */
@@ -106,7 +124,10 @@ export const useStore = create<StoreState>()((set, get) => ({
   createBooking: (input) => {
     const { online, concerns } = get();
     const concern = concerns.find((c) => c.id === input.concernId);
-    const fromIvr = concern?.source === "ivr";
+    // The data layer enforces the invariants; screens only warn.
+    if (!concern) return undefined;
+    if (!input.emergency && slotTaken(get().bookings, input.date, input.slot)) return undefined;
+    const fromIvr = concern.source === "ivr";
     const booking: Booking = {
       ...input,
       id: nextId("b"),
@@ -147,7 +168,7 @@ export const useStore = create<StoreState>()((set, get) => ({
   // answered call, and not every consult needs one.
   saveAdvice: (bookingId, advice) => {
     set((s) => ({
-      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, advice } : b)),
+      bookings: s.bookings.map((b) => (b.id === bookingId ? { ...b, advice, adviceAt: new Date().toISOString() } : b)),
     }));
   },
 
@@ -191,6 +212,7 @@ export const useStore = create<StoreState>()((set, get) => ({
 
   resetDemo: () => {
     clearSyncTimer();
-    set(createSeed());
+    // A new run: open sessions keyed on it (the voice call) start over.
+    set({ ...createSeed(), demoRun: get().demoRun + 1 });
   },
 }));

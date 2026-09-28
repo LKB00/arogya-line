@@ -17,7 +17,8 @@ export default function ConnectivityToggle() {
         onChange={(e) => setOnline(e.target.checked)}
       />
       <span className="signal__track" aria-hidden="true" />
-      <span>Simulated ASHA signal: {online ? "online" : "offline"}</span>
+      <span className="demo__long">Simulated ASHA signal: {online ? "online" : "offline"}</span>
+      <span className="demo__short">Signal {online ? "on" : "off"}</span>
     </label>
   );
 }

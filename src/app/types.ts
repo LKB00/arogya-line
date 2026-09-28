@@ -55,6 +55,7 @@ export type Booking = {
   /** Doctor, after the consult: could this have been handled without a visit? */
   avoidable?: boolean;
   advice?: string; // doctor's note text (stands in for the voice note)
+  adviceAt?: string; // ISO timestamp the advice was last saved, so "latest" is exact
   followUpDue?: string; // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
   /** The doctor, after a missed call, asked the ASHA to follow up. Never automatic. */
@@ -74,4 +75,6 @@ export type Store = {
   bookings: Booking[];
   online: boolean; // ASHA app connectivity
   activeSurface: Surface;
+  /** Counts resets, so anything still running from before (a call, its timer) ends with the old demo. */
+  demoRun: number;
 };

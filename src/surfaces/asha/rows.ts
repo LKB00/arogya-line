@@ -30,6 +30,8 @@ export type Row = {
   date: string;
   /** For sorting within a day: the slot, or "" for undated work. */
   slot: string;
+  /** The concern this row is about: its reason, urgency and task all come from it. */
+  concernId: string;
   /** Other open items for the same person, not shown on this row. */
   more: number;
   sync: SyncStatus;
@@ -70,7 +72,7 @@ export function itemsFor(family: Family, concerns: Concern[], bookings: Booking[
   for (const concern of concerns.filter((c) => c.familyId === family.id)) {
     const member = family.members.find((m) => m.id === concern.memberId);
     const booking = bookings.find((b) => b.concernId === concern.id);
-    const base = { family, member, band: concern.urgency as Band, date: today, slot: "", more: 0 };
+    const base = { family, member, concernId: concern.id, band: concern.urgency as Band, date: today, slot: "", more: 0 };
 
     if (!booking && concern.source === "ivr") {
       // The family called the line and was told their ASHA will follow up:
@@ -126,9 +128,16 @@ export function personLabel(row: Row): string {
   return row.member ? `${row.member.name}, ${row.member.age}` : row.family.head;
 }
 
-/** Why this person: what the family noticed, else the first finding. */
+/**
+ * Why this row: read from the row's own concern, never from another concern
+ * of the same person. For an urgent result, the danger sign that made it
+ * urgent; otherwise the first thing found. Only when the check found nothing
+ * does it fall back to what the family said.
+ */
 export function reasonFor(row: Row, concerns: Concern[]): string | undefined {
+  const concern = concerns.find((c) => c.id === row.concernId);
+  const found = concern ? concern.reasons.slice(0, concern.answers.filter((a) => a.answer === "yes").length) : [];
+  if (found.length > 0) return concern?.urgency === "red" ? found.at(-1) : found[0];
   if (row.member?.note) return row.member.note[0].toUpperCase() + row.member.note.slice(1);
-  const concern = concerns.find((c) => c.familyId === row.family.id && c.memberId === row.member?.id);
-  return concern?.reasons[0];
+  return undefined;
 }

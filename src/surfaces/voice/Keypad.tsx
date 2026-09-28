@@ -15,6 +15,7 @@ export default function Keypad({
   onHangUp,
   inCall,
   ended = false,
+  listening = true,
 }: {
   onKey: (key: Key) => void;
   onCall: () => void;
@@ -22,12 +23,14 @@ export default function Keypad({
   inCall: boolean;
   /** The line has said goodbye: dialling again starts a new call. */
   ended?: boolean;
+  /** False while a person is talking: keys do nothing, so they look it. */
+  listening?: boolean;
 }) {
   return (
     <div className="dialer">
       <div className="keypad" role="group" aria-label="Keypad">
         {KEYS.map((k) => (
-          <button className="key" key={k} type="button" onClick={() => onKey(k)} disabled={!inCall} aria-label={`Key ${k}`}>
+          <button className="key" key={k} type="button" onClick={() => onKey(k)} disabled={!inCall || !listening} aria-label={`Key ${k}`}>
             <span className="key__num">{k}</span>
             {HINT[k] && <span className="key__label">{HINT[k]}</span>}
           </button>

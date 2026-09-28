@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { IconBuildingHospital, IconCalendarOff, IconCheck, IconCloudOff, IconSun, IconSunrise } from "@tabler/icons-react";
-import { useStore } from "../../app/store";
+import { slotTaken, useStore } from "../../app/store";
 import { PHC, SLOTS, isoDate } from "../../app/seed";
 import { shortDate, slotLabel } from "../../app/format";
 import { decodeAnswers, evaluate, nextQuestion, toTriageRole } from "../../app/triage";
@@ -38,6 +38,7 @@ export default function Booking() {
 
   const [date, setDate] = useState(DAYS[1].date);
   const [slot, setSlot] = useState<string | null>(null);
+  const [lost, setLost] = useState<string | null>(null);
 
   if (!family || !member) {
     return (
@@ -68,9 +69,16 @@ export default function Booking() {
 
   const confirm = () => {
     if (!chosen) return;
+    // Re-check against the store as it is now, not as it was at the last
+    // render: a booking may have synced in since. Nothing is written if so.
+    if (slotTaken(useStore.getState().bookings, date, chosen)) {
+      setLost(chosen);
+      setSlot(null);
+      return;
+    }
     const concern = createConcern({ familyId: family.id, memberId: member.id, source: "asha", answers, urgency, reasons });
     const booking = createBooking({ concernId: concern.id, date, slot: chosen, facility: PHC.facility, doctor: PHC.doctor });
-    navigate(`/asha/booked/${booking.id}`, { replace: true });
+    if (booking) navigate(`/asha/booked/${booking.id}`, { replace: true });
   };
 
   return (
@@ -157,6 +165,13 @@ export default function Booking() {
             </div>
           ))}
         </fieldset>
+
+        {lost && !slot && (
+          <p className="notice notice--strong" role="alert">
+            <Icon icon={IconCalendarOff} />
+            <span>{slotLabel(lost)} was just taken. Nothing was booked. Choose another time.</span>
+          </p>
+        )}
 
         {!online && (
           <p className="notice">

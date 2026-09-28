@@ -52,6 +52,8 @@ export type Call = {
   offerSlot: string | null;
   /** How far the scripted operator exchange has got (advanced by tick). */
   operatorStep: number;
+  /** Which page of names is being read, when a list is longer than the keys. */
+  page: number;
 };
 
 /** Read-only slice of the store the machine needs. */
@@ -95,6 +97,7 @@ export const IDLE: Call = {
   offerDate: null,
   offerSlot: null,
   operatorStep: 0,
+  page: 0,
 };
 
 export const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] as const;
@@ -140,26 +143,39 @@ function familyOf(call: Call, env: Env): Family | undefined {
   return env.families.find((f) => f.id === call.familyId);
 }
 
+/** The person the caller chose, and only them: never a guess such as the family head. */
 function memberOf(call: Call, env: Env): Member | undefined {
-  const family = familyOf(call, env);
-  return family?.members.find((m) => m.id === call.memberId) ?? family?.members[0];
+  return familyOf(call, env)?.members.find((m) => m.id === call.memberId);
 }
 
 /**
  * "Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by
- * name, never a kind of person: a family can have two children. Keys 1–8
- * only, as 9 repeats and 0 reaches a person.
+ * name, never a kind of person: a family can have two children. Keys 1–8,
+ * as 9 repeats and 0 reaches a person. A list longer than eight is read in
+ * pages of seven, with 8 for more, so nobody is silently left out.
  */
-function namesPrompt(people: Member[]): string {
-  return people
-    .slice(0, 8)
-    .map((m, i) => `Press ${i + 1} for ${m.name}.`)
-    .join(" ");
+const PAGE_SIZE = 7;
+
+function pageOf<T>(items: T[], page: number): { shown: T[]; paged: boolean } {
+  if (items.length <= 8) return { shown: items, paged: false };
+  return { shown: items.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE), paged: true };
 }
 
-function pickByKey<T>(items: T[], key: Key): T | undefined {
+function nextPage(length: number, page: number): number {
+  return (page + 1) * PAGE_SIZE >= length ? 0 : page + 1;
+}
+
+function namesPrompt(names: string[], page: number): string {
+  const { shown, paged } = pageOf(names, page);
+  const said = shown.map((name, i) => `Press ${i + 1} for ${name}.`).join(" ");
+  return paged ? `${said} Press 8 for more names.` : said;
+}
+
+function pickByKey<T>(items: T[], key: Key, page: number): T | "more" | undefined {
+  const { shown, paged } = pageOf(items, page);
+  if (paged && key === "8") return "more";
   const n = Number(key);
-  return n >= 1 && n <= 8 ? items[n - 1] : undefined;
+  return n >= 1 && n <= shown.length ? shown[n - 1] : undefined;
 }
 
 function hourOf(env: Env): number {
@@ -172,20 +188,18 @@ function freeSlot(env: Env, date: string): string | undefined {
   return SLOTS.find((s) => !taken.has(s) && (date !== env.today || Number(s.slice(0, 2)) > hourOf(env)));
 }
 
-/** First day on or after `from` with a free slot. */
-function nextAvailable(env: Env, from: string): { date: string; slot: string } {
+/** How far ahead the line looks for a free slot. */
+export const SEARCH_DAYS = 30;
+
+/** First day on or after `from` with a free slot, or nothing: never an invented one. */
+function nextAvailable(env: Env, from: string): { date: string; slot: string } | undefined {
   let date = from;
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < SEARCH_DAYS; i++) {
     const slot = freeSlot(env, date);
     if (slot) return { date, slot };
     date = addDays(date, 1);
   }
-  return { date: from, slot: SLOTS[SLOTS.length - 1] };
-}
-
-/** The operator books the earliest slot still to come, today if there is one. */
-function operatorSlot(env: Env): { date: string; slot: string } {
-  return nextAvailable(env, env.today);
+  return undefined;
 }
 
 /** ["fever", "vomiting"] → "fever and vomiting"; three or more take commas. */
@@ -231,9 +245,13 @@ function enterMainMenu(call: Call): Call {
   return prompt({ ...call, state: "mainMenu", role: null, memberId: null, answers: [], result: null, offerDate: null }, MENU);
 }
 
-function enterWhoIsUnwell(call: Call, env: Env): Call {
-  const family = familyOf(call, env);
-  return prompt({ ...call, state: "whoIsUnwell" }, `Who needs help? ${namesPrompt(family?.members ?? [])}`);
+function enterWhoIsUnwell(call: Call, env: Env, page = 0): Call {
+  const people = familyOf(call, env)?.members ?? [];
+  // A card with nobody on it: say so and offer a person, never a menu of nothing.
+  if (people.length === 0) {
+    return prompt({ ...call, state: "whoIsUnwell", page: 0 }, "There is no one registered on this family card.", "Press 0 to talk to a health worker.");
+  }
+  return prompt({ ...call, state: "whoIsUnwell", page }, `Who needs help? ${namesPrompt(people.map((m) => m.name), page)}`);
 }
 
 function askQuestion(call: Call): Call {
@@ -277,7 +295,15 @@ function enterResult(call: Call, env: Env): Step {
 }
 
 function offerSlot(call: Call, env: Env, from: string): Call {
-  const { date, slot } = nextAvailable(env, from);
+  const found = nextAvailable(env, from);
+  if (!found) {
+    return prompt(
+      { ...call, state: "offerBooking", offerDate: null, offerSlot: null },
+      `There are no appointments free in the next ${SEARCH_DAYS} days.`,
+      "Press 0 to talk to a health worker, or hang up and try again later.",
+    );
+  }
+  const { date, slot } = found;
   const when = dayWord(date, env.today);
   const text =
     `The next available slot is ${when === "on" ? "on " : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, ` +
@@ -336,8 +362,12 @@ function enterReadAdvice(call: Call, env: Env): Call {
     return prompt({ ...call, state: "readAdvice" }, "There is no advice for your family yet.", "Press 2 for the main menu, or hang up.");
   }
   if (advice.length === 1) return readAdvice(call, env, advice[0]);
-  const people = advice.map((a) => familyOf(call, env)?.members.find((m) => m.id === a.memberId)).filter((m): m is Member => Boolean(m));
-  return prompt({ ...call, state: "chooseAdvice" }, `Whose advice would you like to hear? ${namesPrompt(people)}`);
+  return enterChooseAdvice(call, env, advice, 0);
+}
+
+function enterChooseAdvice(call: Call, env: Env, advice: PersonAdvice[], page: number): Call {
+  const names = advice.map((a) => familyOf(call, env)?.members.find((m) => m.id === a.memberId)?.name ?? "someone");
+  return prompt({ ...call, state: "chooseAdvice", page }, `Whose advice would you like to hear? ${namesPrompt(names, page)}`);
 }
 
 function end(call: Call, ...texts: string[]): Call {
@@ -417,7 +447,9 @@ export function press(call: Call, key: Key, env: Env): Step {
       break;
 
     case "whoIsUnwell": {
-      const member = pickByKey(familyOf(pressed, env)?.members ?? [], key);
+      const members = familyOf(pressed, env)?.members ?? [];
+      const member = pickByKey(members, key, pressed.page);
+      if (member === "more") return none(enterWhoIsUnwell(pressed, env, nextPage(members.length, pressed.page)));
       if (member) {
         const role = toTriageRole(member.role);
         const chosen = say({ ...pressed, role, memberId: member.id, answers: [] }, "line", `Checking for ${member.name}, ${member.age}.`);
@@ -467,7 +499,8 @@ export function press(call: Call, key: Key, env: Env): Step {
 
     case "chooseAdvice": {
       const advice = pressed.familyId ? adviceByPerson(env, pressed.familyId) : [];
-      const chosen = pickByKey(advice, key);
+      const chosen = pickByKey(advice, key, pressed.page);
+      if (chosen === "more") return none(enterChooseAdvice(pressed, env, advice, nextPage(advice.length, pressed.page)));
       if (chosen) return none(readAdvice(pressed, env, chosen));
       break;
     }
@@ -493,55 +526,53 @@ export function tick(call: Call, env: Env): Step {
   const family = familyOf(call, env);
   const member = memberOf(call, env);
   const who = family ? `family ${family.id}, ${family.head} in ${family.village}` : "your family";
+  const urgent = call.emergency || call.result?.urgency === "red";
 
   if (call.operatorStep === 0) {
     const text = call.emergency
       ? `Namaste, Arogya Line. I have your emergency call for ${who}. I am alerting ${PHC.doctor} at ${PHC.facility} and your ASHA, ${ASHA.name}.`
-      : call.result?.urgency === "red"
+      : urgent
         ? `Namaste, Arogya Line. I can see ${who}. From the answers, this is urgent.`
-        : // Never promise "today" before a slot is found.
-          `Namaste, Arogya Line. I can see ${who}. Let me find the next available time.`;
-    // The caller never starts from zero with a person: what the line already
-    // heard is passed on and said back.
-    const heard = call.role && call.answers.length > 0 ? evaluate(call.role, call.answers).reasons : [];
-    const context =
-      member && call.memberId && heard.length > 0
-        ? [`I have ${member.name}'s answers from the call: ${heard.map((r) => r[0].toLowerCase() + r.slice(1)).join(", ")}. You won't need to repeat them.`]
-        : [];
-    return { call: { ...say(call, "operator", text, ...context), operatorStep: 1 }, effects: [] };
+        : `Namaste, Arogya Line. I can see ${who}.`;
+    return { call: { ...say(call, "operator", text, ...handOffLines(call, member)), operatorStep: 1 }, effects: [] };
   }
 
-  const urgency: Urgency = call.emergency || call.result?.urgency === "red" ? "red" : "amber";
-  // Only the person the caller actually chose is named: never guess the head.
-  const who2 = call.memberId && member ? member.name : "the patient";
+  // Not urgent: 0 means "a person", nothing more. The health worker asks how
+  // to help, and the conversation is theirs: no booking, no record, no
+  // referral is made on the caller's behalf from a key press.
+  if (!urgent) {
+    if (call.operatorStep > 1) return { call, effects: [] };
+    return { call: { ...say(call, "operator", "How can I help you today?"), operatorStep: 2 }, effects: [] };
+  }
 
   // An emergency is not an appointment: come now, the PHC and the ASHA are
   // told, and the PHC expects an emergency arrival today. No slot is booked.
-  if (urgency === "red") {
-    const concern = concernFor(call, env, "red", call.emergency ? "Emergency call from the ASHA app" : undefined);
-    const done = end(
-      say(
-        call,
-        "operator",
-        `Please bring ${who2} to ${PHC.facility} now. You will be seen as an emergency; there is no need to wait for a time.`,
-        `${PHC.doctor} is expecting ${who2}, and your ASHA, ${ASHA.name}, has been told.`,
-      ),
-    );
-    return { call: done, effects: [{ type: "emergency", concern }] };
-  }
-
-  // Otherwise the next real slot, said with its day, so nothing was promised
-  // that the diary could not keep.
-  const { date, slot } = operatorSlot(env);
-  const when = dayWord(date, env.today);
-  const concern = concernFor(call, env, urgency, "Asked to talk to a person");
+  // Only the person the caller actually chose is named.
+  const name = member?.name ?? "the patient";
+  const concern = concernFor(call, env, "red", call.emergency ? "Emergency call from the ASHA app" : undefined);
   const done = end(
     say(
       call,
       "operator",
-      `The next available time is ${when === "on" ? "" : `${when}, `}${shortDate(date)}, ${slotLabel(slot)}, with ${PHC.doctor} at ${PHC.facility}.`,
-      `I have booked ${who2} in. Your ASHA, ${ASHA.name}, has been told.`,
+      `Please bring ${name} to ${PHC.facility} now. You will be seen as an emergency; there is no need to wait for a time.`,
+      `${PHC.doctor} is expecting ${name}, and your ASHA, ${ASHA.name}, has been told.`,
     ),
   );
-  return { call: done, effects: [{ type: "book", concern, date, slot }] };
+  return { call: done, effects: [{ type: "emergency", concern }] };
+}
+
+/**
+ * What the health worker already knows when they pick up, said so the caller
+ * never starts from zero: a finished check and its result, or a check that
+ * was started and not finished (never treated as finished).
+ */
+function handOffLines(call: Call, member: Member | undefined): string[] {
+  if (!member || !call.role || call.answers.length === 0) return [];
+  if (!call.result) return [`I can see you started a health check for ${member.name}. I'll help you from here, so you won't need to start again.`];
+  const summary = {
+    green: "The check found no urgent signs.",
+    amber: "The check suggested a visit to the doctor.",
+    red: "The check found a danger sign.",
+  }[call.result.urgency];
+  return [`I have ${member.name}'s answers from the call. ${summary} You won't need to repeat them.`];
 }

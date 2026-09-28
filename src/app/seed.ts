@@ -202,6 +202,7 @@ export function createSeed(): Store {
       avoidable: false,
       advice:
         "Rest with feet raised. Take the iron tablet after food. Come back at once if the headache returns or vision blurs.",
+      adviceAt: at(-1, 11),
       followUpDue: isoDate(0),
       followUpStatus: "pending",
     },
@@ -216,6 +217,7 @@ export function createSeed(): Store {
       walkIn: true, // the one walk-in, so "pre-booked %" is not a flat 100%
       avoidable: true,
       advice: "Paracetamol twice a day for three days. Drink plenty of water. No visit needed unless fever passes five days.",
+      adviceAt: at(-3, 15),
       followUpDue: isoDate(-2),
       followUpStatus: "missed",
       ashaAsked: true, // the doctor's decision after the missed call, recorded
@@ -228,5 +230,6 @@ export function createSeed(): Store {
     bookings,
     online: false,
     activeSurface: "asha",
+    demoRun: 0,
   };
 }

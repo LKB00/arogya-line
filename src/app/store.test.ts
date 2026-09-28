@@ -33,7 +33,7 @@ describe("syncPending", () => {
       doctor: "Dr. Ramesh",
     });
     expect(concern.sync).toBe("saved_offline");
-    expect(booking.sync).toBe("saved_offline");
+    expect(booking?.sync).toBe("saved_offline");
   });
 
   it("flips saved_offline items to sent after the delay once online", async () => {
@@ -184,3 +184,55 @@ describe("after a missed call, the doctor decides", () => {
   });
 });
 
+
+describe("booking invariants, enforced by the store", () => {
+  const input = (concernId: string, slot = "10:00–11:00") => ({ concernId, date: isoDate(3), slot, facility: "PHC Tumkur", doctor: "Dr. Ramesh" });
+
+  it("never double-books a slot, whatever the screen thought", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const a = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "asha", answers: [], urgency: "amber", reasons: [] });
+    const b = s.createConcern({ familyId: "4471", memberId: "4471-1", source: "asha", answers: [], urgency: "amber", reasons: [] });
+    expect(s.createBooking(input(a.id))).toBeDefined();
+    expect(useStore.getState().createBooking(input(b.id))).toBeUndefined();
+    expect(useStore.getState().bookings.filter((x) => x.date === isoDate(3))).toHaveLength(1);
+  });
+
+  it("refuses a booking with no concern behind it", () => {
+    useStore.getState().resetDemo();
+    expect(useStore.getState().createBooking(input("no-such-concern"))).toBeUndefined();
+  });
+
+  it("an emergency arrival holds no slot, so it never blocks one", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "ivr", answers: [], urgency: "red", reasons: [] });
+    expect(s.createBooking({ ...input(c.id, "Now"), emergency: true })).toBeDefined();
+    expect(useStore.getState().createBooking({ ...input(c.id, "Now"), emergency: true })).toBeDefined();
+  });
+});
+
+describe("latest advice means the latest moment, not the latest day", () => {
+  it("a home-care check later the same day is newer than the doctor's morning advice", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const today = isoDate(0);
+    useStore.setState({
+      bookings: s.bookings.map((b) => (b.id === "b-3120" ? { ...b, advice: "Morning advice.", adviceAt: `${today}T09:00:00` } : b)),
+      concerns: [
+        ...s.concerns,
+        { ...s.concerns[0], id: "c-pm", homeCare: { tell: ["Rest"], callIf: ["Worse"] }, createdAt: new Date(`${today}T15:00:00`).toISOString() },
+      ],
+    });
+    const kavya = adviceByPerson(useStore.getState(), "3120").find((a) => a.memberId === "3120-2");
+    expect(kavya?.from).toBe("check");
+  });
+});
+
+describe("reset starts a new run", () => {
+  it("counts runs, so open sessions from the old run can end", () => {
+    const before = useStore.getState().demoRun;
+    useStore.getState().resetDemo();
+    expect(useStore.getState().demoRun).toBe(before + 1);
+  });
+});

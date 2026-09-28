@@ -461,3 +461,16 @@
     max-width: var(--phone-width);
   }
 }
+
+/* On a real phone the call fills the screen; the card follows below it. */
+@media (max-width: 480px) {
+  .voice {
+    width: 100%;
+    gap: 0;
+  }
+
+  .voice__side {
+    max-width: none;
+    padding: var(--g6) var(--g4);
+  }
+}

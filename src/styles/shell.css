@@ -318,14 +318,131 @@
   background: var(--surface-sunken);
 }
 
+/* The phone-only "Demo" button; on a laptop the panel is simply the bar's
+   contents, laid out as before. */
+.demo__toggle {
+  display: none;
+}
+
+.demo__panel {
+  display: contents;
+}
+
+/* Long and short labels in the demo bar: one or the other, never both. */
+.demo__short {
+  display: none;
+}
+
+/*
+ * On a real phone the prototype is the phone. No drawn device (bezel,
+ * rounded corners, shadow, fake status bar, camera, gesture handle): the
+ * handset in her hand already has all of those. The surface fills the screen
+ * under a one-row demo bar with short labels, and still scrolls inside, so
+ * the buttons pinned to its foot stay at the thumb.
+ */
 @media (max-width: 480px) {
-  .stage {
-    padding: var(--space-4) var(--space-3);
+  .demo {
+    --demo-bar-h: 44px;
   }
 
-  .phone {
+  /* One slim row: "Demo · ASHA app", so the product has the screen. */
+  .demo__bar {
+    position: relative;
+    z-index: 10;
+    flex-wrap: nowrap;
+    height: var(--demo-bar-h);
+    box-sizing: border-box;
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .demo__brand,
+  .demo__long {
+    display: none;
+  }
+
+  .demo__short {
+    display: inline;
+  }
+
+  .demo__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 32px;
+    padding: 0 var(--space-3);
+    border: var(--border-thin) solid var(--demo-border);
+    border-radius: var(--radius-pill);
+    background: var(--demo-surface);
+    color: var(--demo-text);
+    font-size: var(--size-sm);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+  }
+
+  .demo__toggle-label {
+    color: var(--demo-muted);
+    font-size: var(--size-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+  }
+
+  .demo__chevron {
+    transition: transform var(--transition);
+  }
+
+  .demo__bar.is-open .demo__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* The controls open under the bar, over the product, and close on a choice. */
+  .demo__panel {
+    display: none;
+  }
+
+  .demo__bar.is-open .demo__panel {
+    position: absolute;
+    top: var(--demo-bar-h);
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--demo-bg);
+    border-bottom: var(--border-thin) solid var(--demo-border);
+  }
+
+  .demo__nav {
+    align-self: stretch;
+  }
+
+  .demo__tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  .demo__controls {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+    margin-left: 0;
+  }
+
+  .stage {
+    padding: 0;
+  }
+
+  .demo .phone {
     width: 100%;
-    height: auto;
-    min-height: var(--phone-height);
+    height: calc(100dvh - var(--demo-bar-h));
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .demo .phone .phone__camera,
+  .demo .phone .phone__status,
+  .demo .phone .phone__nav {
+    display: none;
   }
 }

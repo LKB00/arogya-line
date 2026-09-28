@@ -53,7 +53,7 @@ export default function PatientRow({ row, today, selected, onOpen }: Props) {
       aria-selected={selected}
     >
       <td className="cell cell--time">{slotLabel(booking.slot)}</td>
-      <td className="cell">
+      <td className="cell cell--who">
         <span className="who__name">{patientName(row)}</span>
         <span className="who__meta">{patientMeta(row)}</span>
         <span className="who__source">
@@ -67,7 +67,7 @@ export default function PatientRow({ row, today, selected, onOpen }: Props) {
                 : "Walk-in"}
         </span>
       </td>
-      <td className="cell">
+      <td className="cell cell--found">
         {concern ? (
           <>
             <span className={`urgency-tag urgency--${concern.urgency}`}>{URGENCY_LABEL[concern.urgency]}</span>

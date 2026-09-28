@@ -19,7 +19,8 @@ to the seed scenario.
 - **Voice line** (`/voice`): a simulated call from a basic phone. The caller
   keys in the family ID printed on their card, picks the person by name, and
   can run the same screening, book a visit (read back before it is booked),
-  or hear the advice that person was given.
+  or hear the advice that person was given. 0 reaches a person and never
+  books anything by itself.
 - **PHC dashboard** (`/phc`): the doctor's desktop view. Opens on today: the
   day's workload, bookings in time order with urgent ones marked, and a
   consult sheet for advice, "could this have been handled without a visit"

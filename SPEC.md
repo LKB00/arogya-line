@@ -120,6 +120,7 @@ type Booking = {
   sync: SyncStatus;
   avoidable?: boolean;        // doctor, after consult: could this have been handled without a visit?
   advice?: string;            // doctor's note text (stands in for the voice note)
+  adviceAt?: string;          // ISO timestamp advice was saved: "latest" is by moment, not day
   followUpDue?: string;       // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
   ashaAsked?: boolean;        // after a missed call, the doctor asked the ASHA to follow up
@@ -196,7 +197,7 @@ Linear path. Each step is its own route so back works.
 
 **Booking**
 - Pick a day from the next 3 days and a slot from a fixed list. Slots already taken by other bookings appear as unavailable.
-- Creates Booking (+ Concern), respecting `online` for sync status.
+- Creates Booking (+ Concern), respecting `online` for sync status. At the tap it re-checks the slot against the store as it is now; if it was just taken, nothing is written and the screen says so.
 
 **Booked**
 - Shows date, slot, facility, doctor, and a fixed "what to tell the family" checklist (3 items, checkable, purely local state).
@@ -208,7 +209,7 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 
 - Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it.
 - Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear your advice, 0 = Talk to a person.
-- 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
+- 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. A list longer than eight is read in pages of seven, with 8 for more names. A card with nobody registered says so and offers a person (0). The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
 - What the caller reported is said back as speech: "You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing."
 - Result green → "From your answers, there are no urgent signs for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`, saved with the concern so a replay says exactly what was said), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
 - Result amber → offers the next available slot; 1 = choose it, 2 = another day. Choosing reads the booking back ("You are booking a visit for {name}, {day}, {slot}, at {facility}.") and asks 1 = confirm, 2 = choose another day. Only confirming creates the Booking. The new row appears immediately in the PHC dashboard and in the ASHA TodayList.
@@ -216,7 +217,9 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 - Results are said from the answers, never as a code: "Thank you. From your answers, Arjun should see the doctor."
 - 3 → advice is a person's, never the family's. One person with advice: read at once as a message ("Dr. Ramesh has a message for Shobha, from yesterday." … "That's all from Dr. Ramesh."), then 1 = hear it again, 2 = main menu. Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
 - A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
-- 0 → operator state: "Let me find the next available time." (never "today" before a slot is found), then "The next available time is {day}, {slot}…" and the booking. The health worker picks up with what the line already heard ("I have Arjun's answers from the call: …"), so the caller never starts from zero.
+- 0 → a person, never a booking. The health worker picks up with what the line already knows (a finished check and its result, or "I can see you started a health check for Arjun. I'll help you from here"), then asks "How can I help you today?". The conversation is theirs: no booking, concern or referral is created from pressing 0. Only an emergency (the ASHA's "Call PHC now", or an urgent result) acts: come now, and an emergency arrival is created. While a person is talking, the keys are off and the call shows "With a health worker".
+- No free slot within 30 days: the line says so and offers a person. It never offers an invented slot.
+- A call is one session (family, person, mode, answers, demo run): a new handover link or Reset demo ends the old call and its timers.
 
 ### 6.3 PHC dashboard (desktop-sized)
 

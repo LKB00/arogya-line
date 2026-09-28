@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { IconBuildingHospital, IconCalendarEvent, IconPhoneCall, IconStethoscope, IconX } from "@tabler/icons-react";
+import { IconCalendarEvent, IconPhoneCall, IconX } from "@tabler/icons-react";
 import { dayLabel, longDate } from "../../app/format";
 import { useStore } from "../../app/store";
 import { PHC, isoDate } from "../../app/seed";
@@ -80,10 +80,10 @@ export default function Dashboard() {
   return (
     <section className={consultId ? "phc has-sheet" : "phc"}>
       <nav className="rail" aria-label="Views">
-        <span className="rail__brand" title={PHC.facility}>
-          <Icon icon={IconBuildingHospital} size={24} />
-        </span>
-        {/* Icon-only: the page title already names the view. The name stays
+        {/* The two views and nothing else: the facility and the signed-in
+            doctor are named in the line above the title, so a logo tile and
+            an avatar here would only repeat it (and look like buttons).
+            Icon-only: the page title already names the view. The name stays
             for screen readers and as a tooltip. */}
         <button type="button" className="rail__item" aria-pressed={view === "day"} aria-label="Day" title="Day" onClick={() => update({ view: null })}>
           <span className="rail__pill">
@@ -108,10 +108,6 @@ export default function Dashboard() {
             )}
           </span>
         </button>
-        <span className="rail__me" title={`Signed in as ${PHC.doctor}`}>
-          <Icon icon={IconStethoscope} />
-          <span className="visually-hidden">Signed in as {PHC.doctor}</span>
-        </span>
       </nav>
 
       <main className="phc__main">
@@ -201,7 +197,7 @@ export default function Dashboard() {
               <p className="phc__empty">
                 <Icon icon={IconCalendarEvent} size={24} />
                 <span>
-                  No bookings have reached the PHC {dayWords(day)}.
+                  No bookings {dayWords(day).startsWith("for ") ? dayWords(day) : `for ${dayWords(day)}`} have reached the PHC.
                   <span className="phc__empty-sub">Bookings made offline appear once the ASHA's phone has signal.</span>
                 </span>
               </p>

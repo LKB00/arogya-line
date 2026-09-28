@@ -129,20 +129,6 @@ describe("triage over the keypad", () => {
     expect(repeated.call.transcript.length).toBeGreaterThan(asked.call.transcript.length);
   });
 
-  it("0 mid-question jumps to the operator, who books the same day", () => {
-    const e = env();
-    const midway = type(startCall(e), "4471" + "1" + "2" + "1", e);
-    expect(midway.call.state).toBe("triageQuestion");
-    const operator = type(midway, "0", e);
-    expect(operator.call.state).toBe("operator");
-
-    const first = tick(operator.call, e);
-    expect(first.call.state).toBe("operator");
-    expect(first.effects).toHaveLength(0);
-    const second = tick(first.call, e);
-    expect(second.call.state).toBe("ended");
-    expect(second.effects).toEqual([expect.objectContaining({ type: "book", date: isoDate(0) })]);
-  });
 });
 
 describe("menu 3, hear the doctor's advice", () => {
@@ -280,15 +266,6 @@ describe("edge cases found in the design pass", () => {
     expect(after.call.offerSlot).not.toBe(offered.call.offerSlot);
   });
 
-  it("late in the day, the operator books the next real slot, not one already past", () => {
-    const e = { ...env(), hour: 22 };
-    let step = type(startCall(e), "4471" + "0", e);
-    step = tick(step.call, e);
-    step = tick(step.call, e);
-    const book = step.effects.find((x) => x.type === "book");
-    expect(book).toMatchObject({ date: isoDate(1) });
-  });
-
   it("an emergency is come now, not an appointment: no slot is booked", () => {
     const e = { ...env(), hour: 22 };
     let step = startCall(e, { familyId: "3120", emergency: true });
@@ -297,17 +274,6 @@ describe("edge cases found in the design pass", () => {
     expect(said(step.call)).toContain("Please bring the patient to PHC Tumkur now. You will be seen as an emergency");
     expect(said(step.call)).not.toMatch(/also booked|next available/);
     expect(step.effects).toEqual([expect.objectContaining({ type: "emergency", concern: expect.objectContaining({ urgency: "red" }) })]);
-  });
-
-  it("the health worker never promises today before finding a time", () => {
-    const e = { ...env(), hour: 22 }; // nothing left today
-    const op = press(type(startCall(e), "4471", e).call, "0", e);
-    const first = tick(op.call, e);
-    expect(said(first.call)).toContain("Let me find the next available time.");
-    expect(said(first.call)).not.toContain("today");
-    const second = tick(first.call, e);
-    expect(said(second.call)).toContain("The next available time is tomorrow");
-    expect(second.effects).toEqual([expect.objectContaining({ type: "book", date: isoDate(1) })]);
   });
 
   it("says back what the caller reported, as speech, not a list", () => {
@@ -334,12 +300,79 @@ describe("edge cases found in the design pass", () => {
     expect(type(heard, "2", e).call.state).toBe("mainMenu");
   });
 
-  it("the health worker picks up with what the line already heard", () => {
+});
+
+
+describe("0 is a person, never a booking", () => {
+  /** Press keys, then let the health worker speak until they stop. */
+  function toPerson(keys: string, e: Env, opts = {}) {
+    let step = type(startCall(e, opts), keys, e);
+    const effects = [...step.effects];
+    for (let i = 0; i < 4 && step.call.state === "operator"; i++) {
+      step = tick(step.call, e);
+      effects.push(...step.effects);
+    }
+    return { call: step.call, effects };
+  }
+
+  it("from the main menu: the health worker asks how to help, and nothing is recorded", () => {
     const e = env();
-    const mid = type(startCall(e), "4471" + "1" + "2" + "11", e); // two yeses, then 0
-    const op = press(mid.call, "0", e);
-    const first = tick(op.call, e);
-    expect(said(first.call)).toContain("I have Arjun's answers from the call: fever more than 2 days, vomiting more than 3 times today.");
+    const { call, effects } = toPerson("4471" + "0", e);
+    expect(effects).toEqual([]);
+    expect(call.state).toBe("operator");
+    expect(said(call)).toContain("How can I help you today?");
+    expect(said(call)).not.toMatch(/booked|next available|Lakshmi's answers/);
+  });
+
+  it("after a home-care result: no urgent signs stays no urgent signs, no visit appears", () => {
+    const e = env();
+    const { call, effects } = toPerson("4471" + "1" + "2" + "2222" + "0", e);
+    expect(effects.filter((x) => x.type !== "concern")).toEqual([]); // only the check itself was saved
+    expect(said(call)).toContain("I have Arjun's answers from the call. The check found no urgent signs.");
+  });
+
+  it("while hearing advice: a person, not an appointment", () => {
+    const e = env();
+    const { effects } = toPerson("2205" + "3" + "0", e);
+    expect(effects).toEqual([]);
+  });
+
+  it("halfway through the questions: said to be unfinished, never treated as a referral", () => {
+    const e = env();
+    const { call, effects } = toPerson("4471" + "1" + "2" + "11" + "0", e);
+    expect(effects).toEqual([]);
+    expect(said(call)).toContain("I can see you started a health check for Arjun. I'll help you from here");
   });
 });
 
+describe("failure modes", () => {
+  it("never invents a slot when the diary is full", () => {
+    const e = env();
+    const full = [];
+    for (let d = 0; d < 40; d++)
+      for (const slot of ["09:00–10:00", "10:00–11:00", "11:00–12:00", "14:00–15:00"]) full.push({ ...e.bookings[0], id: `f${d}${slot}`, date: isoDate(d), slot });
+    const e2 = { ...e, bookings: full };
+    const after = type(startCall(e2), "4471" + "1" + "2" + "1122", e2);
+    expect(said(after.call)).toContain("There are no appointments free in the next 30 days.");
+    expect(after.call.offerSlot).toBeNull();
+    expect(type(after, "1", e2).effects).toEqual([]);
+  });
+
+  it("a big family is read in pages, so nobody is left out", () => {
+    const e = env();
+    const members = Array.from({ length: 10 }, (_, i) => ({ id: `big-${i}`, name: `Person${i + 1}`, age: 30, role: "adult" as const }));
+    const e2 = { ...e, families: [...e.families, { ...e.families[0], id: "9000", members }] };
+    const asked = type(startCall(e2), "9000" + "1", e2);
+    expect(said(asked.call)).toContain("Press 7 for Person7. Press 8 for more names.");
+    const more = type(asked, "8", e2);
+    expect(said(more.call)).toContain("Press 3 for Person10.");
+    expect(type(more, "3", e2).call.memberId).toBe("big-9");
+  });
+
+  it("a card with nobody on it says so and offers a person", () => {
+    const e = env();
+    const e2 = { ...e, families: [...e.families, { ...e.families[0], id: "9001", members: [] }] };
+    const asked = type(startCall(e2), "9001" + "1", e2);
+    expect(said(asked.call)).toContain("There is no one registered on this family card. | Press 0 to talk to a health worker.");
+  });
+});

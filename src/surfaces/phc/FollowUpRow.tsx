@@ -22,13 +22,18 @@ export default function FollowUpRow({ row, today, selected, onOpen }: Props) {
   const status = STATUS[followUpState(booking, today)];
   return (
     <tr className={selected ? "trow is-selected" : "trow"} aria-selected={selected}>
-      <td className="cell">
+      <td className="cell cell--who">
         <span className="who__name">{patientName(row)}</span>
         <span className="who__meta">{patientMeta(row)}</span>
       </td>
-      <td className="cell cell--muted">{dayLabel(booking.date)}</td>
-      <td className="cell">{booking.followUpDue ? dayLabel(booking.followUpDue) : "—"}</td>
-      <td className="cell">
+      {/* The labels are for phones, where the columns become a card and lose their headers. */}
+      <td className="cell cell--muted cell--seen" data-label="Seen">
+        {dayLabel(booking.date)}
+      </td>
+      <td className="cell cell--due" data-label="Follow-up">
+        {booking.followUpDue ? dayLabel(booking.followUpDue) : "—"}
+      </td>
+      <td className="cell cell--status">
         <span className={`status status--${status.tone}`}>{status.label}</span>
       </td>
       <td className="cell cell--action">

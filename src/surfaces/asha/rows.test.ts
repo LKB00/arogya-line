@@ -65,10 +65,26 @@ describe("rowFor: what each family needs today", () => {
     expect(row.band).toBe("done");
   });
 
-  it("the reason is what the family said, capitalised, before any finding", () => {
+  it("an urgent row's reason is the danger sign that made it urgent", () => {
     const s = seed();
     const row = rowFor(fam(s, "3120"), s.concerns, s.bookings, today)!;
-    expect(reasonFor(row, s.concerns)).toBe("Breathing fast");
+    expect(reasonFor(row, s.concerns)).toBe("Breathing fast or difficulty breathing");
+  });
+
+  it("a row's reason comes from its own concern, never another of the same person's", () => {
+    const s = seed();
+    // An older concern for Kavya that found only a fever, with no booking.
+    const older: Concern = { ...s.concerns[0], id: "c-old", urgency: "green", answers: [{ questionId: "child_fever", answer: "yes" }], reasons: ["Fever more than 2 days"] };
+    const rows = rowsFor(fam(s, "3120"), [older, ...s.concerns], s.bookings, today);
+    expect(rows[0].concernId).toBe("c-3120");
+    expect(reasonFor(rows[0], [older, ...s.concerns])).toBe("Breathing fast or difficulty breathing");
+  });
+
+  it("with nothing found, the reason falls back to what the family said", () => {
+    const s = seed();
+    const nothing: Concern = { ...s.concerns[0], id: "c-none", familyId: "4471", memberId: "4471-2", urgency: "green", answers: [], reasons: [] };
+    const row = rowFor(fam(s, "4471"), [nothing], [], today)!;
+    expect(reasonFor(row, [nothing])).toBe("Fever since Tuesday");
   });
 
   it("two people with open concerns in one family are two rows, most urgent first", () => {

@@ -26,6 +26,7 @@ const LINE_NUMBER = "1800 4471 108";
 function statusLabel(state: Call["state"]): string {
   if (state === "idle") return "Ready to dial";
   if (state === "ended") return "Call ended";
+  if (state === "operator") return "With a health worker";
   return "On call";
 }
 
@@ -54,7 +55,20 @@ function initialCall(params: URLSearchParams): Call {
   return startCall(readEnv(), callOptions(params)).call;
 }
 
+/**
+ * One call is one session: who it is for (family, person, mode, answers) and
+ * which run of the demo it belongs to. When any of those change (a new
+ * handover link, or Reset demo), the old call and its timers end and a fresh
+ * one starts, so nothing from the old session can write into the new store.
+ */
 export default function CallSimulator() {
+  const [params] = useSearchParams();
+  const demoRun = useStore((s) => s.demoRun);
+  const session = ["family", "member", "mode", "a"].map((k) => params.get(k) ?? "").join("|") + `#${demoRun}`;
+  return <CallSession key={session} />;
+}
+
+function CallSession() {
   const [params] = useSearchParams();
   const [call, setCall] = useState<Call>(() => initialCall(params));
   // Keys pressed faster than React re-renders must still see the latest call.
@@ -202,7 +216,7 @@ export default function CallSimulator() {
             </div>
           )}
 
-          <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} ended={call.state === "ended"} />
+          <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} ended={call.state === "ended"} listening={call.state !== "operator"} />
         </div>
       </PhoneFrame>
 

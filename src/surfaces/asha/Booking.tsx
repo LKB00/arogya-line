@@ -8,7 +8,8 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { IconBuildingHospital, IconCalendarOff, IconCheck, IconCloudOff, IconSun, IconSunrise } from "@tabler/icons-react";
-import { slotTaken, useStore } from "../../app/store";
+import { useStore } from "../../app/store";
+import { isBookable } from "../../app/slots";
 import { PHC, SLOTS, isoDate } from "../../app/seed";
 import { shortDate, slotLabel } from "../../app/format";
 import { decodeAnswers, evaluate, nextQuestion, toTriageRole } from "../../app/triage";
@@ -71,7 +72,7 @@ export default function Booking() {
     if (!chosen) return;
     // Re-check against the store as it is now, not as it was at the last
     // render: a booking may have synced in since. Nothing is written if so.
-    if (slotTaken(useStore.getState().bookings, date, chosen)) {
+    if (!isBookable(useStore.getState().bookings, date, chosen, isoDate(0), new Date().getHours())) {
       setLost(chosen);
       setSlot(null);
       return;
@@ -169,7 +170,7 @@ export default function Booking() {
         {lost && !slot && (
           <p className="notice notice--strong" role="alert">
             <Icon icon={IconCalendarOff} />
-            <span>{slotLabel(lost)} was just taken. Nothing was booked. Choose another time.</span>
+            <span>{slotLabel(lost)} can no longer be booked (just taken, or its hour has started). Nothing was booked. Choose another time.</span>
           </p>
         )}
 

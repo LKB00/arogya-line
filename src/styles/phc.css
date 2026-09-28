@@ -700,6 +700,14 @@
 }
 
 .sheet__source,
+.sheet__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g1);
+  color: var(--text-muted);
+  font: var(--t-meta);
+}
+
 .sheet__hint {
   display: flex;
   align-items: flex-start;

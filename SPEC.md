@@ -106,6 +106,7 @@ type Concern = {
   urgency: Urgency;
   reasons: string[];          // plain-text reasons shown to the user
   homeCare?: { tell: string[]; callIf: string[]; spoken?: string[] }; // advice exactly as given
+  initiatedBy?: "asha";       // who started it, when not the channel: the ASHA's emergency over the line
   createdAt: string;
   sync: SyncStatus;
 };
@@ -124,6 +125,8 @@ type Booking = {
   followUpDue?: string;       // ISO date
   followUpStatus?: "pending" | "answered" | "missed";
   ashaAsked?: boolean;        // after a missed call, the doctor asked the ASHA to follow up
+  followUpLog?: { due: string; outcome: "answered" | "missed"; at: string }[]; // every call outcome, never erased
+  adviceLog?: { text: string; at: string }[]; // earlier wording of the advice, kept when edited
   arrived?: boolean;          // demo only: a future booking marked as arrived
   emergency?: boolean;        // an emergency arrival today; slot is "Now"
 };
@@ -174,6 +177,8 @@ Linear path. Each step is its own route so back works.
 - Lists the people (not families) with open work, in three sections: today's work (Up next, then Later today), Upcoming (visits on a later day, never counted as "today"), and Already seen. One row per person, showing their first piece of work; any other open items for that person are counted on the row ("+1 more for Arjun") and listed on the family screen.
 - "Up next" is the work that is due, not the brightest colour: danger signs first, then calls already late, then calls and home follow-ups due today, then today's visits by time, then open concerns with no date; urgency orders within each step.
 - Each row: person, task, village, one-line reason, sync tag if waiting, and "+N other people in this family" when others in the same household also need her.
+- Tasks come from where a booking stands, not its date: a follow-up handed to her or a call due comes before the visit; a visit still ahead is "PHC visit"; a visit whose day passed with nothing recorded is "Check the visit happened" (never "seen"); a visit with advice and nothing owed is done.
+- A concern whose person is no longer on the family card reads "Person not found" with "Record needs checking", never the family head's name.
 - A missed follow-up call is her task only when the doctor asks ("Follow up at home · Doctor asked: the follow-up call was missed"); a missed call alone commits nobody.
 - A home-care concern from the voice line (no booking) is a "Follow up" task for today: the line told the family their ASHA will follow up, and this row is that promise.
 - "Up next" reads person → task and time → reason → village and card.
@@ -197,7 +202,7 @@ Linear path. Each step is its own route so back works.
 
 **Booking**
 - Pick a day from the next 3 days and a slot from a fixed list. Slots already taken by other bookings appear as unavailable.
-- Creates Booking (+ Concern), respecting `online` for sync status. At the tap it re-checks the slot against the store as it is now; if it was just taken, nothing is written and the screen says so.
+- Creates Booking (+ Concern), respecting `online` for sync status. One rule decides whether a slot can be booked (`app/slots.ts` `isBookable`: not a past day, not already started today, not taken), used by this screen, by the voice line when it offers a time and again when the caller confirms, and by the store at the moment of writing. At the tap it re-checks the live store; if the slot can no longer be booked, nothing is written and the screen says so.
 
 **Booked**
 - Shows date, slot, facility, doctor, and a fixed "what to tell the family" checklist (3 items, checkable, purely local state).
@@ -207,7 +212,7 @@ Linear path. Each step is its own route so back works.
 
 Presented as a phone call, not an app: a transcript area where spoken prompts appear one at a time, and a 0–9 keypad. Also a "hang up" and "replay" (9) control.
 
-- Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it.
+- Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it. A found card is confirmed without saying any name or village ("We have found your family card"); a real service would verify the caller before reading names or advice.
 - Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear your advice, 0 = Talk to a person.
 - 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. A list longer than eight is read in pages of seven, with 8 for more names. A card with nobody registered says so and offers a person (0). The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
 - What the caller reported is said back as speech: "You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing."
@@ -219,6 +224,8 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 - A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
 - 0 → a person, never a booking. The health worker picks up with what the line already knows (a finished check and its result, or "I can see you started a health check for Arjun. I'll help you from here"), then asks "How can I help you today?". The conversation is theirs: no booking, concern or referral is created from pressing 0. Only an emergency (the ASHA's "Call PHC now", or an urgent result) acts: come now, and an emergency arrival is created. While a person is talking, the keys are off and the call shows "With a health worker".
 - No free slot within 30 days: the line says so and offers a person. It never offers an invented slot.
+- Confirming re-checks the exact slot with the same rule used to offer it: taken meanwhile ("just been taken") or its hour started ("has just started") → nothing booked, the next slot offered.
+- An emergency the ASHA called in is saved with `initiatedBy: "asha"`, so the PHC reads "Emergency called in by the ASHA", not a family's call.
 - A call is one session (family, person, mode, answers, demo run): a new handover link or Reset demo ends the old call and its timers.
 
 ### 6.3 PHC dashboard (desktop-sized)
@@ -233,7 +240,9 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
   - `advice` text field (stands in for the 20-second voice note). Saving it does not set a follow-up.
   - `avoidable` toggle (Yes / No): "Could this have been handled without a visit?", answered with the patient seen.
   - Follow-up call choice: None, Next day, In 3 days, In a week (days after the visit). Choosing sets `followUpDue` and `followUpStatus = "pending"`; choosing the day already set keeps its outcome; None clears it.
-  - "Mark follow-up answered / missed" buttons for demo purposes.
+  - "Mark follow-up answered / missed" buttons for demo purposes. Every outcome is logged (`followUpLog`) and shown as earlier calls, so clearing or moving the follow-up never erases that a call was missed.
+  - Editing advice keeps the earlier words with their time (`adviceLog`); the family hears the latest.
+  - The store refuses contradictions: advice or "avoidable" for a patient not yet arrived, a call outcome with no call planned, an emergency on any day but today, a booking without a concern or in an unbookable slot.
   - A missed call needs a decision: "Call again today" or "Ask the ASHA to follow up" (`ashaAsked`), or leave it open. Nothing is asked of the ASHA automatically.
 - A second view: "Follow-ups", grouped by who acts: Needs attention now (due today, overdue, missed and undecided), With the ASHA (missed, ASHA asked), Upcoming (due later). The rail badge and the "Follow-ups due" figure count only Needs attention now.
 - "Across the service, to date", below the list and quieter than the workload (every booking so far, not the day on screen): bookings pre-booked (%), potential trips avoided (count of "could have been handled without a visit"; a learning signal, not a score), follow-ups answered (%). These update live as the demo is used. This is the "outcomes" moment of the prototype.

@@ -30,7 +30,9 @@ describe("family ID entry", () => {
     const after = type(start, "4471", e);
     expect(after.call.state).toBe("mainMenu");
     expect(after.call.familyId).toBe("4471");
-    expect(said(after.call)).toContain("Lakshmi");
+    expect(said(after.call)).toContain("We have found your family card.");
+    // Nothing identifying is spoken on a card number alone.
+    expect(said(after.call)).not.toMatch(/Lakshmi|Hebbur/);
   });
 
   it("asks again after a wrong ID", () => {
@@ -376,3 +378,36 @@ describe("failure modes", () => {
     expect(said(asked.call)).toContain("There is no one registered on this family card. | Press 0 to talk to a health worker.");
   });
 });
+
+describe("conflicts: the hour changes between offer and confirm", () => {
+  it("offered at 9:58 for today, confirmed at 10:02: not booked, and the caller is told why", () => {
+    const at9 = { ...env(), hour: 9 };
+    const checked = type(startCall(at9, { familyId: "4471" }), "1" + "2" + "1122", at9);
+    // The line offered today's 10–11 while it was still 9-something.
+    const offered = { ...checked.call, state: "offerBooking" as const, offerDate: isoDate(0), offerSlot: "10:00–11:00" };
+    const confirming = press(offered, "1", at9);
+    const after = press(confirming.call, "1", { ...at9, hour: 10 });
+    expect(after.effects).toEqual([]);
+    expect(said(after.call)).toContain("Sorry, that time has just started, so it can no longer be booked.");
+  });
+});
+
+describe("provenance", () => {
+  it("an emergency the ASHA called in is recorded as hers, not the family's", () => {
+    const e = env();
+    let step = startCall(e, { familyId: "4471", memberId: "4471-2", emergency: true, answers: [{ questionId: "child_breathing", answer: "yes" }] });
+    step = tick(step.call, e);
+    step = tick(step.call, e);
+    expect(step.effects).toEqual([expect.objectContaining({ type: "emergency", concern: expect.objectContaining({ initiatedBy: "asha" }) })]);
+  });
+
+  it("a family's own urgent result on the line is not marked as the ASHA's", () => {
+    const e = env();
+    let step = type(startCall(e), "4471" + "1" + "2" + "2221", e); // danger sign: red
+    step = tick(step.call, e);
+    step = tick(step.call, e);
+    const emergency = step.effects.find((x) => x.type === "emergency");
+    expect(emergency && "concern" in emergency ? emergency.concern.initiatedBy : undefined).toBeUndefined();
+  });
+});
+

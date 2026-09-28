@@ -11,8 +11,10 @@ export type BookingRow = {
   member?: Member;
 };
 
+/** Who the record came from: the ASHA (in person, or her emergency call), the family on the line, or the door. */
 export function reportedBy(row: BookingRow): string {
   if (row.booking.walkIn) return "Walk-in";
+  if (row.concern?.initiatedBy === "asha") return "ASHA";
   return row.concern?.source === "ivr" ? "Voice line" : "ASHA";
 }
 

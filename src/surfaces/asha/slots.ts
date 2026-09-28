@@ -1,18 +1,16 @@
-// Whether a PHC slot can still be booked. Display logic for the booking
-// screen: a slot is full when another booking holds it, and past when it is
-// today and its hour has already started.
+// Whether a PHC slot can still be booked, for the booking screen's display:
+// full when another booking holds it, past when its hour has started. The
+// rule itself lives in app/slots.ts, shared with the voice line and the store.
 
+import { slotPassed, slotStartHour, slotTaken } from "../../app/slots";
 import type { Booking } from "../../app/types";
+
+export { slotStartHour };
 
 export type SlotState = "open" | "full" | "past";
 
-/** The hour a slot starts, from "09:00–10:00". */
-export function slotStartHour(slot: string): number {
-  return Number(slot.slice(0, 2));
-}
-
 export function slotState(slot: string, date: string, bookings: Booking[], today: string, now: Date): SlotState {
-  if (date === today && slotStartHour(slot) <= now.getHours()) return "past";
-  if (bookings.some((b) => b.date === date && b.slot === slot)) return "full";
+  if (slotPassed(date, slot, today, now.getHours())) return "past";
+  if (slotTaken(bookings, date, slot)) return "full";
   return "open";
 }

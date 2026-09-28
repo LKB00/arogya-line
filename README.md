@@ -20,7 +20,7 @@ to the seed scenario.
   keys in the family ID printed on their card, picks the person by name, and
   can run the same screening, book a visit (read back before it is booked),
   or hear the advice that person was given. 0 reaches a person and never
-  books anything by itself.
+  books anything by itself. No name is read aloud on a card number alone.
 - **PHC dashboard** (`/phc`): the doctor's desktop view. Opens on today: the
   day's workload, bookings in time order with urgent ones marked, and a
   consult sheet for advice, "could this have been handled without a visit"
@@ -61,6 +61,7 @@ The bar in the dark strip at the top (surface tabs, signal toggle, reset) is
 demo chrome, not part of the product; so is any control marked "Demo only".
 
 Design rationale, edge cases and the test record: [docs/design-rationale.md](docs/design-rationale.md).
+Behaviour, field by field: [SPEC.md](SPEC.md). The three are kept in step.
 
 ## Disclaimer
 

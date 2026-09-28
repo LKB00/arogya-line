@@ -7,7 +7,8 @@
 import { Link } from "react-router-dom";
 import { IconChevronRight, IconMapPin, IconMessageCircle } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
-import { ASHA, isoDate } from "../../app/seed";
+import { useToday } from "../../app/useToday";
+import { ASHA } from "../../app/seed";
 import Icon from "../../shell/Icon";
 import { personIcon } from "./pictograms";
 import { rowFor } from "./rows";
@@ -17,7 +18,7 @@ export default function FamilyPicker() {
   const families = useStore((s) => s.families).filter((f) => f.ashaId === ASHA.id);
   const concerns = useStore((s) => s.concerns);
   const bookings = useStore((s) => s.bookings);
-  const today = isoDate(0);
+  const today = useToday();
   const villages = [...new Set(families.map((f) => f.village))];
 
   return (

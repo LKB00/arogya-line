@@ -177,6 +177,8 @@ Linear path. Each step is its own route so back works.
 - Lists the people (not families) with open work, in three sections: today's work (Up next, then Later today), Upcoming (visits on a later day, never counted as "today"), and Already seen. One row per person, showing their first piece of work; any other open items for that person are counted on the row ("+1 more for Arjun") and listed on the family screen.
 - "Up next" is the work that is due, not the brightest colour: danger signs first, then calls already late, then calls and home follow-ups due today, then today's visits by time, then open concerns with no date; urgency orders within each step.
 - Each row: person, task, village, one-line reason, sync tag if waiting, and "+N other people in this family" when others in the same household also need her.
+- A follow-up after the consult never carries the urgent colour (an urgent case, once seen, becomes care work), so red on the list always means an urgent action still unresolved.
+- Today, the family picker and the PHC dashboard re-read the date at midnight while open.
 - Tasks come from where a booking stands, not its date: a follow-up handed to her or a call due comes before the visit; a visit still ahead is "PHC visit"; a visit whose day passed with nothing recorded is "Check the visit happened" (never "seen"); a visit with advice and nothing owed is done.
 - A concern whose person is no longer on the family card reads "Person not found" with "Record needs checking", never the family head's name.
 - A missed follow-up call is her task only when the doctor asks ("Follow up at home · Doctor asked: the follow-up call was missed"); a missed call alone commits nobody.

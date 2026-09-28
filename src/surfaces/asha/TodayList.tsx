@@ -25,7 +25,8 @@ import {
   type TablerIcon,
 } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
-import { ASHA, isoDate } from "../../app/seed";
+import { useToday } from "../../app/useToday";
+import { ASHA } from "../../app/seed";
 import { URGENCY_LABEL, longDate } from "../../app/format";
 import Icon from "../../shell/Icon";
 import SyncBanner from "./SyncBanner";
@@ -61,7 +62,7 @@ export default function TodayList() {
   const families = useStore((s) => s.families);
   const concerns = useStore((s) => s.concerns);
   const bookings = useStore((s) => s.bookings);
-  const today = isoDate(0);
+  const today = useToday();
 
   const rows = families
     .filter((f) => f.ashaId === ASHA.id)

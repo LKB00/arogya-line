@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SYNC_DELAY_MS, useStore } from "./store";
+import { SYNC_DELAY_MS, adviceByPerson, useStore } from "./store";
 import { addDays } from "./seed";
 
 const arjunConcern = {
@@ -140,3 +140,22 @@ describe("setFollowUp", () => {
     expect(get("b-2205").followUpStatus).toBeUndefined();
   });
 });
+
+describe("adviceByPerson", () => {
+  it("each person's own latest advice, never another family member's", () => {
+    useStore.getState().resetDemo();
+    const s = useStore.getState();
+    const dad = s.createConcern({ familyId: "3120", memberId: "3120-1", source: "ivr", answers: [], urgency: "green", reasons: [], homeCare: { tell: ["Rest"], callIf: ["Chest pain"] } });
+    s.saveAdvice("b-3120", "Steam twice a day.");
+    const advice = adviceByPerson(useStore.getState(), "3120");
+    expect(advice.find((a) => a.memberId === "3120-2")?.booking?.advice).toBe("Steam twice a day.");
+    expect(advice.find((a) => a.memberId === "3120-1")?.concern?.id).toBe(dad.id);
+    expect(advice).toHaveLength(2);
+  });
+
+  it("a family with none has none", () => {
+    useStore.getState().resetDemo();
+    expect(adviceByPerson(useStore.getState(), "4471")).toEqual([]);
+  });
+});
+

@@ -15,7 +15,7 @@ const LINE_NUMBER = "1800 4471 108";
 const MENU = [
   { key: "1", icon: IconStethoscope, label: "Someone is unwell" },
   { key: "2", icon: IconCalendarEvent, label: "Book a visit" },
-  { key: "3", icon: IconVolume, label: "Hear the doctor's advice" },
+  { key: "3", icon: IconVolume, label: "Hear your advice" },
   { key: "0", icon: IconUser, label: "Talk to a person" },
 ];
 

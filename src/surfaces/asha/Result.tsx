@@ -22,7 +22,7 @@ import {
 import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import { shortDate, slotLabel } from "../../app/format";
-import { HOME_CARE, decodeAnswers, evaluate, getQuestions, nextQuestion, toTriageRole } from "../../app/triage";
+import { HOME_CARE, decodeAnswers, evaluate, getQuestions, homeCareFor, nextQuestion, toTriageRole } from "../../app/triage";
 import type { Urgency } from "../../app/types";
 import Icon from "../../shell/Icon";
 import UrgencyChip from "./UrgencyChip";
@@ -90,7 +90,9 @@ export default function Result() {
   const homeCare = HOME_CARE[role];
 
   const saveHomeCare = () => {
-    createConcern({ familyId: family.id, memberId: member.id, source: "asha", answers, urgency, reasons });
+    // The advice on screen is saved with the concern, so the family can hear
+    // it again on the voice line and the family screen shows what was given.
+    createConcern({ familyId: family.id, memberId: member.id, source: "asha", answers, urgency, reasons, homeCare: homeCareFor(role) });
     navigate("/asha");
   };
 

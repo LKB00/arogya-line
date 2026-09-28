@@ -509,20 +509,14 @@ a:hover .person__head .row__chevron {
   justify-content: space-between;
 }
 
-.hero__card {
-  color: var(--tri-text);
-  font: var(--t-meta);
-  font-variant-numeric: tabular-nums;
-}
-
 .hero__name {
   font: 600 24px / 32px var(--font-sans);
   letter-spacing: -0.015em;
 }
 
-.hero__family {
-  color: var(--tri-text);
-  font: var(--t-meta);
+/* What to do, and when: the line she acts on, so it carries the weight. */
+.hero__facts .hero__task {
+  font-weight: 700;
 }
 
 .hero__facts {
@@ -980,6 +974,31 @@ a:hover .person__head .row__chevron {
   padding: 0 var(--g4) var(--g4);
   color: var(--text-muted);
   font: var(--t-meta);
+}
+
+/* Home-care advice given with a check: the same card, words instead of a
+   voice note, meta line first. */
+.homecare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+  padding: var(--g4);
+  border-radius: 20px;
+  background: var(--surface);
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+.homecare .voicenote__meta {
+  padding: 0;
+}
+
+.homecare__line {
+  font: var(--t-body);
+}
+
+.homecare__line b {
+  font-weight: 600;
 }
 
 .voicenote__words {

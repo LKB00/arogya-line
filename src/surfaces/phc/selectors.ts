@@ -7,10 +7,10 @@ import type { BookingRow } from "./rows";
 
 const URGENCY_ORDER: Record<Urgency, number> = { red: 0, amber: 1, green: 2 };
 
-/** A day from the URL, or tomorrow when it is missing or not a real date. */
+/** A day from the URL, or today when it is missing or not a real date: a doctor opens on today. */
 export function dayFromParam(param: string | null): string {
   if (param && /^\d{4}-\d{2}-\d{2}$/.test(param) && !Number.isNaN(new Date(param).getTime())) return param;
-  return isoDate(1);
+  return isoDate(0);
 }
 
 export function toRow(booking: Booking, concerns: Concern[], families: Family[]): BookingRow {
@@ -25,7 +25,11 @@ export function sent(bookings: Booking[]): Booking[] {
   return bookings.filter((b) => b.sync === "sent");
 }
 
-/** A day's bookings: most urgent first, then by time. */
+/**
+ * A day's bookings in the order they will walk in: by time, then the most
+ * urgent first within a slot. Urgency is signalled on the row, not used as
+ * the sort, so the doctor always knows who is next.
+ */
 export function dayRows(bookings: Booking[], concerns: Concern[], families: Family[], day: string): BookingRow[] {
   return sent(bookings)
     .filter((b) => b.date === day)
@@ -33,7 +37,7 @@ export function dayRows(bookings: Booking[], concerns: Concern[], families: Fami
     .sort((a, b) => {
       const ua = a.concern ? URGENCY_ORDER[a.concern.urgency] : 3;
       const ub = b.concern ? URGENCY_ORDER[b.concern.urgency] : 3;
-      return ua - ub || a.booking.slot.localeCompare(b.booking.slot);
+      return a.booking.slot.localeCompare(b.booking.slot) || ua - ub;
     });
 }
 

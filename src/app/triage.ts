@@ -4,7 +4,7 @@
 //
 // Illustrative questions, not clinical guidance.
 
-import type { Member, TriageAnswer, Urgency } from "./types";
+import type { HomeCare, Member, TriageAnswer, Urgency } from "./types";
 
 export const DISCLAIMER = "Illustrative questions, not clinical guidance.";
 
@@ -132,22 +132,42 @@ const SETS: Record<TriageRole, Question[]> = {
 /**
  * What the family is told when no urgent sign is found: what to do at home,
  * and the signs that mean they should call again. Shown by the ASHA app on a
- * home-care result and spoken by the voice line, so both give the same advice.
+ * home-care result, saved with the concern, and spoken by the voice line, so
+ * everyone gives the same advice. `spoken` is the same advice as a person
+ * would say it on the phone, not a list read aloud.
  */
-export const HOME_CARE: Record<TriageRole, { tell: string[]; callIf: string[] }> = {
+export const HOME_CARE: Record<TriageRole, HomeCare & { spoken: [string, string] }> = {
   child: {
     tell: ["Give small sips of fluid often", "Keep the child cool and lightly dressed", "Keep feeding as usual"],
     callIf: ["Breathing becomes fast or difficult", "The child stops drinking or feeding", "The fever lasts 2 more days"],
+    spoken: [
+      "At home, give small sips of fluid often, keep the child cool and lightly dressed, and keep feeding as usual.",
+      "Call us again if the breathing becomes fast or difficult, if the child stops drinking or feeding, or if the fever lasts two more days.",
+    ],
   },
   adult: {
     tell: ["Rest", "Drink plenty of water", "Take paracetamol if the fever is high"],
     callIf: ["Chest pain, or breathless while resting", "Too weak to do daily work", "The fever lasts 2 more days"],
+    spoken: [
+      "At home, rest, drink plenty of water, and take paracetamol if the fever is high.",
+      "Call us again if there is chest pain or breathlessness while resting, if you become too weak for daily work, or if the fever lasts two more days.",
+    ],
   },
   pregnant: {
     tell: ["Rest lying on the left side", "Drink plenty of water", "Keep taking the iron tablets"],
     callIf: ["Any bleeding, or the waters break", "Severe headache or blurred vision", "The baby moves less than usual"],
+    spoken: [
+      "At home, rest lying on your left side, drink plenty of water, and keep taking your iron tablets.",
+      "Call us again at once if there is any bleeding or the waters break, if you have a severe headache or blurred vision, or if the baby moves less than usual.",
+    ],
   },
 };
+
+/** The advice to save with a concern: the lists only, not the spoken form. */
+export function homeCareFor(role: TriageRole): HomeCare {
+  const { tell, callIf } = HOME_CARE[role];
+  return { tell, callIf };
+}
 
 /** Map a family member's role onto a question set. Mothers use the adult set. */
 export function toTriageRole(role: Member["role"]): TriageRole {

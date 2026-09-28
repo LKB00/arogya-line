@@ -1,8 +1,8 @@
 // Doctor's after-consult panel (SPEC 6.3 AfterConsult), as a side sheet beside
 // the list. Everything the doctor needs for this one patient, in the order it
-// is done: what was found, whether it could have been handled without a visit,
-// the advice (read back to the family on the voice line), then whether and
-// when to call the family again.
+// is done: what was found, the advice (read back to the family on the voice
+// line), then, with the patient seen, whether it could have been handled
+// without a visit, and whether and when to call the family again.
 
 import { useState } from "react";
 import { IconCheck, IconNurse, IconPhoneCall, IconVolume, IconX } from "@tabler/icons-react";
@@ -48,7 +48,7 @@ export default function AfterConsult({ row, today, onClose }: Props) {
     <aside className="sheet" aria-labelledby="after-consult-heading">
       <header className="sheet__head">
         <div className="sheet__who">
-          <p className="sheet__eyebrow">After consult</p>
+          <p className="sheet__eyebrow">Consult</p>
           <h2 id="after-consult-heading" className="sheet__name">
             {patientName(row)}
           </h2>
@@ -82,14 +82,6 @@ export default function AfterConsult({ row, today, onClose }: Props) {
       </section>
 
       <section className="sheet__block">
-        <h3 className="sheet__label">Could this have been handled without a visit?</h3>
-        <AvoidableToggle booking={booking} />
-        {booking.avoidable === undefined && (
-          <p className="sheet__hint">Not set yet. A “Yes” counts towards visits that advice could have replaced.</p>
-        )}
-      </section>
-
-      <section className="sheet__block">
         <label className="sheet__label" htmlFor="advice-text">
           Advice for the family
         </label>
@@ -117,6 +109,14 @@ export default function AfterConsult({ row, today, onClose }: Props) {
             </span>
           )}
         </div>
+      </section>
+
+      <section className="sheet__block">
+        <h3 className="sheet__label">Could this have been handled without a visit?</h3>
+        <AvoidableToggle booking={booking} />
+        {booking.avoidable === undefined && (
+          <p className="sheet__hint">Not set yet. A “Yes” counts towards visits that advice could have replaced.</p>
+        )}
       </section>
 
       <section className="sheet__block">

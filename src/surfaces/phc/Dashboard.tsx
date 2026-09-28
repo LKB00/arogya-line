@@ -112,11 +112,22 @@ export default function Dashboard() {
             <h1 className="phc__title">{view === "day" ? longDate(day) : "Follow-ups"}</h1>
           </div>
           {view === "day" && (
+            <div className="dayswitch">
+              {/* Today first: what the doctor opens the dashboard for. */}
+              <span className="seg" role="group" aria-label="Day">
+                <button type="button" className="seg__btn" aria-pressed={day === today} onClick={() => update({ day: null })}>
+                  Today
+                </button>
+                <button type="button" className="seg__btn" aria-pressed={day === isoDate(1)} onClick={() => update({ day: isoDate(1) })}>
+                  Tomorrow
+                </button>
+              </span>
             <label className="datefield">
               <Icon icon={IconCalendarEvent} className="datefield__icon" />
               <span className="visually-hidden">Change day</span>
               <input className="datefield__input" type="date" value={day} onChange={(e) => update({ day: e.target.value || null })} />
             </label>
+            </div>
           )}
         </header>
 
@@ -131,7 +142,7 @@ export default function Dashboard() {
             <div className="metric">
               <dt className="metric__label">Urgent</dt>
               <dd className={w.urgent ? "metric__value urgency--red" : "metric__value"}>{w.urgent}</dd>
-              <dd className="metric__detail">Seen first</dd>
+              <dd className="metric__detail">Danger sign found</dd>
             </div>
             <div className="metric">
               <dt className="metric__label">Advice to record</dt>
@@ -151,8 +162,9 @@ export default function Dashboard() {
         {view === "day" ? (
           <section className="phc__list">
             <div className="phc__listhead">
-              {/* The count and the urgent figure are in the workload above. */}
-              <h2 className="phc__h2">Bookings, most urgent first</h2>
+              {/* The count and the urgent figure are in the workload above;
+                  urgent rows are marked in the list itself. */}
+              <h2 className="phc__h2">Bookings by time</h2>
             </div>
             {rows.length === 0 ? (
               <p className="phc__empty">
@@ -170,11 +182,8 @@ export default function Dashboard() {
                       <th className="th th--time">Time</th>
                       <th className="th">Patient</th>
                       <th className="th">What was found</th>
-                      <th className="th th--need" title="Could this have been handled without a visit?">
-                        Avoidable?
-                      </th>
                       <th className="th th--action">
-                        <span className="visually-hidden">Advice</span>
+                        <span className="visually-hidden">Consult</span>
                       </th>
                     </tr>
                   </thead>
@@ -227,10 +236,11 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Reporting, not workload: how the whole loop is doing. */}
+        {/* Reporting, not workload: how the whole loop is doing. Every
+            booking to date, not the day on screen, and the heading says so. */}
         <section className="outcomes" aria-labelledby="outcomes-heading">
           <h2 id="outcomes-heading" className="outcomes__title">
-            Outcomes so far
+            Across the service, to date
           </h2>
           <dl className="outcomes__list">
             <div className="outcome">

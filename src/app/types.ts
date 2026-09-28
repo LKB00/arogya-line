@@ -21,6 +21,9 @@ export type Family = {
   members: Member[];
 };
 
+/** Home-care advice given with a "no urgent signs" result: what to do, and when to call again. */
+export type HomeCare = { tell: string[]; callIf: string[] };
+
 export type TriageAnswer = { questionId: string; answer: "yes" | "no" };
 
 export type Concern = {
@@ -31,6 +34,7 @@ export type Concern = {
   answers: TriageAnswer[];
   urgency: Urgency;
   reasons: string[]; // plain-text reasons shown to the user
+  homeCare?: HomeCare; // the advice given, saved with a home-care result
   createdAt: string;
   sync: SyncStatus;
 };

@@ -5,20 +5,28 @@ import { dayFromParam, dayRows, followUpRows, followUpState, outcomes, percent, 
 
 describe("dayFromParam", () => {
   it("keeps a real date", () => expect(dayFromParam("2026-09-30")).toBe("2026-09-30"));
-  it("falls back to tomorrow when missing or not a date", () => {
-    expect(dayFromParam(null)).toBe(isoDate(1));
-    expect(dayFromParam("")).toBe(isoDate(1));
-    expect(dayFromParam("banana")).toBe(isoDate(1));
-    expect(dayFromParam("2026-13-45")).toBe(isoDate(1));
+  it("falls back to today when missing or not a date", () => {
+    expect(dayFromParam(null)).toBe(isoDate(0));
+    expect(dayFromParam("")).toBe(isoDate(0));
+    expect(dayFromParam("banana")).toBe(isoDate(0));
+    expect(dayFromParam("2026-13-45")).toBe(isoDate(0));
   });
 });
 
 describe("dayRows", () => {
-  it("lists only bookings that have reached the PHC, most urgent first", () => {
+  it("lists only bookings that have reached the PHC, by time", () => {
     const s = createSeed();
     const offline: Booking = { ...s.bookings[0], id: "b-off", slot: "14:00–15:00", sync: "saved_offline" };
-    const rows = dayRows([...s.bookings, offline], s.concerns, s.families, isoDate(1));
+    const rows = dayRows([...s.bookings, offline], s.concerns, s.families, isoDate(0));
     expect(rows.map((r) => r.booking.id)).toEqual(["b-3120", "b-5638"]);
+  });
+
+  it("time sets the order, even when a later booking is more urgent", () => {
+    const s = createSeed();
+    const lateRed: Booking = { ...s.bookings[0], id: "b-late", slot: "14:00–15:00" }; // Kavya's red concern
+    const early: Booking = { ...s.bookings[1], id: "b-early", slot: "09:00–10:00" };
+    const rows = dayRows([lateRed, early], s.concerns, s.families, isoDate(0));
+    expect(rows.map((r) => r.booking.id)).toEqual(["b-early", "b-late"]);
   });
 
   it("an empty day is an empty list", () => {
@@ -26,12 +34,12 @@ describe("dayRows", () => {
     expect(dayRows(s.bookings, s.concerns, s.families, isoDate(9))).toEqual([]);
   });
 
-  it("a walk-in with no concern sorts last and has no patient", () => {
+  it("within one slot, the most urgent first; a walk-in with nothing recorded after", () => {
     const s = createSeed();
     const walkIn: Booking = { ...s.bookings[0], id: "b-walk", concernId: "none", slot: "09:00–10:00", walkIn: true };
-    const rows = dayRows([...s.bookings, walkIn], s.concerns, s.families, isoDate(1));
-    expect(rows.at(-1)?.booking.id).toBe("b-walk");
-    expect(rows.at(-1)?.member).toBeUndefined();
+    const rows = dayRows([walkIn, ...s.bookings], s.concerns, s.families, isoDate(0));
+    expect(rows.map((r) => r.booking.id).slice(0, 2)).toEqual(["b-3120", "b-walk"]);
+    expect(rows[1].member).toBeUndefined();
   });
 });
 
@@ -66,9 +74,9 @@ describe("outcomes", () => {
 });
 
 describe("workload", () => {
-  it("tomorrow in the seed: 2 patients, 1 urgent, 2 with advice to record", () => {
+  it("today in the seed: 2 patients, 1 urgent, 2 with advice to record", () => {
     const s = createSeed();
-    const rows = dayRows(s.bookings, s.concerns, s.families, isoDate(1));
+    const rows = dayRows(s.bookings, s.concerns, s.families, isoDate(0));
     expect(workload(rows, s.bookings, isoDate(0))).toMatchObject({ patients: 2, urgent: 1, toRecord: 2 });
   });
 

@@ -15,12 +15,12 @@ import {
   IconCircleCheck,
   IconCloudOff,
   IconHomeHeart,
+  IconMapPin,
   IconMessageCircle,
   IconPhoneCall,
   IconPlus,
   IconReportMedical,
   IconStethoscope,
-  IconUsers,
   type TablerIcon,
 } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
@@ -93,18 +93,18 @@ export default function TodayList() {
         {next && (
           <section className="block">
             <h2 className="block__title">Up next</h2>
+            {/* Person, then what to do and when, then why, then where. The
+                colour and the word say how urgent; the family screen carries
+                everything else. */}
             <article className={`hero tri--${next.band}`}>
-              <div className="hero__top">
-                {next.band !== "done" && <UrgencyChip urgency={next.band} />}
-                <span className="hero__card">Card {next.family.id}</span>
-              </div>
-              <div>
-                <h3 className="hero__name">{personLabel(next)}</h3>
-                <p className="hero__family">
-                  {next.family.head}'s family · {next.family.village}
-                </p>
-              </div>
+              <div className="hero__top">{next.band !== "done" && <UrgencyChip urgency={next.band} />}</div>
+              <h3 className="hero__name">{personLabel(next)}</h3>
               <ul className="hero__facts">
+                <li className="hero__task">
+                  <Icon icon={next.kind === "visit" ? IconCalendarEvent : KIND_ICON[next.kind]} />
+                  {next.task}
+                  {when(next) && ` · ${when(next)}`}
+                </li>
                 {reasonFor(next, concerns) && (
                   <li>
                     <Icon icon={IconMessageCircle} />
@@ -112,16 +112,10 @@ export default function TodayList() {
                   </li>
                 )}
                 <li>
-                  <Icon icon={next.kind === "visit" ? IconCalendarEvent : KIND_ICON[next.kind]} />
-                  {next.task}
-                  {when(next) && ` · ${when(next)}`}
+                  <Icon icon={IconMapPin} />
+                  {next.family.village} · Card {next.family.id}
+                  {othersLine(next, open) && ` · ${othersLine(next, open)}`}
                 </li>
-                {othersLine(next, open) && (
-                  <li>
-                    <Icon icon={IconUsers} />
-                    {othersLine(next, open)}
-                  </li>
-                )}
               </ul>
               {next.sync === "saved_offline" && (
                 <p className="hero__pending">
@@ -203,9 +197,10 @@ export default function TodayList() {
           </section>
         ))}
       </section>
+      {/* Care work, not data entry: she checks a person. */}
       <Link className="fab" to="/asha/families">
         <Icon icon={IconPlus} size={24} />
-        New concern
+        Check someone
       </Link>
     </>
   );

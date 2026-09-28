@@ -19,7 +19,7 @@ describe("rowFor: what each family needs today", () => {
     expect(row.kind).toBe("visit");
     expect(row.band).toBe("red");
     expect(personLabel(row)).toBe("Kavya, 5");
-    expect(row.day).toBe("Tomorrow");
+    expect(row.day).toBe("Today");
   });
 
   it("a follow-up due today is a call, today", () => {
@@ -85,4 +85,14 @@ describe("rowFor: what each family needs today", () => {
     const row = rowFor(fam(s, "2205"), s.concerns, [s.bookings[0], s.bookings[1], late, s.bookings[3]], today)!;
     expect(row.kind).toBe("call");
   });
+
+  it("a family's call to the line with no urgent sign puts a follow-up on her list", () => {
+    const s = seed();
+    const ivr: Concern = { ...s.concerns[0], id: "c-ivr", familyId: "4471", memberId: "4471-2", source: "ivr", urgency: "green" };
+    const row = rowFor(fam(s, "4471"), [...s.concerns, ivr], s.bookings, today)!;
+    expect(row.task).toBe("Follow up");
+    expect(row.note).toBe("Called the voice line");
+    expect(row.day).toBe("Today");
+  });
 });
+

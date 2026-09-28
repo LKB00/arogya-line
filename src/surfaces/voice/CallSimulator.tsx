@@ -96,7 +96,8 @@ export default function CallSimulator() {
     return () => clearTimeout(timer);
   }, [apply, call]);
 
-  const inCall = call.state !== "idle";
+  // After goodbye the line is closed: no keys, and the button calls again.
+  const inCall = call.state !== "idle" && call.state !== "ended";
   // Another surface started this call, so the caller belongs back there when
   // it is over. The way back sits where it does everywhere else in the
   // product — top-left, round, always there — not somewhere that appears.
@@ -120,7 +121,7 @@ export default function CallSimulator() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
-      if (callRef.current.state === "idle") return;
+      if (callRef.current.state === "idle" || callRef.current.state === "ended") return;
       if (e.key === "Backspace") {
         e.preventDefault();
         apply(hangUp());
@@ -197,7 +198,7 @@ export default function CallSimulator() {
             </div>
           )}
 
-          <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} />
+          <Keypad onKey={(key: Key) => apply(press(callRef.current, key, readEnv()))} onCall={dial} onHangUp={() => apply(hangUp())} inCall={inCall} ended={call.state === "ended"} />
         </div>
       </PhoneFrame>
 

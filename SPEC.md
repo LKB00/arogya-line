@@ -105,6 +105,7 @@ type Concern = {
   answers: TriageAnswer[];
   urgency: Urgency;
   reasons: string[];          // plain-text reasons shown to the user
+  homeCare?: { tell: string[]; callIf: string[] }; // advice given with a home-care result
   createdAt: string;
   sync: SyncStatus;
 };
@@ -162,17 +163,20 @@ Threshold: 2 amber = amber. Add a footer note in the prototype: "Illustrative qu
 Linear path. Each step is its own route so back works.
 
 **Connectivity toggle** (in the shell, outside the phone): `online: true/false`.
-- When offline: every write sets `sync = "saved_offline"`; a persistent banner shows count of items waiting.
+- When offline: every write sets `sync = "saved_offline"`; a persistent banner shows what is waiting in her units, not the store's: a booking is "1 visit" (not a concern plus a booking), a check without a booking is "1 check".
 - When toggled to online: all `saved_offline` items flip to `sent` after a short delay (simulate sync). Banner clears. The PHC dashboard gains the new rows at that moment.
 
 **TodayList**
 - Lists the people (not families) with an open concern, booking, or follow-up due today or overdue, sorted red → amber → green → done. One row per person; a person with several concerns shows once, under the most urgent.
 - Each row: person, task, village, one-line reason, sync tag if waiting, and "+N other people in this family" when others in the same household also need her.
-- Primary action: "New family concern" → FamilyDetail (family picker step can be skipped in v1 by defaulting to the demo family).
+- A home-care concern from the voice line (no booking) is a "Follow up" task for today: the line told the family their ASHA will follow up, and this row is that promise.
+- "Up next": the most urgent person, in the order person → task and time → reason → village and card.
+- Primary action: "Check someone" → Which family? → FamilyDetail.
 
 **FamilyDetail**
-- Shows members. A member with an open concern is marked.
-- Actions: "Check symptoms" (→ SymptomCheck for that member), "Hear last doctor note" (shows the latest `advice` text for this family, if any).
+- Shows members. Each member with something open shows their own status (never only the family's most urgent).
+- Actions: "Check symptoms" (→ SymptomCheck for that member).
+- "Advice given": each person's latest advice, labelled with their name: the doctor's note (voice note; tap to read), or home-care advice saved with a check.
 
 **SymptomCheck**
 - One question per screen, Yes / No, progress indicator. No "read aloud" control: sound is out of scope, and a control that does nothing is not shown.
@@ -180,7 +184,7 @@ Linear path. Each step is its own route so back works.
 
 **Result**
 - A screening result, not a diagnosis. Shows urgency, headline, and `reasons[]`.
-- Green: headline "No urgent signs found for {name}", then the home-care advice from `triage.ts` (`HOME_CARE`): "Tell the family" and "Call again if". Action "Save this advice" → creates Concern, back to TodayList.
+- Green: headline "No urgent signs found for {name}", then the home-care advice from `triage.ts` (`HOME_CARE`): "Tell the family" and "Call again if". Action "Save this advice" → creates Concern with `homeCare` (the advice itself), back to TodayList.
 - Amber: action "Book PHC visit" → Booking. Secondary: "Call the doctor line" (v1: switches to Voice surface with family preselected).
 - Amber when the person already has an upcoming visit: the verdict says so; primary "View existing visit" (→ Booked), secondary "Book another visit".
 - Red: action "Call PHC now" (v1: switches to Voice surface in emergency mode).
@@ -198,27 +202,29 @@ Linear path. Each step is its own route so back works.
 Presented as a phone call, not an app: a transcript area where spoken prompts appear one at a time, and a 0–9 keypad. Also a "hang up" and "replay" (9) control.
 
 - Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it.
-- Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear my doctor's advice, 0 = Talk to a person.
-- 1 → "Who is unwell?" 1 child, 2 adult, 3 pregnant → runs the same `triage.ts` questions, answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
-- Result green → "No urgent signs found.", the same `HOME_CARE` advice as the ASHA app (at home; call again if), ends with "Your ASHA will visit tomorrow." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online).
+- Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear your advice, 0 = Talk to a person.
+- 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
+- Result green → "No urgent signs found for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
 - Result amber → offers the next available slot; 1 = choose it, 2 = another day. Choosing reads the booking back ("You are booking a visit for {name}, {day}, {slot}, at {facility}.") and asks 1 = confirm, 2 = choose another day. Only confirming creates the Booking. The new row appears immediately in the PHC dashboard and in the ASHA TodayList.
 - Result red → operator state: transcript shows the operator connecting and alerting the ASHA. Creates a red Concern.
-- 3 → reads back the latest `advice` for this family, if a doctor has entered one. If none: "No advice yet."
+- 3 → advice is a person's, never the family's. One person with advice: read at once, named ("Advice for Shobha from Dr. Ramesh, yesterday: …"). Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
+- A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
 - 0 → operator state: a short scripted exchange, then a booking is created for the same day.
 
 ### 6.3 PHC dashboard (desktop-sized)
 
-- Header: selected day (default: tomorrow).
+- Header: selected day (default: today), with Today and Tomorrow one tap away and a date field for any other day.
 - Workload strip for that day: patients, urgent, advice still to record, follow-ups due today (overdue and missed included).
-- Table: all bookings for that day, sorted red → amber → green. Columns: time, patient (name, age, family ID), reported by (ASHA / Voice line), symptoms captured (`reasons[]` joined), avoidable (toggle: "Could this have been handled without a visit?"), after-consult action.
+- Table: all bookings for that day in time order (most urgent first within a slot); urgent rows are marked with the chart's pink on their time and edge. Columns: time, patient (name, age, family ID), reported by (ASHA / Voice line), symptoms captured (`reasons[]` joined), consult ("Start consult" / "Open consult", "Advice saved"). Nothing decided after the consult is editable from the table.
 - Rows created offline in the ASHA app only appear once synced (drives the demo story).
-- **AfterConsult** (opens from a row):
-  - `avoidable` toggle (Yes / No): "Could this have been handled without a visit?"
+- **Consult sheet** (opens from a row), in the order the work is done:
+  - What was found.
   - `advice` text field (stands in for the 20-second voice note). Saving it does not set a follow-up.
+  - `avoidable` toggle (Yes / No): "Could this have been handled without a visit?", answered with the patient seen.
   - Follow-up call choice: None, Next day, In 3 days, In a week (days after the visit). Choosing sets `followUpDue` and `followUpStatus = "pending"`; choosing the day already set keeps its outcome; None clears it.
   - "Mark follow-up answered / missed" buttons for demo purposes.
 - A second tab or filter: "Follow-ups" – bookings with `followUpStatus` pending or missed. Missed ones show "ASHA visit requested".
-- "Outcomes so far", below the list and quieter than the workload: bookings pre-booked (%), visits that could have been handled without a visit (count), follow-ups answered (%). These update live as the demo is used. This is the "outcomes" moment of the prototype.
+- "Across the service, to date", below the list and quieter than the workload (every booking so far, not the day on screen): bookings pre-booked (%), visits that could have been handled without a visit (count), follow-ups answered (%). These update live as the demo is used. This is the "outcomes" moment of the prototype.
 
 ---
 
@@ -227,7 +233,7 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 Seed data (`seed.ts`):
 - 1 ASHA (Savitri), 1 PHC (Tumkur, Dr. Ramesh), 5 families, of which:
   - Family 4471 (Lakshmi): child Arjun with a note "fever since Tuesday", no concern yet. This is the family the visitor will walk through.
-  - 2 families with existing bookings for tomorrow (one red, one green), one from IVR.
+  - 2 families with existing bookings for today (one red, one green), one from IVR.
   - 1 family with a booking already consulted and `advice` set, so menu 3 on the voice line has something to read.
   - 1 family with a missed follow-up.
 - Default `online: false` so the visitor sees the offline banner first.
@@ -235,7 +241,7 @@ Seed data (`seed.ts`):
 **Guided walkthrough** (optional but valuable): a small step indicator in the shell that suggests the order:
 1. ASHA app, offline: check Arjun → amber → book → see "waiting to send".
 2. Toggle signal on → watch it sync.
-3. PHC dashboard: Arjun appears → say whether it could have been handled without a visit → enter advice → choose the follow-up.
+3. PHC dashboard: Tomorrow → Arjun appears → start the consult → enter advice → say whether it could have been handled without a visit → choose the follow-up.
 4. Voice line: enter 4471 → press 3 → hear the advice back.
 
 "Reset demo" restores seed data.

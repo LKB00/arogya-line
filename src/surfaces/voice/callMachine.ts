@@ -8,8 +8,8 @@
 
 import { ASHA, PHC, SLOTS, addDays } from "../../app/seed";
 import type { ConcernInput } from "../../app/store";
-import { latestAdviceFor } from "../../app/store";
-import { HOME_CARE, evaluate, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
+import { adviceByPerson, type PersonAdvice } from "../../app/store";
+import { HOME_CARE, evaluate, homeCareFor, nextQuestion, toTriageRole, type TriageResult, type TriageRole } from "../../app/triage";
 import type { Booking, Concern, Family, Member, TriageAnswer, Urgency } from "../../app/types";
 import { URGENCY_LABEL, dayLabel, shortDate, slotLabel } from "../../app/format";
 
@@ -25,6 +25,7 @@ export type CallState =
   | "confirmBooking"
   | "resultRed"
   | "operator"
+  | "chooseAdvice"
   | "readAdvice"
   | "ended";
 
@@ -103,23 +104,15 @@ const WELCOME = "Welcome to Arogya Line.";
 const ASK_ID = "Please enter your 4-digit family ID. It is printed on your family card.";
 const MENU =
   "Main menu. Press 1 if someone is unwell and you want to know if it is serious. " +
-  "Press 2 to book a visit. Press 3 to hear your doctor's advice. Press 0 to talk to a person.";
-const WHO = "Who is unwell? Press 1 for a child, 2 for an adult, 3 for a pregnant woman.";
+  "Press 2 to book a visit. Press 3 to hear your advice. Press 0 to talk to a person.";
 const YES_NO = "Press 1 for yes, 2 for no, or 9 to hear the question again.";
 const NOT_UNDERSTOOD = "Sorry, I did not understand that.";
 const GOODBYE = "Thank you for calling Arogya Line. Goodbye.";
 
-/** The shared home-care advice, as the line says it. */
-function homeCareLines(role: TriageRole): string[] {
-  const { tell, callIf } = HOME_CARE[role];
-  const lower = (t: string) => t[0].toLowerCase() + t.slice(1);
-  return [`At home: ${tell.map(lower).join("; ")}.`, `Call again if: ${callIf.map(lower).join("; or ")}.`];
-}
-
-const RESULT_HEADLINE: Record<Urgency, string> = {
-  green: "No urgent signs found.",
-  amber: "Should see the doctor.",
-  red: "Needs the PHC now.",
+const RESULT_HEADLINE: Record<Urgency, (who: string) => string> = {
+  green: (who) => `No urgent signs found for ${who}.`,
+  amber: (who) => `${who} should see the doctor.`,
+  red: (who) => `${who} needs the PHC now.`,
 };
 
 function dayWord(date: string, today: string): string {
@@ -149,9 +142,21 @@ function memberOf(call: Call, env: Env): Member | undefined {
   return family?.members.find((m) => m.id === call.memberId) ?? family?.members[0];
 }
 
-/** The family member of that kind, if there is one. */
-function memberForRole(family: Family, role: TriageRole): Member | undefined {
-  return family.members.find((m) => toTriageRole(m.role) === role);
+/**
+ * "Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by
+ * name, never a kind of person: a family can have two children. Keys 1–8
+ * only, as 9 repeats and 0 reaches a person.
+ */
+function namesPrompt(people: Member[]): string {
+  return people
+    .slice(0, 8)
+    .map((m, i) => `Press ${i + 1} for ${m.name}.`)
+    .join(" ");
+}
+
+function pickByKey<T>(items: T[], key: Key): T | undefined {
+  const n = Number(key);
+  return n >= 1 && n <= 8 ? items[n - 1] : undefined;
 }
 
 function hourOf(env: Env): number {
@@ -209,8 +214,9 @@ function enterMainMenu(call: Call): Call {
   return prompt({ ...call, state: "mainMenu", role: null, memberId: null, answers: [], result: null, offerDate: null }, MENU);
 }
 
-function enterWhoIsUnwell(call: Call): Call {
-  return prompt({ ...call, state: "whoIsUnwell" }, WHO);
+function enterWhoIsUnwell(call: Call, env: Env): Call {
+  const family = familyOf(call, env);
+  return prompt({ ...call, state: "whoIsUnwell" }, `Who needs help? ${namesPrompt(family?.members ?? [])}`);
 }
 
 function askQuestion(call: Call): Call {
@@ -226,19 +232,22 @@ function enterResult(call: Call, env: Env): Step {
   const member = memberOf(call, env);
   const who = member ? `${member.name}` : "The patient";
   // Spoken in words the caller knows, never the internal colour name.
-  const headline = `Result: ${URGENCY_LABEL[result.urgency].toLowerCase()}. ${who}: ${RESULT_HEADLINE[result.urgency]}`;
+  const headline = `Result: ${URGENCY_LABEL[result.urgency].toLowerCase()}. ${RESULT_HEADLINE[result.urgency](who)}`;
   const withResult = { ...call, result };
 
   if (result.urgency === "green") {
+    // The concern this saves puts a follow-up on the ASHA's list, so the line
+    // promises only that: she has been told and will follow up.
     const next = prompt(
       { ...withResult, state: "resultGreen" },
       headline,
       reasonsLine(result.reasons),
-      ...homeCareLines(call.role),
-      "Your ASHA will visit tomorrow.",
+      ...HOME_CARE[call.role].spoken,
+      `Your ASHA, ${ASHA.name}, has been told and will follow up with you.`,
       "Press 9 to hear this again, or hang up.",
     );
-    return { call: next, effects: [{ type: "concern", concern: concernFor(next, env, "green") }] };
+    const concern = { ...concernFor(next, env, "green"), homeCare: homeCareFor(call.role) };
+    return { call: next, effects: [{ type: "concern", concern }] };
   }
 
   if (result.urgency === "amber") {
@@ -277,17 +286,37 @@ function enterOperator(call: Call): Call {
   return prompt({ ...call, state: "operator", operatorStep: 0 }, text);
 }
 
+/** One person's advice, said the way a person says it, from its first word. */
+function adviceWords(a: PersonAdvice, env: Env, member: Member | undefined): string {
+  const name = member?.name ?? "you";
+  if (a.from === "doctor" && a.booking) {
+    // The date as a person says it ("yesterday", "Fri 25 Sep"), never ISO, and
+    // never a day still to come: advice written ahead of a visit has no "when".
+    const when = a.date <= env.today ? `, ${dayLabel(a.date).toLowerCase()}` : "";
+    return `Advice for ${name} from ${a.booking.doctor}${when}: ${a.booking.advice}`;
+  }
+  const role = member ? toTriageRole(member.role) : "adult";
+  return `Advice for ${name} from the check ${dayLabel(a.date).toLowerCase()}. ${HOME_CARE[role].spoken.join(" ")}`;
+}
+
+function readAdvice(call: Call, env: Env, a: PersonAdvice): Call {
+  const member = familyOf(call, env)?.members.find((m) => m.id === a.memberId);
+  return prompt({ ...call, state: "readAdvice" }, adviceWords(a, env, member), "Press 1 for the main menu, 9 to hear this again, or hang up.");
+}
+
+/** Advice is a person's: one person is read at once, several are chosen by name. */
 function enterReadAdvice(call: Call, env: Env): Call {
-  const advice = call.familyId ? latestAdviceFor(env, call.familyId) : undefined;
-  // The date as a person says it ("yesterday", "Fri 25 Sep"), never ISO, and
-  // never a day still to come: advice written ahead of a visit has no "when".
-  const when = advice && advice.date <= env.today ? `, ${dayLabel(advice.date).toLowerCase()}` : "";
-  const text = advice ? `Your doctor's advice from ${advice.doctor}${when}: ${advice.advice}` : "No advice yet.";
-  return prompt({ ...call, state: "readAdvice" }, text, "Press 1 for the main menu, 9 to hear this again, or hang up.");
+  const advice = call.familyId ? adviceByPerson(env, call.familyId) : [];
+  if (advice.length === 0) {
+    return prompt({ ...call, state: "readAdvice" }, "No advice yet.", "Press 1 for the main menu, or hang up.");
+  }
+  if (advice.length === 1) return readAdvice(call, env, advice[0]);
+  const people = advice.map((a) => familyOf(call, env)?.members.find((m) => m.id === a.memberId)).filter((m): m is Member => Boolean(m));
+  return prompt({ ...call, state: "chooseAdvice" }, `Whose advice would you like to hear? ${namesPrompt(people)}`);
 }
 
 function end(call: Call, ...texts: string[]): Call {
-  return prompt({ ...call, state: "ended" }, ...texts, GOODBYE, "Hang up to finish.");
+  return prompt({ ...call, state: "ended" }, ...texts, GOODBYE);
 }
 
 /** Look the family up; on success go to the menu (or straight to the operator in emergency mode). */
@@ -353,26 +382,19 @@ export function press(call: Call, key: Key, env: Env): Step {
 
   switch (call.state) {
     case "mainMenu":
-      if (key === "1") return none(enterWhoIsUnwell(pressed));
+      if (key === "1") return none(enterWhoIsUnwell(pressed, env));
       if (key === "2") {
         return none(
-          enterWhoIsUnwell(say(pressed, "line", "To book a visit, I will first ask a few questions so the doctor knows what to expect.")),
+          enterWhoIsUnwell(say(pressed, "line", "To book a visit, I will first ask a few questions so the doctor knows what to expect."), env),
         );
       }
       if (key === "3") return none(enterReadAdvice(pressed, env));
       break;
 
     case "whoIsUnwell": {
-      const role: TriageRole | null = key === "1" ? "child" : key === "2" ? "adult" : key === "3" ? "pregnant" : null;
-      const family = familyOf(pressed, env);
-      if (role && family) {
-        const member = memberForRole(family, role);
-        // Nobody of that kind in the family: say so and ask again, rather
-        // than running pregnancy questions for a man.
-        if (!member) {
-          const kind = role === "child" ? "a child" : role === "pregnant" ? "a pregnant woman" : "an adult";
-          return none(prompt(pressed, `There is no ${kind.replace(/^an? /, "")} recorded in family ${family.id}.`, WHO));
-        }
+      const member = pickByKey(familyOf(pressed, env)?.members ?? [], key);
+      if (member) {
+        const role = toTriageRole(member.role);
         const chosen = say({ ...pressed, role, memberId: member.id, answers: [] }, "line", `Checking for ${member.name}, ${member.age}.`);
         return none(askQuestion(chosen));
       }
@@ -415,6 +437,13 @@ export function press(call: Call, key: Key, env: Env): Step {
         return { call: done, effects: [{ type: "book", concern, date, slot }] };
       }
       if (key === "2" && pressed.offerDate) return none(offerSlot(pressed, env, addDays(pressed.offerDate, 1)));
+      break;
+    }
+
+    case "chooseAdvice": {
+      const advice = pressed.familyId ? adviceByPerson(env, pressed.familyId) : [];
+      const chosen = pickByKey(advice, key);
+      if (chosen) return none(readAdvice(pressed, env, chosen));
       break;
     }
 

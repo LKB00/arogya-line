@@ -56,8 +56,8 @@ describe("family ID entry", () => {
 describe("triage over the keypad", () => {
   it("child, two amber yeses and no danger sign, offers a booking", () => {
     const e = env();
-    // 4471 → menu 1 → child → yes, yes, no, no
-    const after = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    // 4471 → menu 1 → Arjun (2) → yes, yes, no, no
+    const after = type(startCall(e), "4471" + "1" + "2" + "1122", e);
     expect(after.call.result?.urgency).toBe("amber");
     expect(after.call.state).toBe("offerBooking");
     expect(after.effects).toHaveLength(0); // nothing written until the caller books
@@ -65,7 +65,7 @@ describe("triage over the keypad", () => {
 
   it("1 reads the choice back and books nothing until it is confirmed", () => {
     const e = env();
-    const chosen = type(startCall(e), "4471" + "1" + "1" + "1122" + "1", e);
+    const chosen = type(startCall(e), "4471" + "1" + "2" + "1122" + "1", e);
     expect(chosen.call.state).toBe("confirmBooking");
     expect(said(chosen.call)).toContain("You are booking a visit for Arjun, tomorrow");
     expect(chosen.effects).toHaveLength(0);
@@ -73,7 +73,7 @@ describe("triage over the keypad", () => {
 
   it("2 at the read-back offers another day instead of booking", () => {
     const e = env();
-    const back = type(startCall(e), "4471" + "1" + "1" + "1122" + "1" + "2", e);
+    const back = type(startCall(e), "4471" + "1" + "2" + "1122" + "1" + "2", e);
     expect(back.call.state).toBe("offerBooking");
     expect(back.call.offerDate).toBe(isoDate(2));
     expect(back.effects).toHaveLength(0);
@@ -81,7 +81,7 @@ describe("triage over the keypad", () => {
 
   it("1 then 1 books the offered slot as an ivr concern plus booking", () => {
     const e = env();
-    const after = type(startCall(e), "4471" + "1" + "1" + "1122" + "11", e);
+    const after = type(startCall(e), "4471" + "1" + "2" + "1122" + "11", e);
     expect(after.call.state).toBe("ended");
     expect(after.effects).toEqual([
       expect.objectContaining({ type: "book", date: isoDate(1), concern: expect.objectContaining({ source: "ivr", urgency: "amber" }) }),
@@ -90,7 +90,7 @@ describe("triage over the keypad", () => {
 
   it("2 offers the next day instead", () => {
     const e = env();
-    const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const offered = type(startCall(e), "4471" + "1" + "2" + "1122", e);
     const another = type(offered, "2", e);
     expect(another.call.state).toBe("offerBooking");
     expect(another.call.offerDate).toBe(isoDate(2));
@@ -99,20 +99,25 @@ describe("triage over the keypad", () => {
   it("a danger sign yes ends triage red and connects the operator", () => {
     const e = env();
     // child: fever no, vomiting no, feeding no, breathing yes
-    const after = type(startCall(e), "4471" + "1" + "1" + "2221", e);
+    const after = type(startCall(e), "4471" + "1" + "2" + "2221", e);
     expect(after.call.result?.urgency).toBe("red");
     expect(after.call.state).toBe("operator");
   });
 
   it("green speaks home care, promises the ASHA visit, and saves a concern", () => {
     const e = env();
-    const after = type(startCall(e), "4471" + "1" + "1" + "2222", e);
+    const after = type(startCall(e), "4471" + "1" + "2" + "2222", e);
     expect(after.call.state).toBe("resultGreen");
-    expect(said(after.call)).toContain("No urgent signs found.");
-    expect(said(after.call)).toContain("At home: give small sips of fluid often");
-    expect(said(after.call)).toContain("Call again if: breathing becomes fast or difficult");
-    expect(said(after.call)).toContain("Your ASHA will visit tomorrow.");
-    expect(after.effects).toEqual([expect.objectContaining({ type: "concern", concern: expect.objectContaining({ urgency: "green" }) })]);
+    expect(said(after.call)).toContain("No urgent signs found for Arjun.");
+    // Spoken as a person says it, not a list read aloud.
+    expect(said(after.call)).toContain("At home, give small sips of fluid often, keep the child cool");
+    expect(said(after.call)).toContain("Call us again if the breathing becomes fast or difficult");
+    // Promises only what the system does: the concern puts a follow-up on her list.
+    expect(said(after.call)).toContain("Your ASHA, Savitri, has been told and will follow up with you.");
+    expect(said(after.call)).not.toContain("visit tomorrow");
+    expect(after.effects).toEqual([
+      expect.objectContaining({ type: "concern", concern: expect.objectContaining({ urgency: "green", homeCare: expect.objectContaining({ tell: expect.any(Array) }) }) }),
+    ]);
   });
 
   it("9 repeats the current question without answering it", () => {
@@ -126,7 +131,7 @@ describe("triage over the keypad", () => {
 
   it("0 mid-question jumps to the operator, who books the same day", () => {
     const e = env();
-    const midway = type(startCall(e), "4471" + "1" + "1" + "1", e);
+    const midway = type(startCall(e), "4471" + "1" + "2" + "1", e);
     expect(midway.call.state).toBe("triageQuestion");
     const operator = type(midway, "0", e);
     expect(operator.call.state).toBe("operator");
@@ -180,7 +185,7 @@ describe("hang up", () => {
 describe("edge cases found in the design pass", () => {
   it("speaks the result in words, never the colour code", () => {
     const e = env();
-    const after = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const after = type(startCall(e), "4471" + "1" + "2" + "1122", e);
     expect(said(after.call)).toContain("Result: needs a visit.");
     expect(said(after.call)).not.toMatch(/Result: (amber|red|green)/);
   });
@@ -194,22 +199,65 @@ describe("edge cases found in the design pass", () => {
 
   it("never dates advice in the future", () => {
     const e = env();
-    const bookings = e.bookings.map((b) => (b.id === "b-3120" ? { ...b, advice: "Keep her upright." } : b));
+    const bookings = e.bookings.map((b) => (b.id === "b-3120" ? { ...b, date: isoDate(1), advice: "Keep her upright." } : b));
     const after = type(startCall({ ...e, bookings }, { familyId: "3120" }), "3", { ...e, bookings });
-    expect(said(after.call)).toContain("Your doctor's advice from Dr. Ramesh: Keep her upright.");
+    expect(said(after.call)).toContain("Advice for Kavya from Dr. Ramesh: Keep her upright.");
   });
 
-  it("asks again when nobody of that kind is in the family", () => {
+  it("names each person, so two children are never confused", () => {
     const e = env();
-    // 3120 has an adult and a child, no pregnant woman
+    const twins = e.families.map((f) =>
+      f.id === "4471" ? { ...f, members: [...f.members, { id: "4471-3", name: "Meena", age: 6, role: "child" as const }] } : f,
+    );
+    const e2 = { ...e, families: twins };
+    const asked = type(startCall(e2), "4471" + "1", e2);
+    expect(said(asked.call)).toContain("Who needs help? Press 1 for Lakshmi. Press 2 for Arjun. Press 3 for Meena.");
+    const meena = type(asked, "3", e2);
+    expect(meena.call.memberId).toBe("4471-3");
+    expect(said(meena.call)).toContain("Checking for Meena, 6.");
+  });
+
+  it("a key with nobody behind it asks again", () => {
+    const e = env();
     const after = type(startCall(e), "3120" + "1" + "3", e);
     expect(after.call.state).toBe("whoIsUnwell");
-    expect(said(after.call)).toContain("There is no pregnant woman recorded in family 3120.");
+    expect(said(after.call)).toContain("Sorry, I did not understand that.");
+  });
+
+  it("advice belongs to a person: with two, the caller chooses by name", () => {
+    const e = env();
+    const kavya = { ...e.bookings[0], id: "b-k", date: isoDate(0), advice: "Steam twice a day." };
+    const dad = { ...e.concerns[0], id: "c-dad", memberId: "3120-1" };
+    const dadBooking = { ...e.bookings[0], id: "b-d", concernId: "c-dad", date: isoDate(0), advice: "Rest for two days." };
+    const e2 = { ...e, concerns: [...e.concerns, dad], bookings: [kavya, dadBooking, ...e.bookings.slice(1)] };
+    const menu = type(startCall(e2, { familyId: "3120" }), "3", e2);
+    expect(menu.call.state).toBe("chooseAdvice");
+    expect(said(menu.call)).toContain("Whose advice would you like to hear?");
+    const heard = type(menu, "2", e2);
+    const names = said(menu.call).match(/Press 2 for (\w+)/)![1];
+    expect(said(heard.call)).toContain(`Advice for ${names}`);
+    expect(said(heard.call)).toContain(names === "Kavya" ? "Steam twice a day." : "Rest for two days.");
+  });
+
+  it("home-care advice from a check can be heard again", () => {
+    const e = env();
+    const green = { ...e.concerns[0], id: "c-g", familyId: "4471", memberId: "4471-2", urgency: "green" as const, homeCare: { tell: ["x"], callIf: ["y"] } };
+    const e2 = { ...e, concerns: [...e.concerns, green] };
+    const heard = type(startCall(e2, { familyId: "4471" }), "3", e2);
+    expect(said(heard.call)).toContain("Advice for Arjun from the check today. At home, give small sips");
+  });
+
+  it("the end of a call says goodbye and nothing more", () => {
+    const e = env();
+    const done = type(startCall(e), "4471" + "1" + "2" + "1122" + "11", e);
+    expect(done.call.state).toBe("ended");
+    expect(done.call.transcript.at(-1)?.text).toBe("Thank you for calling Arogya Line. Goodbye.");
+    expect(said(done.call)).not.toContain("Hang up");
   });
 
   it("books exactly the slot it offered", () => {
     const e = env();
-    const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const offered = type(startCall(e), "4471" + "1" + "2" + "1122", e);
     const { offerDate, offerSlot } = offered.call;
     const booked = type(offered, "11", e);
     const book = booked.effects.find((x) => x.type === "book");
@@ -218,7 +266,7 @@ describe("edge cases found in the design pass", () => {
 
   it("says so, and offers another, when the offered slot is taken meanwhile", () => {
     const e = env();
-    const offered = type(startCall(e), "4471" + "1" + "1" + "1122", e);
+    const offered = type(startCall(e), "4471" + "1" + "2" + "1122", e);
     const taken: Env = {
       ...e,
       bookings: [...e.bookings, { ...e.bookings[0], id: "b-x", date: offered.call.offerDate!, slot: offered.call.offerSlot! }],

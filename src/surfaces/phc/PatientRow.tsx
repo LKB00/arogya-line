@@ -1,6 +1,8 @@
 // One row of the day's list (SPEC 6.3 table): time; who, and how they came;
-// what was found, in the IMNCI chart's colours; could it have been handled
-// without a visit; advice. The Yes/No toggle writes through setAvoidable.
+// what was found, in the IMNCI chart's colours; the consult. Nothing decided
+// after the consult (could it have been handled without a visit, advice,
+// follow-up) is answered from the list: that needs the patient seen first, so
+// it lives in the after-consult sheet. The row only says whether it is done.
 
 import { IconCheck, IconNurse, IconPhone, IconWalk } from "@tabler/icons-react";
 import { URGENCY_LABEL, slotLabel } from "../../app/format";
@@ -37,7 +39,10 @@ export default function PatientRow({ row, selected, onOpen }: Props) {
   const { booking, concern } = row;
   const source = reportedBy(row) as keyof typeof SOURCE_ICON;
   return (
-    <tr className={selected ? "trow is-selected" : "trow"} aria-selected={selected}>
+    <tr
+      className={["trow", concern?.urgency === "red" && "trow--urgent", selected && "is-selected"].filter(Boolean).join(" ")}
+      aria-selected={selected}
+    >
       <td className="cell cell--time">{slotLabel(booking.slot)}</td>
       <td className="cell">
         <span className="who__name">{patientName(row)}</span>
@@ -57,13 +62,11 @@ export default function PatientRow({ row, selected, onOpen }: Props) {
           <span className="found found--none">Nothing recorded before the visit</span>
         )}
       </td>
-      <td className="cell">
-        <AvoidableToggle booking={booking} />
-      </td>
       <td className="cell cell--action">
         <button type="button" className="btn btn--compact btn--secondary" aria-expanded={selected} onClick={() => onOpen(booking.id)}>
-          {booking.advice ? "Edit advice" : "Record advice"}
+          {booking.advice ? "Open consult" : "Start consult"}
         </button>
+        {/* "Start consult" already says it has not happened; done says so. */}
         {booking.advice && (
           <span className="saved">
             <Icon icon={IconCheck} size={16} />

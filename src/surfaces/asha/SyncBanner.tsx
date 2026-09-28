@@ -8,19 +8,30 @@ import { IconCloudOff, IconCloudUpload } from "@tabler/icons-react";
 import { useStore } from "../../app/store";
 import Icon from "../../shell/Icon";
 
+/**
+ * What is waiting, in the ASHA's units, not the store's: a booking is one
+ * visit even though it saves a concern and a booking. "1 visit", "1 check",
+ * "1 visit, 1 check".
+ */
+export function waitingWords(visits: number, checks: number): string {
+  const part = (n: number, one: string) => (n === 0 ? "" : `${n} ${one}${n === 1 ? "" : "s"}`);
+  return [part(visits, "visit"), part(checks, "check")].filter(Boolean).join(", ");
+}
+
 export default function SyncBanner() {
   const online = useStore((s) => s.online);
-  const waiting = useStore(
-    (s) =>
-      s.concerns.filter((c) => c.sync === "saved_offline").length +
-      s.bookings.filter((b) => b.sync === "saved_offline").length,
-  );
-  if (waiting === 0) return null;
+  const concerns = useStore((s) => s.concerns);
+  const bookings = useStore((s) => s.bookings);
+  const visits = bookings.filter((b) => b.sync === "saved_offline").length;
+  // A concern waiting with its booking is part of that visit, not a second item.
+  const checks = concerns.filter((c) => c.sync === "saved_offline" && !bookings.some((b) => b.concernId === c.id)).length;
+  if (visits + checks === 0) return null;
+  const words = waitingWords(visits, checks);
   if (online) {
     return (
       <span className="sync-chip sync-chip--sending" role="status">
         <Icon icon={IconCloudUpload} size={16} />
-        Sending {waiting}…
+        Sending {words}…
       </span>
     );
   }
@@ -28,7 +39,7 @@ export default function SyncBanner() {
     <span className="sync-chip" role="status">
       <Icon icon={IconCloudOff} size={16} />
       <span>
-        Offline · {waiting} to send
+        Offline · {words} to send
         <span className="visually-hidden"> — saved on this phone, sends when there is signal</span>
       </span>
     </span>

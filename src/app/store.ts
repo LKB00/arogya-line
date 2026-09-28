@@ -5,16 +5,39 @@ import { create } from "zustand";
 import type { Booking, Concern, Store, Surface } from "./types";
 import { addDays, createSeed } from "./seed";
 
+/** Advice someone in a family has been given: by the doctor, or with a home-care result. */
+export type PersonAdvice = {
+  memberId: string;
+  date: string; // ISO date it was given
+  from: "doctor" | "check";
+  booking?: Booking; // doctor's advice: the visit it came from
+  concern?: Concern; // home-care advice: the check it came with
+};
+
 /**
- * The most recent booking with saved doctor advice for a family, if any.
- * Read by the ASHA FamilyDetail ("Hear last doctor note") and the Voice line
- * (menu 3) so both read back the same note.
+ * The latest advice for each person in a family, newest first. Advice belongs
+ * to a person, never to the family: the ASHA FamilyDetail and the Voice line
+ * (menu 3) both read it here, so Arjun never hears Lakshmi's advice.
  */
-export function latestAdviceFor(state: Pick<Store, "concerns" | "bookings">, familyId: string): Booking | undefined {
-  const concernIds = new Set(state.concerns.filter((c) => c.familyId === familyId).map((c) => c.id));
-  return state.bookings
-    .filter((b) => concernIds.has(b.concernId) && b.advice)
-    .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+export function adviceByPerson(state: Pick<Store, "concerns" | "bookings">, familyId: string): PersonAdvice[] {
+  const concerns = state.concerns.filter((c) => c.familyId === familyId);
+  const all: PersonAdvice[] = [
+    ...state.bookings.flatMap((b) => {
+      const c = concerns.find((x) => x.id === b.concernId);
+      return c && b.advice ? [{ memberId: c.memberId, date: b.date, from: "doctor" as const, booking: b }] : [];
+    }),
+    ...concerns.filter((c) => c.homeCare).map((c) => ({ memberId: c.memberId, date: localDay(c.createdAt), from: "check" as const, concern: c })),
+  ];
+  // Newest first; on the same day the doctor's word outranks the check's.
+  all.sort((a, b) => (a.date === b.date ? (a.from === "doctor" ? -1 : 1) : a.date < b.date ? 1 : -1));
+  const seen = new Set<string>();
+  return all.filter((a) => (seen.has(a.memberId) ? false : (seen.add(a.memberId), true)));
+}
+
+/** The local calendar day of an ISO timestamp. */
+function localDay(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export const SYNC_DELAY_MS = 1500;

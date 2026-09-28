@@ -9,11 +9,11 @@ type Step = { path: string; text: string };
 
 /** Each step names the surface its Next control should land on. */
 const STEPS: Step[] = [
-  { path: "/asha", text: "ASHA app, offline: tap New concern, choose family 4471, check Arjun's symptoms, book a PHC visit. Notice it says waiting to send." },
+  { path: "/asha", text: "ASHA app, offline: tap Check someone, choose family 4471, check Arjun's symptoms, book a PHC visit. Notice it says waiting to send." },
   { path: "/asha", text: "Turn the signal on with the toggle. Watch the booking sync." },
-  { path: "/phc", text: "PHC dashboard: find Arjun for tomorrow. Say whether it could have been handled without a visit, save advice, and choose when to call the family." },
+  { path: "/phc", text: "PHC dashboard: choose Tomorrow and find Arjun. Start the consult: save advice, say whether it could have been handled without a visit, and choose when to call the family." },
   { path: "/voice", text: "Voice line: call, enter 4471, press 3. Hear the doctor's advice read back." },
-  { path: "/phc", text: "Done. Look at Outcomes so far at the foot of the dashboard. Reset to try again." },
+  { path: "/phc", text: "Done. The figures at the foot of the dashboard moved. Reset to try again." },
 ];
 
 export default function GuidedWalkthrough() {

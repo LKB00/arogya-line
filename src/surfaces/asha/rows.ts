@@ -38,7 +38,11 @@ export function rowsFor(family: Family, concerns: Concern[], bookings: Booking[]
     const booking = bookings.find((b) => b.concernId === concern.id);
     const base = { family, member, band: concern.urgency as Band };
 
-    if (!booking) {
+    if (!booking && concern.source === "ivr") {
+      // The family called the line and was told their ASHA will follow up:
+      // that promise is this row.
+      candidates.push({ ...base, kind: "call", task: "Follow up", note: "Called the voice line", day: "Today", sync: concern.sync });
+    } else if (!booking) {
       const green = concern.urgency === "green";
       candidates.push({ ...base, kind: green ? "home" : "concern", task: green ? "Home care" : "Concern noted", note: concern.reasons[0], sync: concern.sync });
     } else if (booking.date >= today) {

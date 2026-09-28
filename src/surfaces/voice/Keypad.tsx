@@ -1,6 +1,7 @@
 // The 0–9 keypad, plus Call and Hang up (SPEC 6.2). Laid out as a handset
 // dialer: round keys, and one round call button that is green to dial and
-// red to hang up, as on the phone in her hand.
+// red to hang up, as on the phone in her hand. Once the line has said
+// goodbye the call is over: the button is green again, to call again.
 
 import { IconPhone } from "@tabler/icons-react";
 import Icon from "../../shell/Icon";
@@ -13,11 +14,14 @@ export default function Keypad({
   onCall,
   onHangUp,
   inCall,
+  ended = false,
 }: {
   onKey: (key: Key) => void;
   onCall: () => void;
   onHangUp: () => void;
   inCall: boolean;
+  /** The line has said goodbye: dialling again starts a new call. */
+  ended?: boolean;
 }) {
   return (
     <div className="dialer">
@@ -35,7 +39,7 @@ export default function Keypad({
             <Icon icon={IconPhone} size={24} className="callbtn__end" />
           </button>
         ) : (
-          <button className="callbtn callbtn--dial" type="button" onClick={onCall} aria-label="Call">
+          <button className="callbtn callbtn--dial" type="button" onClick={onCall} aria-label={ended ? "Call again" : "Call"} title={ended ? "Call again" : undefined}>
             <Icon icon={IconPhone} size={24} />
           </button>
         )}

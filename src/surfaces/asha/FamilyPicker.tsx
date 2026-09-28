@@ -1,5 +1,5 @@
-// Choose which family the new concern is for (SPEC 6.1 TodayList primary
-// action). Grouped by village, the way she holds her households in her head.
+// Choose which family the person to check is in (SPEC 6.1 TodayList primary
+// action, "Check someone"). Grouped by village, the way she holds her households in her head.
 // Each household is drawn as its people, and anything open or anything the
 // family has said shows on the row, so the right family stands out before
 // she reads a name.
@@ -23,7 +23,7 @@ export default function FamilyPicker() {
   return (
     <section className="screen">
       <header className="pagehead">
-        <p className="pagehead__eyebrow">New concern</p>
+        <p className="pagehead__eyebrow">Check someone</p>
         <h1 className="pagehead__title">Which family?</h1>
       </header>
 

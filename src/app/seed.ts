@@ -1,6 +1,6 @@
 // Demo scenario. Source of truth: SPEC.md section 7.
 // All dates are relative to "today" so the PHC dashboard's default day
-// (tomorrow) always has rows. createSeed() returns fresh objects each call.
+// (today) always has rows. createSeed() returns fresh objects each call.
 
 import type { Booking, Concern, Family, Store } from "./types";
 
@@ -59,7 +59,7 @@ export function createSeed(): Store {
       ],
     },
     {
-      // Red booking tomorrow, reported by the ASHA.
+      // Red booking today, reported by the ASHA.
       id: "3120",
       head: "Manjunath",
       village: "Hebbur",
@@ -71,7 +71,7 @@ export function createSeed(): Store {
       ],
     },
     {
-      // Green booking tomorrow, made on the Voice line.
+      // Green booking today, made on the Voice line.
       id: "5638",
       head: "Gowramma",
       village: "Kallur",
@@ -173,7 +173,7 @@ export function createSeed(): Store {
     {
       id: "b-3120",
       concernId: "c-3120",
-      date: isoDate(1),
+      date: isoDate(0),
       slot: SLOTS[0],
       facility: PHC.facility,
       doctor: PHC.doctor,
@@ -182,7 +182,7 @@ export function createSeed(): Store {
     {
       id: "b-5638",
       concernId: "c-5638",
-      date: isoDate(1),
+      date: isoDate(0),
       slot: SLOTS[2],
       facility: PHC.facility,
       doctor: PHC.doctor,

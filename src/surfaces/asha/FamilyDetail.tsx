@@ -2,12 +2,14 @@
 // The screen steers to the likely next step: the person the family reported,
 // or the one with something open, comes first with their words quoted, and
 // checking them is the one primary action at the foot of the screen. Anyone
-// else is one tap on their card. The doctor's last advice is a voice note.
+// else is one tap on their card. Each person's status and latest advice sit
+// with that person, never pooled for the family: two people can need her.
 
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   IconChevronRight,
+  IconHomeHeart,
   IconIdBadge2,
   IconMapPin,
   IconMessageCircle,
@@ -15,17 +17,24 @@ import {
   IconPlayerPlayFilled,
   IconStethoscope,
 } from "@tabler/icons-react";
-import { latestAdviceFor, useStore } from "../../app/store";
+import { adviceByPerson, useStore, type PersonAdvice } from "../../app/store";
 import { isoDate } from "../../app/seed";
 import { dayLabel, memberAge } from "../../app/format";
 import type { Member } from "../../app/types";
 import Icon from "../../shell/Icon";
 import UrgencyChip from "./UrgencyChip";
 import { personIcon } from "./pictograms";
-import { rowFor } from "./rows";
+import { rowsFor } from "./rows";
 
 /** A voice note's waveform: fixed bar heights, so it reads as speech. */
 const WAVE = [8, 14, 20, 12, 24, 16, 10, 22, 18, 12, 8, 16, 24, 20, 12, 8, 14, 18, 10, 6, 12, 16, 8, 6];
+
+/** ["Rest", "Drink water"] → "rest, and drink water." Read as a sentence, not a list. */
+function sentence(items: string[], joiner: "and" | "or"): string {
+  const words = items.map((t) => t[0].toLowerCase() + t.slice(1));
+  const body = words.length > 1 ? `${words.slice(0, -1).join(", ")}, ${joiner} ${words.at(-1)}` : words.join("");
+  return `${body}.`;
+}
 
 /** Age, plus who they are in the household when that says something. */
 function detail(m: Member): string {
@@ -38,7 +47,7 @@ export default function FamilyDetail() {
   const family = useStore((s) => s.families.find((f) => f.id === familyId));
   const concerns = useStore((s) => s.concerns);
   const bookings = useStore((s) => s.bookings);
-  const [showNote, setShowNote] = useState(false);
+  const [shown, setShown] = useState<string | null>(null);
 
   if (!family) {
     return (
@@ -48,14 +57,12 @@ export default function FamilyDetail() {
     );
   }
 
-  const row = rowFor(family, concerns, bookings, isoDate(0));
-  const openFor = (m: Member) => (row && row.band !== "done" && row.member?.id === m.id ? row : undefined);
+  const rows = rowsFor(family, concerns, bookings, isoDate(0));
+  const openFor = (m: Member) => rows.find((r) => r.band !== "done" && r.member?.id === m.id);
   const flagged = (m: Member) => Boolean(openFor(m) || m.note);
 
-  const latestAdvice = latestAdviceFor({ concerns, bookings }, family.id);
-  const adviceFor = latestAdvice
-    ? family.members.find((m) => m.id === concerns.find((c) => c.id === latestAdvice.concernId)?.memberId)
-    : undefined;
+  const advice = adviceByPerson({ concerns, bookings }, family.id);
+  const nameOf = (a: PersonAdvice) => family.members.find((m) => m.id === a.memberId)?.name ?? "Someone";
 
   // The person with something open is why she is here: they come first.
   const members = [...family.members].sort((a, b) => Number(flagged(b)) - Number(flagged(a)));
@@ -129,49 +136,66 @@ export default function FamilyDetail() {
           </ul>
         </section>
 
-        {/* Only when a doctor has actually left a note. Drawn as the voice
-            note she knows from WhatsApp; v1 has no audio, so playing it shows
-            the words. */}
-        {latestAdvice && (
+        {/* Each person's latest advice, only when there is some. The doctor's
+            is drawn as the voice note she knows from WhatsApp; v1 has no audio,
+            so playing it shows the words. Home-care advice is shown as given. */}
+        {advice.length > 0 && (
           <section className="block">
-            <h2 className="block__title">From the doctor</h2>
-            <div className="voicenote">
-              <div className="voicenote__player">
-                <button
-                  type="button"
-                  className="voicenote__play"
-                  aria-expanded={showNote}
-                  aria-label={showNote ? "Hide the doctor's note" : "Hear last doctor note"}
-                  onClick={() => setShowNote((v) => !v)}
-                >
-                  <Icon icon={showNote ? IconPlayerPauseFilled : IconPlayerPlayFilled} />
-                </button>
-                <span className="voicenote__track">
-                  <span className="voicenote__wave" aria-hidden="true">
-                    {WAVE.map((h, i) => (
-                      <span key={i} className={showNote && i < 10 ? "is-played" : ""} style={{ height: h }} />
-                    ))}
-                  </span>
-                  <span className="voicenote__time">
-                    <span>{showNote ? "0:08" : "0:00"}</span>
-                    <span>0:20</span>
-                  </span>
-                </span>
-              </div>
-              <p className="voicenote__meta">
-                <Icon icon={IconStethoscope} size={16} />
-                {latestAdvice.doctor}
-                {/* Never a day still to come: advice written ahead of a visit has no "when". */}
-                {latestAdvice.date <= isoDate(0) && ` · ${dayLabel(latestAdvice.date).toLowerCase()}`}
-                {adviceFor && ` · about ${adviceFor.name}`}
-              </p>
-              {showNote && (
-                <div className="voicenote__words">
-                  <span className="voicenote__label">What the doctor said</span>
-                  <blockquote>{latestAdvice.advice}</blockquote>
+            <h2 className="block__title">Advice given</h2>
+            {advice.map((a) =>
+              a.from === "doctor" && a.booking ? (
+                <div className="voicenote" key={a.memberId}>
+                  <div className="voicenote__player">
+                    <button
+                      type="button"
+                      className="voicenote__play"
+                      aria-expanded={shown === a.memberId}
+                      aria-label={shown === a.memberId ? `Hide the doctor's note for ${nameOf(a)}` : `Hear the doctor's note for ${nameOf(a)}`}
+                      onClick={() => setShown((v) => (v === a.memberId ? null : a.memberId))}
+                    >
+                      <Icon icon={shown === a.memberId ? IconPlayerPauseFilled : IconPlayerPlayFilled} />
+                    </button>
+                    <span className="voicenote__track">
+                      <span className="voicenote__wave" aria-hidden="true">
+                        {WAVE.map((h, i) => (
+                          <span key={i} className={shown === a.memberId && i < 10 ? "is-played" : ""} style={{ height: h }} />
+                        ))}
+                      </span>
+                      <span className="voicenote__time">
+                        <span>{shown === a.memberId ? "0:08" : "0:00"}</span>
+                        <span>0:20</span>
+                      </span>
+                    </span>
+                  </div>
+                  <p className="voicenote__meta">
+                    <Icon icon={IconStethoscope} size={16} />
+                    For {nameOf(a)} · {a.booking.doctor}
+                    {/* Never a day still to come: advice written ahead of a visit has no "when". */}
+                    {a.date <= isoDate(0) && ` · ${dayLabel(a.date).toLowerCase()}`}
+                  </p>
+                  {shown === a.memberId && (
+                    <div className="voicenote__words">
+                      <span className="voicenote__label">What the doctor said</span>
+                      <blockquote>{a.booking.advice}</blockquote>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              ) : a.concern?.homeCare ? (
+                <div className="homecare" key={a.memberId}>
+                  <p className="voicenote__meta">
+                    <Icon icon={IconHomeHeart} size={16} />
+                    For {nameOf(a)} · home care, {dayLabel(a.date).toLowerCase()}
+                    {a.concern.source === "ivr" ? " · on the voice line" : ""}
+                  </p>
+                  <p className="homecare__line">
+                    <b>At home:</b> {sentence(a.concern.homeCare.tell, "and")}
+                  </p>
+                  <p className="homecare__line">
+                    <b>Call again if:</b> {sentence(a.concern.homeCare.callIf, "or")}
+                  </p>
+                </div>
+              ) : null,
+            )}
           </section>
         )}
       </section>

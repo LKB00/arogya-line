@@ -75,18 +75,29 @@ export default function Dashboard() {
         <span className="rail__brand" title={PHC.facility}>
           <Icon icon={IconBuildingHospital} size={24} />
         </span>
-        <button type="button" className="rail__item" aria-pressed={view === "day"} onClick={() => update({ view: null })}>
+        {/* Icon-only: the page title already names the view. The name stays
+            for screen readers and as a tooltip. */}
+        <button type="button" className="rail__item" aria-pressed={view === "day"} aria-label="Day" title="Day" onClick={() => update({ view: null })}>
           <span className="rail__pill">
             <Icon icon={IconCalendarEvent} size={24} />
           </span>
-          Day
         </button>
-        <button type="button" className="rail__item" aria-pressed={view === "followups"} onClick={() => update({ view: "followups" })}>
+        <button
+          type="button"
+          className="rail__item"
+          aria-pressed={view === "followups"}
+          aria-label={`Follow-ups, ${followUps.length} open`}
+          title="Follow-ups"
+          onClick={() => update({ view: "followups" })}
+        >
           <span className="rail__pill">
             <Icon icon={IconPhoneCall} size={24} />
-            {followUps.length > 0 && <span className="rail__badge">{followUps.length}</span>}
+            {followUps.length > 0 && (
+              <span className="rail__badge" aria-hidden="true">
+                {followUps.length}
+              </span>
+            )}
           </span>
-          Follow-ups
         </button>
         <span className="rail__me" title={`Signed in as ${PHC.doctor}`}>
           <Icon icon={IconStethoscope} />

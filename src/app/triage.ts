@@ -163,10 +163,14 @@ export const HOME_CARE: Record<TriageRole, HomeCare & { spoken: [string, string]
   },
 };
 
-/** The advice to save with a concern: the lists only, not the spoken form. */
+/**
+ * The advice to save with a concern, exactly as given (written and spoken), so
+ * "what did we tell this family?" is answered from the record, never from
+ * whatever the protocol says today.
+ */
 export function homeCareFor(role: TriageRole): HomeCare {
-  const { tell, callIf } = HOME_CARE[role];
-  return { tell, callIf };
+  const { tell, callIf, spoken } = HOME_CARE[role];
+  return { tell: [...tell], callIf: [...callIf], spoken: [...spoken] };
 }
 
 /** Map a family member's role onto a question set. Mothers use the adult set. */

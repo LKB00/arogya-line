@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../../app/store";
 import { isoDate } from "../../app/seed";
-import { PHC } from "../../app/seed";
+import { EMERGENCY_SLOT, PHC } from "../../app/seed";
 import { decodeAnswers } from "../../app/triage";
 import PhoneFrame from "../../shell/PhoneFrame";
 import { IconArrowLeft, IconBuildingHospital, IconMessageCircle } from "@tabler/icons-react";
@@ -70,6 +70,10 @@ export default function CallSimulator() {
         const concern = createConcern(e.concern);
         if (e.type === "book") {
           createBooking({ concernId: concern.id, date: e.date, slot: e.slot, facility: PHC.facility, doctor: PHC.doctor });
+        }
+        // An emergency arrival today, not a slot: the PHC list shows it first.
+        if (e.type === "emergency") {
+          createBooking({ concernId: concern.id, date: isoDate(0), slot: EMERGENCY_SLOT, emergency: true, facility: PHC.facility, doctor: PHC.doctor });
         }
       }
     },

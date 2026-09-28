@@ -105,7 +105,7 @@ type Concern = {
   answers: TriageAnswer[];
   urgency: Urgency;
   reasons: string[];          // plain-text reasons shown to the user
-  homeCare?: { tell: string[]; callIf: string[] }; // advice given with a home-care result
+  homeCare?: { tell: string[]; callIf: string[]; spoken?: string[] }; // advice exactly as given
   createdAt: string;
   sync: SyncStatus;
 };
@@ -124,6 +124,7 @@ type Booking = {
   followUpStatus?: "pending" | "answered" | "missed";
   ashaAsked?: boolean;        // after a missed call, the doctor asked the ASHA to follow up
   arrived?: boolean;          // demo only: a future booking marked as arrived
+  emergency?: boolean;        // an emergency arrival today; slot is "Now"
 };
 
 type Store = {
@@ -169,15 +170,16 @@ Linear path. Each step is its own route so back works.
 - When toggled to online: all `saved_offline` items flip to `sent` after a short delay (simulate sync). Banner clears. The PHC dashboard gains the new rows at that moment.
 
 **TodayList**
-- Lists the people (not families) with an open concern, booking, or follow-up due today or overdue, sorted red → amber → green → done. One row per person; a person with several concerns shows once, under the most urgent.
+- Lists the people (not families) with open work, in three sections: today's work (Up next, then Later today), Upcoming (visits on a later day, never counted as "today"), and Already seen. One row per person, showing their first piece of work; any other open items for that person are counted on the row ("+1 more for Arjun") and listed on the family screen.
+- "Up next" is the work that is due, not the brightest colour: danger signs first, then calls already late, then calls and home follow-ups due today, then today's visits by time, then open concerns with no date; urgency orders within each step.
 - Each row: person, task, village, one-line reason, sync tag if waiting, and "+N other people in this family" when others in the same household also need her.
 - A missed follow-up call is her task only when the doctor asks ("Follow up at home · Doctor asked: the follow-up call was missed"); a missed call alone commits nobody.
 - A home-care concern from the voice line (no booking) is a "Follow up" task for today: the line told the family their ASHA will follow up, and this row is that promise.
-- "Up next": the most urgent person, in the order person → task and time → reason → village and card.
+- "Up next" reads person → task and time → reason → village and card.
 - Primary action: "Check someone" → Which family? → FamilyDetail.
 
 **FamilyDetail**
-- Shows members. Each member with something open shows their own status (never only the family's most urgent).
+- Shows members. Each member shows every open item of theirs (never only the family's most urgent, never only their first).
 - Actions: "Check symptoms" (→ SymptomCheck for that member).
 - "Advice given": each person's latest advice, labelled with their name: the doctor's note (voice note; tap to read), or home-care advice saved with a check.
 
@@ -207,18 +209,19 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 - Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it.
 - Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear your advice, 0 = Talk to a person.
 - 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
-- Result green → "No urgent signs found for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
+- What the caller reported is said back as speech: "You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing."
+- Result green → "From your answers, there are no urgent signs for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`, saved with the concern so a replay says exactly what was said), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
 - Result amber → offers the next available slot; 1 = choose it, 2 = another day. Choosing reads the booking back ("You are booking a visit for {name}, {day}, {slot}, at {facility}.") and asks 1 = confirm, 2 = choose another day. Only confirming creates the Booking. The new row appears immediately in the PHC dashboard and in the ASHA TodayList.
-- Result red → operator state: transcript shows the operator connecting and alerting the ASHA. Creates a red Concern.
+- Result red (or the ASHA's "Call PHC now") → operator state: an emergency, not an appointment. "Please bring {name} to PHC Tumkur now … there is no need to wait for a time." Creates a red Concern and an emergency arrival for today (`emergency: true`, slot "Now"), shown first on the PHC list. No slot is booked. Only a person the caller actually chose is named.
 - Results are said from the answers, never as a code: "Thank you. From your answers, Arjun should see the doctor."
 - 3 → advice is a person's, never the family's. One person with advice: read at once as a message ("Dr. Ramesh has a message for Shobha, from yesterday." … "That's all from Dr. Ramesh."), then 1 = hear it again, 2 = main menu. Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
 - A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
-- 0 → operator state: a short scripted exchange, then a booking is created for the same day. The health worker picks up with what the line already heard ("I have Arjun's answers from the call: …"), so the caller never starts from zero.
+- 0 → operator state: "Let me find the next available time." (never "today" before a slot is found), then "The next available time is {day}, {slot}…" and the booking. The health worker picks up with what the line already heard ("I have Arjun's answers from the call: …"), so the caller never starts from zero.
 
 ### 6.3 PHC dashboard (desktop-sized)
 
 - Header: selected day (default: today), with Today and Tomorrow one tap away and a date field for any other day.
-- Workload strip for that day: patients, urgent, advice still to record, follow-ups due today (overdue and missed included).
+- Two groups of figures, never mixed. For the day on screen (captioned with it): patients, urgent, consults remaining (today's and past-day patients without advice; "Not arrived yet" when all are future). Needs attention now (whatever day is on screen): follow-ups due, today and overdue, with missed ones needing a decision.
 - Where a booking stands: tomorrow's is "View booking" (not arrived; nothing after the consult can be recorded), today's "Start consult", a past day's unresolved one "Complete consult", with advice "Open consult". A demo-only "Patient arrives now" marks a future booking `arrived` so the walkthrough can consult it honestly.
 - Table: all bookings for that day in time order (most urgent first within a slot); urgent rows are marked with the chart's pink on their time and edge. Columns: time, patient (name, age, family ID), reported by (ASHA / Voice line), symptoms captured (`reasons[]` joined), consult ("Start consult" / "Open consult", "Advice saved"). Nothing decided after the consult is editable from the table.
 - Rows created offline in the ASHA app only appear once synced (drives the demo story).

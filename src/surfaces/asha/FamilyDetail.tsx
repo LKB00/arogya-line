@@ -24,7 +24,7 @@ import type { Member } from "../../app/types";
 import Icon from "../../shell/Icon";
 import UrgencyChip from "./UrgencyChip";
 import { personIcon } from "./pictograms";
-import { rowsFor } from "./rows";
+import { itemsFor } from "./rows";
 
 /** A voice note's waveform: fixed bar heights, so it reads as speech. */
 const WAVE = [8, 14, 20, 12, 24, 16, 10, 22, 18, 12, 8, 16, 24, 20, 12, 8, 14, 18, 10, 6, 12, 16, 8, 6];
@@ -57,9 +57,11 @@ export default function FamilyDetail() {
     );
   }
 
-  const rows = rowsFor(family, concerns, bookings, isoDate(0));
-  const openFor = (m: Member) => rows.find((r) => r.band !== "done" && r.member?.id === m.id);
-  const flagged = (m: Member) => Boolean(openFor(m) || m.note);
+  // Every open item for each person, not only the first: this is where the
+  // folded "+1 more for Arjun" on Today unfolds.
+  const items = itemsFor(family, concerns, bookings, isoDate(0));
+  const openFor = (m: Member) => items.filter((r) => r.band !== "done" && r.member?.id === m.id);
+  const flagged = (m: Member) => openFor(m).length > 0 || Boolean(m.note);
 
   const advice = adviceByPerson({ concerns, bookings }, family.id);
   const nameOf = (a: PersonAdvice) => family.members.find((m) => m.id === a.memberId)?.name ?? "Someone";
@@ -110,15 +112,17 @@ export default function FamilyDetail() {
                       </span>
                       <Icon icon={IconChevronRight} className="row__chevron" />
                     </span>
-                    {open && open.band !== "done" && (
-                      <span className="person__status">
-                        <UrgencyChip urgency={open.band} tonal />
-                        <span className="person__task">
-                          {open.task}
-                          {open.day && ` · ${open.day}`}
-                          {open.time && `, ${open.time}`}
+                    {open.map((item, i) =>
+                      item.band !== "done" ? (
+                        <span className="person__status" key={i}>
+                          <UrgencyChip urgency={item.band} tonal />
+                          <span className="person__task">
+                            {item.task}
+                            {item.day && ` · ${item.day}`}
+                            {item.time && `, ${item.time}`}
+                          </span>
                         </span>
-                      </span>
+                      ) : null,
                     )}
                     {m.note && (
                       <span className="quote">

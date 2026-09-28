@@ -15,6 +15,7 @@ import {
   IconCircleCheck,
   IconCloudOff,
   IconHomeHeart,
+  IconListCheck,
   IconMapPin,
   IconMessageCircle,
   IconPhoneCall,
@@ -29,7 +30,7 @@ import { URGENCY_LABEL, longDate } from "../../app/format";
 import Icon from "../../shell/Icon";
 import SyncBanner from "./SyncBanner";
 import UrgencyChip from "./UrgencyChip";
-import { BANDS, BAND_ORDER, personLabel, reasonFor, rowsFor, type Kind, type Row } from "./rows";
+import { BANDS, byWork, isUpcoming, personLabel, reasonFor, rowsFor, type Kind, type Row } from "./rows";
 
 /** What she will do, drawn: see the doctor, phone, go to the home, note it, done. */
 const KIND_ICON: Record<Kind, TablerIcon> = {
@@ -42,6 +43,11 @@ const KIND_ICON: Record<Kind, TablerIcon> = {
 
 function when(row: Row): string {
   return [row.day, row.time].filter(Boolean).join(", ");
+}
+
+/** "+1 more for Arjun": his other open items, folded into his one row. */
+function moreLine(row: Row): string | undefined {
+  return row.more > 0 ? `+${row.more} more for ${row.member?.name ?? "them"}` : undefined;
 }
 
 /** "+1 other in this family": others in the same household who also need her. */
@@ -60,15 +66,19 @@ export default function TodayList() {
   const rows = families
     .filter((f) => f.ashaId === ASHA.id)
     .flatMap((f) => rowsFor(f, concerns, bookings, today))
-    .sort((a, b) => BAND_ORDER[a.band] - BAND_ORDER[b.band]);
+    .sort(byWork(today));
 
   const open = rows.filter((r) => r.band !== "done");
-  const urgent = open.filter((r) => r.band === "red").length;
-  const [next, ...later] = open;
+  // Today is today: a visit tomorrow is planned work, never "later today".
+  const todays = open.filter((r) => !isUpcoming(r, today));
+  const upcoming = open.filter((r) => isUpcoming(r, today));
+  const urgent = todays.filter((r) => r.band === "red").length;
+  const [next, ...later] = todays;
   const done = rows.filter((r) => r.band === "done");
-  // Still to do, then already done: done work never sits under "Later today".
+  // Today's work, then planned days, then work already done.
   const sections = [
     { title: "Later today", rows: later },
+    { title: "Upcoming", rows: upcoming },
     { title: "Already seen", rows: done },
   ].filter((sec) => sec.rows.length > 0);
 
@@ -81,9 +91,9 @@ export default function TodayList() {
             <SyncBanner />
           </div>
           <h1 className="home__title">Namaste, {ASHA.name}</h1>
-          {open.length > 0 && (
+          {todays.length > 0 && (
             <p className="home__sub">
-              {open.length} {open.length === 1 ? "person needs" : "people need"} you today
+              {todays.length} {todays.length === 1 ? "person needs" : "people need"} you today
               {urgent > 0 && <span className="home__urgent tri--red">{urgent} urgent</span>}
             </p>
           )}
@@ -116,6 +126,12 @@ export default function TodayList() {
                   {next.family.village} · Card {next.family.id}
                   {othersLine(next, open) && ` · ${othersLine(next, open)}`}
                 </li>
+                {moreLine(next) && (
+                  <li>
+                    <Icon icon={IconListCheck} />
+                    {moreLine(next)}
+                  </li>
+                )}
               </ul>
               {next.sync === "saved_offline" && (
                 <p className="hero__pending">
@@ -133,7 +149,7 @@ export default function TodayList() {
 
         {/* A clear day is good news, said plainly, with the one thing she
             might need next. */}
-        {open.length === 0 && (
+        {todays.length === 0 && (
           <section className="empty">
             <span className="empty__mark">
               <Icon icon={IconCircleCheck} size={32} />
@@ -171,6 +187,7 @@ export default function TodayList() {
                                 {r.task} · {r.family.village}
                               </span>
                               {r.note && <span className="row__note">{r.note}</span>}
+                              {moreLine(r) && <span className="row__note">{moreLine(r)}</span>}
                               {r.band !== "done" && othersLine(r, open) && <span className="row__note">{othersLine(r, open)}</span>}
                               {r.sync === "saved_offline" && (
                                 <span className="row__pending">

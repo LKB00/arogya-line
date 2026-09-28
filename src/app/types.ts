@@ -22,7 +22,12 @@ export type Family = {
 };
 
 /** Home-care advice given with a "no urgent signs" result: what to do, and when to call again. */
-export type HomeCare = { tell: string[]; callIf: string[] };
+export type HomeCare = {
+  tell: string[];
+  callIf: string[];
+  /** The same advice as it was spoken on the phone, kept so a replay says exactly what was said. */
+  spoken?: string[];
+};
 
 export type TriageAnswer = { questionId: string; answer: "yes" | "no" };
 
@@ -54,6 +59,8 @@ export type Booking = {
   followUpStatus?: "pending" | "answered" | "missed";
   /** The doctor, after a missed call, asked the ASHA to follow up. Never automatic. */
   ashaAsked?: boolean;
+  /** An emergency: the patient is coming now, not to a slot. `slot` is "Now". */
+  emergency?: boolean;
   /** Demo only: a future booking marked as arrived, so it can be consulted today. */
   arrived?: boolean;
   walkIn?: boolean; // came without a booking; only the PHC metrics strip reads this

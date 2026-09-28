@@ -180,11 +180,34 @@
 
 /* ---------- Workload ---------- */
 
+/* The day's figures, then what needs the doctor now: two captions, one row. */
+.workload {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  gap: var(--g4);
+}
+
+.workload > section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g2);
+}
+
+.workload__caption {
+  color: var(--text-muted);
+  font: 600 14px / 20px var(--font-sans);
+}
+
 .metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--g4);
   margin: 0;
+}
+
+.metrics.metrics--now {
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
 }
 
 .metric {
@@ -808,8 +831,16 @@
     align-items: flex-start;
   }
 
+  .workload {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics.metrics--now {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .outcomes__list {

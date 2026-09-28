@@ -143,35 +143,51 @@ export default function Dashboard() {
         </header>
 
         {/* What needs the doctor: the day's patients, and the follow-ups due now. */}
+        {/* Two different questions, never mixed: the day on screen, and what
+            needs the doctor now whatever day is showing. */}
         {view === "day" && (
-          <dl className="metrics" aria-label="Workload">
-            <div className="metric">
-              <dt className="metric__label">Patients</dt>
-              <dd className="metric__value">{w.patients}</dd>
-              <dd className="metric__detail">Booked {dayWords(day)}</dd>
-            </div>
-            <div className="metric">
-              <dt className="metric__label">Urgent</dt>
-              <dd className={w.urgent ? "metric__value urgency--red" : "metric__value"}>{w.urgent}</dd>
-              <dd className="metric__detail">Danger sign found</dd>
-            </div>
-            <div className="metric">
-              <dt className="metric__label">Advice to record</dt>
-              <dd className="metric__value">{w.toRecord}</dd>
-              <dd className="metric__detail">
-                {w.patients === 0
-                  ? "No patients yet"
-                  : w.notArrived === w.patients
-                    ? "Not arrived yet"
-                    : `Of ${w.patients} ${w.patients === 1 ? "patient" : "patients"}`}
-              </dd>
-            </div>
-            <div className="metric">
-              <dt className="metric__label">Follow-ups due</dt>
-              <dd className="metric__value">{w.followUpsDue}</dd>
-              <dd className="metric__detail">{w.missed > 0 ? `Today · ${w.missed} missed` : "Today"}</dd>
-            </div>
-          </dl>
+          <div className="workload">
+            <section aria-labelledby="day-figures">
+              <h2 id="day-figures" className="workload__caption">
+                {dayLabel(day)}
+              </h2>
+              <dl className="metrics metrics--day">
+                <div className="metric">
+                  <dt className="metric__label">Patients</dt>
+                  <dd className="metric__value">{w.patients}</dd>
+                  <dd className="metric__detail">Booked {dayWords(day)}</dd>
+                </div>
+                <div className="metric">
+                  <dt className="metric__label">Urgent</dt>
+                  <dd className={w.urgent ? "metric__value urgency--red" : "metric__value"}>{w.urgent}</dd>
+                  <dd className="metric__detail">Danger sign found</dd>
+                </div>
+                <div className="metric">
+                  <dt className="metric__label">Consults remaining</dt>
+                  <dd className="metric__value">{w.toRecord}</dd>
+                  <dd className="metric__detail">
+                    {w.patients === 0
+                      ? "No patients yet"
+                      : w.notArrived === w.patients
+                        ? "Not arrived yet"
+                        : `Of ${w.patients} ${w.patients === 1 ? "patient" : "patients"}`}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section aria-labelledby="now-figures">
+              <h2 id="now-figures" className="workload__caption">
+                Needs attention now
+              </h2>
+              <dl className="metrics metrics--now">
+                <div className="metric">
+                  <dt className="metric__label">Follow-ups due</dt>
+                  <dd className="metric__value">{w.followUpsDue}</dd>
+                  <dd className="metric__detail">{w.missed > 0 ? `${w.missed} missed, needs a decision` : "Today and overdue"}</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
         )}
 
         {view === "day" ? (

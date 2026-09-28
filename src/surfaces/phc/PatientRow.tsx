@@ -58,7 +58,13 @@ export default function PatientRow({ row, today, selected, onOpen }: Props) {
         <span className="who__meta">{patientMeta(row)}</span>
         <span className="who__source">
           <Icon icon={SOURCE_ICON[source] ?? IconWalk} size={16} />
-          {source === "ASHA" ? "Booked by the ASHA" : source === "Voice line" ? "Booked on the voice line" : "Walk-in"}
+          {booking.emergency
+            ? "Emergency, coming now"
+            : source === "ASHA"
+              ? "Booked by the ASHA"
+              : source === "Voice line"
+                ? "Booked on the voice line"
+                : "Walk-in"}
         </span>
       </td>
       <td className="cell">

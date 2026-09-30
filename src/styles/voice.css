@@ -17,7 +17,7 @@
   font: var(--t-body);
 }
 
-/* ---------- The handset ---------- */
+/* ---------- The screen ---------- */
 
 .phone--voice,
 .phone--voice .phone__status,
@@ -25,15 +25,6 @@
 .phone--voice .phone__screen {
   background: #1b1a18;
   color: #ffffff;
-}
-
-.phone--voice .phone__status {
-  padding: 0 var(--g5);
-  font: 600 14px / 20px var(--font-sans);
-}
-
-.phone--voice .phone__handle {
-  background: #ffffff;
 }
 
 .call {

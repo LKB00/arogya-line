@@ -6,17 +6,19 @@
  * so the list never moves while the doctor writes. Everything on the 4 px grid.
  */
 
+/* A web app, so it is the whole page under the demo bar: no card, no stage
+   around it. The phone surfaces keep their frame; this one has none. */
+.stage:has(> .phc) {
+  padding: 0;
+}
+
 .phc {
-  align-self: flex-start;
+  align-self: stretch;
   width: 100%;
-  max-width: var(--page-max);
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
-  min-height: 720px;
   overflow: hidden;
-  border-radius: 24px;
   background: var(--bg);
-  box-shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 16px 40px rgba(29, 27, 24, 0.12);
   color: var(--text);
   font: var(--t-body);
 }
@@ -992,14 +994,5 @@
     content: attr(data-label) " ";
     color: var(--text-muted);
     font-weight: 500;
-  }
-}
-
-/* On a phone the dashboard is the screen: no card around it. */
-@media (max-width: 480px) {
-  .phc {
-    min-height: 0;
-    border-radius: 0;
-    box-shadow: none;
   }
 }

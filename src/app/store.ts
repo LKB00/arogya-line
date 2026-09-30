@@ -19,7 +19,7 @@ export type PersonAdvice = {
 /**
  * The latest advice for each person in a family, newest first. Advice belongs
  * to a person, never to the family: the ASHA FamilyDetail and the Voice line
- * (menu 3) both read it here, so Arjun never hears Lakshmi's advice.
+ * (menu 3) both read it here, so Arjun never hears Pooja's advice.
  */
 export function adviceByPerson(state: Pick<Store, "concerns" | "bookings">, familyId: string): PersonAdvice[] {
   const concerns = state.concerns.filter((c) => c.familyId === familyId);

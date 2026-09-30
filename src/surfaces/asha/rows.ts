@@ -153,7 +153,7 @@ export function rowFor(family: Family, concerns: Concern[], bookings: Booking[],
 }
 
 /**
- * "Kavya, 5": the person first, as the ASHA would say it. A concern whose
+ * "Khushi, 5": the person first, as the ASHA would say it. A concern whose
  * person is no longer on the card is never pinned on someone else (such as
  * the family head): it says so.
  */

@@ -86,7 +86,7 @@ Answers her first question of the day: *who needs me first?*
 | Task from where the visit stands | A booking's task comes from its lifecycle, not its date. | **Sixth review: a visit consulted this morning hid the call due this afternoon; a past visit with nothing recorded was called "seen".** | Owed follow-ups first, then a visit still ahead; a passed visit with no record is "Check the visit happened". Unit-tested. |
 | Missing person | A concern whose person left the card. | **The row fell back to the family head's name.** | "Person not found" and "Record needs checking" (sixth review). Unit-tested. |
 | Reason line | Why this row, in a few words. | **The reason was looked up by person, so a row about a new urgent concern could show an old concern's fever.** | **Fixed after the fifth review:** every row carries its `concernId`; an urgent row shows the danger sign that made it urgent, otherwise the first finding, and only then what the family said. Unit-tested. |
-| Person first ("Kavya, 5") | The concern is about Kavya, not about Manjunath. | Concern without member. | Falls back to the family head. Unit-tested. |
+| Person first ("Khushi, 5") | The concern is about Khushi, not about Mahendra. | Concern without member. | Falls back to the family head. Unit-tested. |
 | Card number | Ties the screen to the printed family card. | — | Quiet, tabular. |
 | "+1 other person in this family" | The family is where she finds people, not the work item. When one household holds two people who need her, one row per family would hide the second. | Two open people in one household; one person with two concerns. | **Added after review.** One row per person; each row (and Up next) says how many others in the same family also need her. One person with several concerns still shows once, under the most urgent. Unit-tested. |
 | Upcoming | Visits on a later day. | **A visit tomorrow sat under "Later today" and counted in "people need you today".** | **Fixed after the fourth review:** its own section after today's work, sorted by date; not counted as today. Unit-tested. |
@@ -107,7 +107,7 @@ Answers her first question of the day: *who needs me first?*
 | Grouped by village | How she already holds her households in her head. | A village with one family. | Singular/plural count. |
 | Household drawn as people | P3: recognise a household before reading a name. | Older person; pregnant woman; mother. | Icons for child, woman, older person (60+), adult; the age is always written too. |
 | What the family told her | The reason the right family stands out. | A note on someone who already has a concern. | Only shown when there is no concern yet; otherwise the status shows. |
-| Status line | What is open for that family. | Colour alone would fail colour-blind eyes and sunlight. | The word leads: "Urgent · Kavya, PHC visit tomorrow" (P2). Tested. |
+| Status line | What is open for that family. | Colour alone would fail colour-blind eyes and sunlight. | The word leads: "Urgent · Khushi, PHC visit tomorrow" (P2). Tested. |
 | Card number | Confirms the family against their printed card. | — | — |
 
 ### 2.3 Family
@@ -120,7 +120,7 @@ Answers her first question of the day: *who needs me first?*
 | Urgency chip and task | What is already open for this person. | Visit in the past; **two people open in one family showed only the most urgent one's status.** | Only open work shows (unit-tested). **Fixed after the second review:** every person shows their own. |
 | Quote | The family's own words (P3). | No note. | Hidden. |
 | Check name's symptoms | P1: the likely next step, at the thumb. | Nobody flagged; one member. | Hidden when nobody is flagged; the hint "or tap anyone above" hidden for one-person households. |
-| Advice given | Each person's latest advice (by the moment it was given, not the day: **fifth review**, a check at 3 pm is newer than the doctor at 9 am), named: the doctor's as a voice note (P3, Jakob's law), home-care advice from a check as words. | **Advice was the family's latest, so Arjun's screen could show Lakshmi's note.** No advice; long advice. | **Fixed after the second review:** advice belongs to a person (`adviceByPerson`, unit-tested), and the same lookup feeds the voice line. Hidden without advice. Playing shows the words (v1 has no audio). |
+| Advice given | Each person's latest advice (by the moment it was given, not the day: **fifth review**, a check at 3 pm is newer than the doctor at 9 am), named: the doctor's as a voice note (P3, Jakob's law), home-care advice from a check as words. | **Advice was the family's latest, so Arjun's screen could show Pooja's note.** No advice; long advice. | **Fixed after the second review:** advice belongs to a person (`adviceByPerson`, unit-tested), and the same lookup feeds the voice line. Hidden without advice. Playing shows the words (v1 has no audio). |
 
 ### 2.4 Symptom check
 
@@ -188,20 +188,20 @@ ASHA's app.
 | 9 repeat, 0 person | Always available, written on the keys. | During ID entry 0 and 9 are digits. | The ID accepts them as digits (unit-tested). |
 | Call / Hang up | One round button, green to call, red to hang up. | Hang up while the health worker is talking; **after "Goodbye" the line still said "Hang up to finish".** | Hanging up stops the scripted operator; no booking is made. **Fixed after the second review:** the call ends on "Goodbye"; the keys go quiet and the button turns green, "Call again". Tested. |
 | Result spoken | The verdict in words. | **It said "Result: amber".** | **Fixed:** "Result: needs a visit." A home-care result says "No urgent signs found", then the same advice as the ASHA app. Unit-tested. |
-| Advice read back | The advice a person was given, from the PHC or a check. | **Dated in ISO; dated "tomorrow" when written ahead of a visit; read the family's latest, whoever it was for.** | **Fixed:** "yesterday", "Fri 25 Sep", or no date when the visit is still to come. **After the second review:** always named ("Advice for Shobha from Dr. Ramesh…"); with several people, "Whose advice would you like to hear? Press 1 for…". Unit-tested. |
-| Who needs help | Picks the person, and so the questions. | **"Pregnant woman" in a family with none ran pregnancy questions on a man; "child" could not tell two children apart.** | **Fixed after the second review:** "Press 1 for Lakshmi. Press 2 for Arjun." By name, never by kind; the question set follows the person. A key with nobody behind it asks again. Unit-tested. |
-| Spoken wording | A phone service, not a transcript of one. | **"Result: needs a visit"; "Advice for Arjun from Dr. Ramesh: …"; "Press 1 for the main menu".** | **Changed after the third review:** "Thank you. From your answers, Arjun should see the doctor."; "Dr. Ramesh has a message for Arjun." … "That's all from Dr. Ramesh. Press 1 to hear it again, or 2 for the main menu." Unit-tested. |
+| Advice read back | The advice a person was given, from the PHC or a check. | **Dated in ISO; dated "tomorrow" when written ahead of a visit; read the family's latest, whoever it was for.** | **Fixed:** "yesterday", "Fri 25 Sep", or no date when the visit is still to come. **After the second review:** always named ("Advice for Rekha from Dr. Meena…"); with several people, "Whose advice would you like to hear? Press 1 for…". Unit-tested. |
+| Who needs help | Picks the person, and so the questions. | **"Pregnant woman" in a family with none ran pregnancy questions on a man; "child" could not tell two children apart.** | **Fixed after the second review:** "Press 1 for Pooja. Press 2 for Arjun." By name, never by kind; the question set follows the person. A key with nobody behind it asks again. Unit-tested. |
+| Spoken wording | A phone service, not a transcript of one. | **"Result: needs a visit"; "Advice for Arjun from Dr. Meena: …"; "Press 1 for the main menu".** | **Changed after the third review:** "Thank you. From your answers, Arjun should see the doctor."; "Dr. Meena has a message for Arjun." … "That's all from Dr. Meena. Press 1 to hear it again, or 2 for the main menu." Unit-tested. |
 | What you told us | The caller hears their answers back. | **"Noted: fever more than 2 days; no chest pain." was a written list read out.** | **Fixed after the fourth review:** "You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing." Unit-tested. |
 | Advice replayed | What the family was told, as a record. | **The line rebuilt home-care advice from today's protocol, not what was said at the time.** | **Fixed after the fourth review:** the spoken words are saved with the concern and replayed exactly. Unit-tested. |
 | Emergency | Come now, and everyone is told. | **An emergency also booked an ordinary slot; a call with no person chosen named the family head.** | **Fixed after the fourth review:** an emergency arrival for today ("Now"), first on the PHC list, no slot; "the patient" unless a person was chosen. Unit-tested. |
 | "Next available time" | Promise only what the diary can keep. | **"Let me get you seen today" before a slot was found; late at night the slot was tomorrow.** | **Fixed after the fourth review:** "Let me find the next available time." then the time with its day. Unit-tested. |
-| Family card found | Confirm the card without disclosing anything. | **Sixth review: "Family 4471, Lakshmi, Hebbur" was read aloud on a card number alone (shared phone, crowded room, found card).** | "Thank you. We have found your family card." The health worker says "I have your family's record in front of me", never the household. Verifying the caller is a production requirement (section 6). Unit-tested. |
+| Family card found | Confirm the card without disclosing anything. | **Sixth review: "Family 4471, Pooja, Kukas" was read aloud on a card number alone (shared phone, crowded room, found card).** | "Thank you. We have found your family card." The health worker says "I have your family's record in front of me", never the household. Verifying the caller is a production requirement (section 6). Unit-tested. |
 | Health worker hand-off (0) | A person, and only a person. "How can I help you today?" is asked by a person in their own words; putting a key menu inside a human conversation would turn it back into a machine. | **Fifth review, reproduced: 0 from the menu booked a visit for the family head, a patient nobody chose; 0 after "no urgent signs" booked a visit; 0 while hearing advice booked one; 0 halfway through the questions turned a half-finished check into a referral.** | **Fixed:** 0 never creates a booking, concern or referral. The health worker says what the line knows (a finished result, or "you started a health check… I'll help you from here") and asks "How can I help you today?". Only an emergency acts. Keys are off while a person talks. Unit-tested for each path. |
 | No free slot | Never offer a time that does not exist. | **After 30 full days the line offered the last slot of the first day anyway.** | **Fixed after the fifth review:** "There are no appointments free in the next 30 days", and a person. Unit-tested. |
 | Big and empty families | Everyone can be chosen. | **A ninth member was silently dropped; a card with nobody on it answered every key with "I did not understand".** | **Fixed after the fifth review:** names read in pages with 8 for more; an empty card says so and offers a person. Unit-tested. |
 | Call session | A call belongs to one family, person and demo run. | **A new handover link could keep the old call; a timer from before Reset could, in principle, write into the new demo.** | **Fixed after the fifth review:** the call is keyed on family, person, mode, answers and the demo run; any change ends it and its timers. (Reset also leaves the voice screen, which already ended the call.) |
-| Home-care result spoken | The advice, as a person would say it on the phone. | **Read as a list ("At home: …; …"); promised "Your ASHA will visit tomorrow" with nothing behind it.** | **Fixed after the second review:** spoken sentences (`HOME_CARE.spoken`); "Your ASHA, Savitri, has been told and will follow up with you", which the saved concern makes true on her list. Unit-tested. |
-| Read-back before booking | Choosing a slot and committing to it are two steps; a voice interface has no screen to check. | **Pressing 1 once booked immediately.** | **Added after review:** "You are booking a visit for Arjun, tomorrow, Tue 29 Sep, 10–11 am, at PHC Tumkur. Press 1 to confirm, or 2 to choose another day." Nothing is written until the caller confirms. Unit-tested. |
+| Home-care result spoken | The advice, as a person would say it on the phone. | **Read as a list ("At home: …; …"); promised "Your ASHA will visit tomorrow" with nothing behind it.** | **Fixed after the second review:** spoken sentences (`HOME_CARE.spoken`); "Your ASHA, Sunita, has been told and will follow up with you", which the saved concern makes true on her list. Unit-tested. |
+| Read-back before booking | Choosing a slot and committing to it are two steps; a voice interface has no screen to check. | **Pressing 1 once booked immediately.** | **Added after review:** "You are booking a visit for Arjun, tomorrow, Tue 29 Sep, 10–11 am, at PHC Achrol. Press 1 to confirm, or 2 to choose another day." Nothing is written until the caller confirms. Unit-tested. |
 | Slot offered | The next free slot, to press 1 to choose. | **The slot fills while the caller listens; pressing 1 booked a different slot.** | **Fixed:** books exactly what was spoken, or says it was just taken and offers the next. Unit-tested. |
 | Health worker | A person, from anywhere with 0, or for an urgent result. | Earlier: booked a slot already past, double-booked a full day. | Superseded after the fifth review: the health worker no longer books from 0 at all (see "Health worker hand-off"); an urgent call is "come now" with an emergency arrival. |
 
@@ -256,7 +256,7 @@ writes.
 | Reset demo mid-flow | Screens that lose their record show "not found" with a way back. |
 | Text overflow | An automated sweep found no horizontal overflow on any screen. |
 | On a real phone | No phone is drawn inside the phone: the ASHA app and voice line fill the screen with no bezel, fake status bar or camera. The demo controls fold behind one "Demo · ASHA app" button. The PHC list becomes cards (time and action, who, what was found), its views move to a bar at the thumb, and a consult fills the screen. Checked at 375 and 360 px wide. |
-| Rail icons | Only the two views. The facility tile and doctor avatar were removed: they did nothing, repeated "Dr. Ramesh · PHC Tumkur", and looked stronger than the buttons that do something (P7). |
+| Rail icons | Only the two views. The facility tile and doctor avatar were removed: they did nothing, repeated "Dr. Meena · PHC Achrol", and looked stronger than the buttons that do something (P7). |
 
 ---
 
@@ -294,7 +294,7 @@ writes.
 - **The dashboard shows only synced bookings**, as a real PHC would; it cannot know what is still on an ASHA's phone.
 - **Saving home-care advice** returns to Today without a confirmation; the new row on Today is the confirmation.
 - **Rebooking** is not blocked, only made the second choice: a second visit can be clinically right.
-- **Kannada** is out of scope for v1 (SPEC 1); Figtree was chosen so a matching Kannada face can follow.
+- **Hindi** (and the local Dhundhari the line would really be spoken in around Jaipur) is out of scope for v1 (SPEC 1); Figtree was chosen so a matching Devanagari face can follow.
 
 ---
 
@@ -337,7 +337,7 @@ prototype; the second is what a real service would still have to design.
   (urgent / needs a visit / home care) for both. A real service separates
   the clinical result (no urgent signs / needs clinician review / emergency)
   from priority (now / today / routine).
-- *Language.* One real flow in Kannada first, end to end on the voice line,
+- *Language.* One real flow in Hindi first, recorded in the way people speak around Jaipur, end to end on the voice line,
   before any other language.
 - *Offline.* Local storage on the phone, a sync queue with retries and
   conflict rules, and a clear record of what the PHC has and has not
@@ -366,7 +366,7 @@ in the store instead (section 4).
 
 **Product gaps** (the design work still to do)
 
-- Language: Kannada (and other languages) for the voice line and the ASHA app.
+- Language: Hindi (and Rajasthani dialects) for the voice line and the ASHA app.
 - Patient identity and privacy on a shared phone number.
 - A care-journey view shared by all three surfaces: concern, screened,
   booked, seen, advice, follow-up.

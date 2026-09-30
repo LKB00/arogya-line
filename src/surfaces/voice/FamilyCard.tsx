@@ -41,7 +41,7 @@ export default function FamilyCard() {
         </p>
         {family && (
           <p className="card__holder">
-            {family.head} · {family.village} · PHC Tumkur
+            {family.head} · {family.village} · PHC Achrol
           </p>
         )}
       </div>

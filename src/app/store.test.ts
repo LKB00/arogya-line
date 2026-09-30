@@ -29,8 +29,8 @@ describe("syncPending", () => {
       concernId: concern.id,
       date: isoDate(3),
       slot: "10:00–11:00",
-      facility: "PHC Tumkur",
-      doctor: "Dr. Ramesh",
+      facility: "PHC Achrol",
+      doctor: "Dr. Meena",
     });
     expect(concern.sync).toBe("saved_offline");
     expect(booking?.sync).toBe("saved_offline");
@@ -43,8 +43,8 @@ describe("syncPending", () => {
       concernId: concern.id,
       date: "2026-01-02",
       slot: "10:00–11:00",
-      facility: "PHC Tumkur",
-      doctor: "Dr. Ramesh",
+      facility: "PHC Achrol",
+      doctor: "Dr. Meena",
     });
 
     s.setOnline(true);
@@ -186,7 +186,7 @@ describe("after a missed call, the doctor decides", () => {
 
 
 describe("booking invariants, enforced by the store", () => {
-  const input = (concernId: string, slot = "10:00–11:00") => ({ concernId, date: isoDate(3), slot, facility: "PHC Tumkur", doctor: "Dr. Ramesh" });
+  const input = (concernId: string, slot = "10:00–11:00") => ({ concernId, date: isoDate(3), slot, facility: "PHC Achrol", doctor: "Dr. Meena" });
 
   it("never double-books a slot, whatever the screen thought", () => {
     useStore.getState().resetDemo();
@@ -245,7 +245,7 @@ describe("conflicts: time", () => {
     useStore.getState().resetDemo();
     const s = useStore.getState();
     const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "asha", answers: [], urgency: "amber", reasons: [] });
-    expect(s.createBooking({ concernId: c.id, date: isoDate(-1), slot: "10:00–11:00", facility: "PHC Tumkur", doctor: "Dr. Ramesh" })).toBeUndefined();
+    expect(s.createBooking({ concernId: c.id, date: isoDate(-1), slot: "10:00–11:00", facility: "PHC Achrol", doctor: "Dr. Meena" })).toBeUndefined();
   });
 });
 
@@ -285,7 +285,7 @@ describe("history is kept, contradictions are refused", () => {
     useStore.getState().resetDemo();
     const s = useStore.getState();
     const c = s.createConcern({ familyId: "4471", memberId: "4471-2", source: "asha", answers: [], urgency: "amber", reasons: [] });
-    const b = s.createBooking({ concernId: c.id, date: isoDate(2), slot: "10:00–11:00", facility: "PHC Tumkur", doctor: "Dr. Ramesh" })!;
+    const b = s.createBooking({ concernId: c.id, date: isoDate(2), slot: "10:00–11:00", facility: "PHC Achrol", doctor: "Dr. Meena" })!;
     useStore.getState().saveAdvice(b.id, "Too early.");
     useStore.getState().setAvoidable(b.id, true);
     expect(get(b.id).advice).toBeUndefined();

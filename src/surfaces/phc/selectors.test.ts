@@ -24,7 +24,7 @@ describe("dayRows", () => {
 
   it("time sets the order, even when a later booking is more urgent", () => {
     const s = createSeed();
-    const lateRed: Booking = { ...s.bookings[0], id: "b-late", slot: "14:00–15:00" }; // Kavya's red concern
+    const lateRed: Booking = { ...s.bookings[0], id: "b-late", slot: "14:00–15:00" }; // Khushi's red concern
     const early: Booking = { ...s.bookings[1], id: "b-early", slot: "09:00–10:00" };
     const rows = dayRows([lateRed, early], s.concerns, s.families, isoDate(0));
     expect(rows.map((r) => r.booking.id)).toEqual(["b-early", "b-late"]);

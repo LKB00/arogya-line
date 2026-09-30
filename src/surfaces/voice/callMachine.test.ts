@@ -32,7 +32,7 @@ describe("family ID entry", () => {
     expect(after.call.familyId).toBe("4471");
     expect(said(after.call)).toContain("We have found your family card.");
     // Nothing identifying is spoken on a card number alone.
-    expect(said(after.call)).not.toMatch(/Lakshmi|Hebbur/);
+    expect(said(after.call)).not.toMatch(/Pooja|Kukas/);
   });
 
   it("asks again after a wrong ID", () => {
@@ -115,7 +115,7 @@ describe("triage over the keypad", () => {
     expect(said(after.call)).toContain("At home, give small sips of fluid often, keep the child cool");
     expect(said(after.call)).toContain("Call us again if the breathing becomes fast or difficult");
     // Promises only what the system does: the concern puts a follow-up on her list.
-    expect(said(after.call)).toContain("Your ASHA, Savitri, has been told and will follow up with you.");
+    expect(said(after.call)).toContain("Your ASHA, Sunita, has been told and will follow up with you.");
     expect(said(after.call)).not.toContain("visit tomorrow");
     expect(after.effects).toEqual([
       expect.objectContaining({ type: "concern", concern: expect.objectContaining({ urgency: "green", homeCare: expect.objectContaining({ tell: expect.any(Array) }) }) }),
@@ -182,7 +182,7 @@ describe("edge cases found in the design pass", () => {
   it("reads the advice date the way a person says it", () => {
     const e = env();
     const after = type(startCall(e), "2205" + "3", e);
-    expect(said(after.call)).toContain("Dr. Ramesh has a message for Shobha, from yesterday.");
+    expect(said(after.call)).toContain("Dr. Meena has a message for Rekha, from yesterday.");
     expect(said(after.call)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 
@@ -190,7 +190,7 @@ describe("edge cases found in the design pass", () => {
     const e = env();
     const bookings = e.bookings.map((b) => (b.id === "b-3120" ? { ...b, date: isoDate(1), advice: "Keep her upright." } : b));
     const after = type(startCall({ ...e, bookings }, { familyId: "3120" }), "3", { ...e, bookings });
-    expect(said(after.call)).toContain("Dr. Ramesh has a message for Kavya. | Keep her upright. | That's all from Dr. Ramesh.");
+    expect(said(after.call)).toContain("Dr. Meena has a message for Khushi. | Keep her upright. | That's all from Dr. Meena.");
   });
 
   it("names each person, so two children are never confused", () => {
@@ -200,7 +200,7 @@ describe("edge cases found in the design pass", () => {
     );
     const e2 = { ...e, families: twins };
     const asked = type(startCall(e2), "4471" + "1", e2);
-    expect(said(asked.call)).toContain("Who needs help? Press 1 for Lakshmi. Press 2 for Arjun. Press 3 for Meena.");
+    expect(said(asked.call)).toContain("Who needs help? Press 1 for Pooja. Press 2 for Arjun. Press 3 for Meena.");
     const meena = type(asked, "3", e2);
     expect(meena.call.memberId).toBe("4471-3");
     expect(said(meena.call)).toContain("Checking for Meena, 6.");
@@ -224,8 +224,8 @@ describe("edge cases found in the design pass", () => {
     expect(said(menu.call)).toContain("Whose advice would you like to hear?");
     const heard = type(menu, "2", e2);
     const names = said(menu.call).match(/Press 2 for (\w+)/)![1];
-    expect(said(heard.call)).toContain(`Dr. Ramesh has a message for ${names}`);
-    expect(said(heard.call)).toContain(names === "Kavya" ? "Steam twice a day." : "Rest for two days.");
+    expect(said(heard.call)).toContain(`Dr. Meena has a message for ${names}`);
+    expect(said(heard.call)).toContain(names === "Khushi" ? "Steam twice a day." : "Rest for two days.");
   });
 
   it("home-care advice from an older record without its spoken form still plays", () => {
@@ -273,7 +273,7 @@ describe("edge cases found in the design pass", () => {
     let step = startCall(e, { familyId: "3120", emergency: true });
     step = tick(step.call, e);
     step = tick(step.call, e);
-    expect(said(step.call)).toContain("Please bring the patient to PHC Tumkur now. You will be seen as an emergency");
+    expect(said(step.call)).toContain("Please bring the patient to PHC Achrol now. You will be seen as an emergency");
     expect(said(step.call)).not.toMatch(/also booked|next available/);
     expect(step.effects).toEqual([expect.objectContaining({ type: "emergency", concern: expect.objectContaining({ urgency: "red" }) })]);
   });
@@ -323,7 +323,7 @@ describe("0 is a person, never a booking", () => {
     expect(effects).toEqual([]);
     expect(call.state).toBe("operator");
     expect(said(call)).toContain("How can I help you today?");
-    expect(said(call)).not.toMatch(/booked|next available|Lakshmi's answers/);
+    expect(said(call)).not.toMatch(/booked|next available|Pooja's answers/);
   });
 
   it("after a home-care result: no urgent signs stays no urgent signs, no visit appears", () => {

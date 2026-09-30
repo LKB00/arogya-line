@@ -255,7 +255,7 @@ writes.
 | Pixel grid | An automated sweep of every screen found no block off the 4 px grid (edges are drawn as outlines and hairlines, so they add no height). |
 | Reset demo mid-flow | Screens that lose their record show "not found" with a way back. |
 | Text overflow | An automated sweep found no horizontal overflow on any screen. |
-| On a laptop | The two phone surfaces are drawn as an Android design frame, as Figma shows one: 360 × 800 dp, the 24 dp status bar and gesture bar spaces left empty, square corners, no handset (bezel, camera, rounded glass). The PHC dashboard is a web app, so it fills the page. |
+| On a laptop | The two phone surfaces sit in a real Pixel 8: Google’s own device art from Android Studio (public/device/README.md), drawn at a third of its pixels so its screen is exactly Android Compact, 360 × 800 dp. Its status bar is Android’s own: AOSP’s Wi-Fi, signal and battery glyphs at SystemUI’s sizes, the clock in Roboto Medium, 44 dp tall so it sits level with the camera; the 24 dp gesture bar space is left empty. The PHC dashboard is a web app, so it fills the page. |
 | On a real phone | No phone is drawn inside the phone: the ASHA app and voice line fill the screen with no bezel, fake status bar or camera. The demo controls fold behind one "Demo · ASHA app" button. The PHC list becomes cards (time and action, who, what was found), its views move to a bar at the thumb, and a consult fills the screen. Checked at 375 and 360 px wide. |
 | Rail icons | Only the two views. The facility tile and doctor avatar were removed: they did nothing, repeated "Dr. Meena · PHC Achrol", and looked stronger than the buttons that do something (P7). |
 

@@ -6,10 +6,27 @@
  * so the list never moves while the doctor writes. Everything on the 4 px grid.
  */
 
-/* A web app, so it is the whole page under the demo bar: no card, no stage
-   around it. The phone surfaces keep their frame; this one has none. */
-.stage:has(> .phc) {
-  padding: 0;
+/* On a laptop the dashboard sits in a Pixel Tablet (shell.css); in a window
+   too narrow for one it is the whole page under the demo bar, no stage
+   around it. */
+@media (max-width: 1023px) {
+  .stage:has(.phc) {
+    padding: 0;
+  }
+}
+
+/* Inside the tablet the screen is fixed, so the dashboard scrolls within it:
+   the rail stays put and the page area scrolls. */
+.tablet__app > .phc {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .tablet__app > .phc .phc__main,
+  .tablet__app > .phc .sheet {
+    overflow-y: auto;
+  }
 }
 
 .phc {

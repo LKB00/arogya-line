@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import SurfaceSwitcher from "../shell/SurfaceSwitcher";
 import PhoneFrame from "../shell/PhoneFrame";
+import TabletFrame from "../shell/TabletFrame";
 import TodayList from "../surfaces/asha/TodayList";
 import FamilyPicker from "../surfaces/asha/FamilyPicker";
 import FamilyDetail from "../surfaces/asha/FamilyDetail";
@@ -39,7 +40,14 @@ export const router = createBrowserRouter([
         ],
       },
       { path: "voice", element: <CallSimulator /> },
-      { path: "phc", element: <Dashboard /> },
+      {
+        path: "phc",
+        element: (
+          <TabletFrame>
+            <Dashboard />
+          </TabletFrame>
+        ),
+      },
       { path: "*", element: <Navigate to="/asha" replace /> },
     ],
   },

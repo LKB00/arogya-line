@@ -284,27 +284,31 @@
 /* Android's status bar, at SystemUI's own sizes: the clock is Roboto Medium
    (sans-serif-medium) at 14sp; Wi-Fi and signal are 15sp; the battery is
    7.8 x 13sp, 6dp after the signal cluster, its empty part at the meter's
-   30% alpha. The bar is the Pixel 8's height at this scale, 44 dp, so the
-   clock and icons sit level with the punch-hole camera. */
-.phone__status {
+   30% alpha. */
+.statusbar {
   flex: none;
-  height: var(--phone-status);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px 0 26px;
   background: var(--surface-sunken);
   font: 500 14px / 20px "Roboto", sans-serif;
 }
 
-.phone__icons {
+.statusbar__icons {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-.phone__icons svg {
+.statusbar__icons svg {
   fill: currentColor;
+}
+
+/* On the Pixel 8 the bar is 44 dp at this scale, so the clock and icons sit
+   level with the punch-hole camera. */
+.phone__status {
+  height: var(--phone-status);
+  padding: 0 24px 0 26px;
 }
 
 .sb-wifi,
@@ -339,6 +343,82 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--surface-sunken);
+}
+
+/* ---------- Android tablet (PHC dashboard) ----------
+   A real Pixel Tablet: Google's own device art from Android Studio (see
+   public/device/README.md), drawn at half its pixels so the screen is its real
+   1280 x 800 dp. TabletFrame shrinks it to fit the window (--tablet-fit). The
+   camera sits in the bezel, so the status bar is Android's standard 24 dp. */
+@media (min-width: 1024px) {
+  .tablet {
+    position: relative;
+    flex: none;
+    align-self: flex-start;
+    width: calc(2798px / 2);
+    height: calc(1837px / 2);
+    zoom: var(--tablet-fit, 1);
+    background: url("/device/pixel-tablet-back.webp") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 2px 4px rgba(19, 19, 22, 0.16)) drop-shadow(0 24px 40px rgba(19, 19, 22, 0.2));
+  }
+
+  .tablet__screen {
+    position: absolute;
+    top: calc(117px / 2);
+    left: calc(119px / 2);
+    width: 1280px;
+    height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--bg);
+  }
+
+  /* Apps draw edge to edge under the status bar, so it shows the dashboard's
+     own colours: the rail's on the left, the page's on the right. Padding is
+     SystemUI's: 14 dp corner padding plus 4 dp start, and 4 + 4 dp after the
+     battery at the end (values-sw600dp). */
+  .tablet__status {
+    height: 24px;
+    padding: 0 22px 0 18px;
+    background: linear-gradient(90deg, var(--container) 87px, var(--border) 87px 88px, var(--bg) 88px);
+  }
+
+  .tablet__app {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+  }
+
+  .tablet__nav {
+    flex: none;
+    height: var(--phone-nav);
+    background: linear-gradient(90deg, var(--container) 87px, var(--border) 87px 88px, var(--bg) 88px);
+  }
+
+  .tablet__glass {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: url("/device/pixel-tablet-mask.webp") center / 100% 100% no-repeat;
+    pointer-events: none;
+  }
+}
+
+/* A window too narrow for a tablet: no frame, the dashboard is the page. */
+@media (max-width: 1023px) {
+  .tablet,
+  .tablet__screen,
+  .tablet__app {
+    display: contents;
+  }
+
+  .tablet__status,
+  .tablet__nav,
+  .tablet__glass {
+    display: none;
+  }
 }
 
 /* The phone-only "Demo" button; on a laptop the panel is simply the bar's

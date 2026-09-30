@@ -234,7 +234,9 @@
   font-size: var(--size-xs);
 }
 
-/* ---------- Phone frame (ASHA app, and later the voice line) ---------- */
+/* ---------- Android frame (ASHA app and voice line) ----------
+   The screen alone, as a Figma frame shows it: the surface between the
+   status bar's and the gesture bar's spaces, both left empty. No drawn handset (bezel, camera, rounded glass). */
 
 .phone {
   position: relative;
@@ -246,68 +248,26 @@
   overflow: hidden;
   padding: var(--phone-safe);
   background: var(--surface-sunken);
-  border: var(--phone-bezel) solid var(--demo-bg);
-  border-radius: var(--radius-frame);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    var(--shadow-frame);
+  box-shadow: var(--shadow-frame);
 }
 
-/* Punch-hole camera, centred in the status bar. */
-.phone__camera {
-  position: absolute;
-  top: calc(var(--phone-safe) + (var(--phone-status) - var(--space-3)) / 2);
-  left: 50%;
-  width: var(--space-3);
-  height: var(--space-3);
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: var(--demo-bg);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
-  z-index: 1;
-}
-
+/* Android's status bar area, 24 dp, left empty: a frame keeps the space so
+   the layout sits where it will on a device, without drawing a clock and
+   icons that never change. */
 .phone__status {
   flex: none;
   height: var(--phone-status);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0 var(--pad-gutter);
   background: var(--surface-sunken);
-  color: var(--text);
-  font-size: var(--size-xs);
-  font-weight: 600;
-  letter-spacing: 0.01em;
 }
 
-.phone__indicators {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-/* Gesture navigation bar. */
+/* Android's gesture navigation area, 24 dp, left empty for the same reason. */
 .phone__nav {
   flex: none;
   height: var(--phone-nav);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--surface-sunken);
 }
 
-.phone__handle {
-  width: 38%;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--text);
-  opacity: 0.45;
-}
-
-/* The screen's own corners follow the frame's, one safe area in. The screen
-   does not scroll itself: the app bar and any bottom bar stay put, and the
+/* The screen does not scroll itself: the app bar and any bottom bar stay put, and the
    content region between them scrolls. */
 .phone__screen {
   flex: 1;
@@ -334,9 +294,9 @@
 }
 
 /*
- * On a real phone the prototype is the phone. No drawn device (bezel,
- * rounded corners, shadow, fake status bar, camera, gesture handle): the
- * handset in her hand already has all of those. The surface fills the screen
+ * On a real phone the prototype is the phone. No drawn system bars (status
+ * bar, gesture handle) or frame outline: the handset in her hand already
+ * has all of those. The surface fills the screen
  * under a one-row demo bar with short labels, and still scrolls inside, so
  * the buttons pinned to its foot stay at the thumb.
  */
@@ -435,12 +395,9 @@
   .demo .phone {
     width: 100%;
     height: calc(100dvh - var(--demo-bar-h));
-    border: 0;
-    border-radius: 0;
     box-shadow: none;
   }
 
-  .demo .phone .phone__camera,
   .demo .phone .phone__status,
   .demo .phone .phone__nav {
     display: none;

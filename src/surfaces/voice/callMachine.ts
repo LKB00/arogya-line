@@ -150,7 +150,7 @@ function memberOf(call: Call, env: Env): Member | undefined {
 }
 
 /**
- * "Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by
+ * "Press 1 for Pooja. Press 2 for Arjun." The caller picks the person by
  * name, never a kind of person: a family can have two children. Keys 1–8,
  * as 9 repeats and 0 reaches a person. A list longer than eight is read in
  * pages of seven, with 8 for more, so nobody is silently left out.

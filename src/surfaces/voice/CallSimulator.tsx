@@ -8,7 +8,7 @@ import { isoDate } from "../../app/seed";
 import { EMERGENCY_SLOT, PHC } from "../../app/seed";
 import { decodeAnswers } from "../../app/triage";
 import PhoneFrame from "../../shell/PhoneFrame";
-import { IconArrowLeft, IconBuildingHospital, IconMessageCircle } from "@tabler/icons-react";
+import { IconArrowLeft, IconBuildingHospital, IconEar, IconMessageCircle } from "@tabler/icons-react";
 import Icon from "../../shell/Icon";
 import FamilyCard from "./FamilyCard";
 import Keypad from "./Keypad";
@@ -180,8 +180,13 @@ function CallSession() {
             </p>
           </header>
 
-          {/* What the line says, as live captions: there is no audio. */}
-          <section className="captions" aria-label="Live captions">
+          {/* What the line says, as live captions: there is no audio. On a real
+              call the family sees only their own dialler, so the card says so. */}
+          <section className="captions" aria-label="What the caller hears">
+            <p className="captions__label">
+              <Icon icon={IconEar} size={16} />
+              What the caller hears
+            </p>
             {call.transcript.length === 0 ? (
               <p className="captions__empty">
                 <Icon icon={IconMessageCircle} size={24} />
@@ -223,7 +228,8 @@ function CallSession() {
       <div className="voice__side">
         <div className="voice__intro">
           <h1>Voice line</h1>
-          <p>A family on any phone, even a basic one, calls the number on their card. There is no audio here: what the line says appears as captions.</p>
+          <p>A family on any phone, even a basic one, calls the number on their card and hears the line in Hindi. There is no audio here: what they would hear appears as captions, in English.</p>
+          <p>On a real call the family sees only their phone's own dialler. The captions and the family ID boxes stand in for what they hear and the keys they press.</p>
           <p>Use the keypad, or the number keys 0–9. Backspace hangs up.</p>
         </div>
         <FamilyCard />

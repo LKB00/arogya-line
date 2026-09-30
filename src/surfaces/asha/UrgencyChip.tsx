@@ -1,5 +1,5 @@
 // Urgency, said three ways at once: the IMNCI chart's colour, an icon and the
-// word. Filled for a verdict; soft ("tonal") where it sits inside a card.
+// word. A quiet status label, one step deeper than its card; soft ("tonal") on a white card.
 
 import { IconAlertTriangle, IconHomeHeart, IconStethoscope } from "@tabler/icons-react";
 import { URGENCY_LABEL } from "../../app/format";

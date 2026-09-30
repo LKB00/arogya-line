@@ -116,7 +116,7 @@ type Booking = {
   concernId: string;
   date: string;               // ISO date
   slot: string;               // e.g. "10:00–11:00"
-  facility: string;           // "PHC Tumkur"
+  facility: string;           // "PHC Achrol"
   doctor: string;
   sync: SyncStatus;
   avoidable?: boolean;        // doctor, after consult: could this have been handled without a visit?
@@ -216,13 +216,13 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 
 - Start: dial the number on the family card (v1: a "Call" button). First prompt asks for the 4-digit family ID via keypad; the family card panel shows it. A found card is confirmed without saying any name or village ("We have found your family card"); a real service would verify the caller before reading names or advice.
 - Main menu: 1 = Is it serious?, 2 = Book a visit, 3 = Hear your advice, 0 = Talk to a person.
-- 1 or 2 → "Who needs help? Press 1 for Lakshmi. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. A list longer than eight is read in pages of seven, with 8 for more names. A card with nobody registered says so and offers a person (0). The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
+- 1 or 2 → "Who needs help? Press 1 for Pooja. Press 2 for Arjun." The caller picks the person by name (keys 1–8), never a kind of person, so two children cannot be confused. A list longer than eight is read in pages of seven, with 8 for more names. A card with nobody registered says so and offers a person (0). The question set follows that person's role. Answered with 1 = yes, 2 = no. 9 repeats the prompt. 0 at any time jumps to the operator state.
 - What the caller reported is said back as speech: "You told us about fever more than 2 days and vomiting more than 3 times today. You did not report fast breathing."
-- Result green → "From your answers, there are no urgent signs for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`, saved with the concern so a replay says exactly what was said), ends with "Your ASHA, Savitri, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
+- Result green → "From your answers, there are no urgent signs for {name}.", the same home-care advice as the ASHA app spoken as sentences (`HOME_CARE.spoken`, saved with the concern so a replay says exactly what was said), ends with "Your ASHA, Sunita, has been told and will follow up with you." Creates a Concern with `source: "ivr"`, `sync: "sent"` (voice line is always online) and `homeCare`, which puts a follow-up on the ASHA's list.
 - Result amber → offers the next available slot; 1 = choose it, 2 = another day. Choosing reads the booking back ("You are booking a visit for {name}, {day}, {slot}, at {facility}.") and asks 1 = confirm, 2 = choose another day. Only confirming creates the Booking. The new row appears immediately in the PHC dashboard and in the ASHA TodayList.
-- Result red (or the ASHA's "Call PHC now") → operator state: an emergency, not an appointment. "Please bring {name} to PHC Tumkur now … there is no need to wait for a time." Creates a red Concern and an emergency arrival for today (`emergency: true`, slot "Now"), shown first on the PHC list. No slot is booked. Only a person the caller actually chose is named.
+- Result red (or the ASHA's "Call PHC now") → operator state: an emergency, not an appointment. "Please bring {name} to PHC Achrol now … there is no need to wait for a time." Creates a red Concern and an emergency arrival for today (`emergency: true`, slot "Now"), shown first on the PHC list. No slot is booked. Only a person the caller actually chose is named.
 - Results are said from the answers, never as a code: "Thank you. From your answers, Arjun should see the doctor."
-- 3 → advice is a person's, never the family's. One person with advice: read at once as a message ("Dr. Ramesh has a message for Shobha, from yesterday." … "That's all from Dr. Ramesh."), then 1 = hear it again, 2 = main menu. Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
+- 3 → advice is a person's, never the family's. One person with advice: read at once as a message ("Dr. Meena has a message for Rekha, from yesterday." … "That's all from Dr. Meena."), then 1 = hear it again, 2 = main menu. Several: "Whose advice would you like to hear? Press 1 for …". Home-care advice from a check is read too. None: "No advice yet."
 - A call that has ended says goodbye and nothing more; the keys go quiet and the call button offers "Call again".
 - 0 → a person, never a booking. The health worker picks up with what the line already knows (a finished check and its result, or "I can see you started a health check for Arjun. I'll help you from here"), then asks "How can I help you today?". The conversation is theirs: no booking, concern or referral is created from pressing 0. Only an emergency (the ASHA's "Call PHC now", or an urgent result) acts: come now, and an emergency arrival is created. While a person is talking, the keys are off and the call shows "With a health worker".
 - No free slot within 30 days: the line says so and offers a person. It never offers an invented slot.
@@ -253,9 +253,9 @@ Presented as a phone call, not an app: a transcript area where spoken prompts ap
 
 ## 7. Demo scenario and reset
 
-Seed data (`seed.ts`):
-- 1 ASHA (Savitri), 1 PHC (Tumkur, Dr. Ramesh), 5 families, of which:
-  - Family 4471 (Lakshmi): child Arjun with a note "fever since Tuesday", no concern yet. This is the family the visitor will walk through.
+Seed data (`seed.ts`). The setting is rural Jaipur district, Rajasthan: villages Kukas and Naila, PHC Achrol. People, the PHC and phone numbers are illustrative.
+- 1 ASHA (Sunita), 1 PHC (Achrol, Dr. Meena), 5 families, of which:
+  - Family 4471 (Pooja): child Arjun with a note "fever since Tuesday", no concern yet. This is the family the visitor will walk through.
   - 2 families with existing bookings for today (one red, one green), one from IVR.
   - 1 family with a booking already consulted and `advice` set, so menu 3 on the voice line has something to read.
   - 1 family with a missed follow-up.

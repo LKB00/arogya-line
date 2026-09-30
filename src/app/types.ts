@@ -54,7 +54,7 @@ export type Booking = {
   concernId: string;
   date: string; // ISO date
   slot: string; // e.g. "10:00–11:00"
-  facility: string; // "PHC Tumkur"
+  facility: string; // "PHC Achrol"
   doctor: string;
   sync: SyncStatus;
   /** Doctor, after the consult: could this have been handled without a visit? */

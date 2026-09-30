@@ -18,7 +18,7 @@ describe("rowFor: what each family needs today", () => {
     const row = rowFor(fam(s, "3120"), s.concerns, s.bookings, today)!;
     expect(row.kind).toBe("visit");
     expect(row.band).toBe("red");
-    expect(personLabel(row)).toBe("Kavya, 5");
+    expect(personLabel(row)).toBe("Khushi, 5");
     expect(row.day).toBe("Today");
   });
 
@@ -89,7 +89,7 @@ describe("rowFor: what each family needs today", () => {
 
   it("a row's reason comes from its own concern, never another of the same person's", () => {
     const s = seed();
-    // An older concern for Kavya that found only a fever, with no booking.
+    // An older concern for Khushi that found only a fever, with no booking.
     const older: Concern = { ...s.concerns[0], id: "c-old", urgency: "green", answers: [{ questionId: "child_fever", answer: "yes" }], reasons: ["Fever more than 2 days"] };
     const rows = rowsFor(fam(s, "3120"), [older, ...s.concerns], s.bookings, today);
     expect(rows[0].concernId).toBe("c-3120");
@@ -107,7 +107,7 @@ describe("rowFor: what each family needs today", () => {
     const s = seed();
     const dad: Concern = { ...s.concerns[0], id: "c-dad", familyId: "3120", memberId: "3120-1", urgency: "amber", reasons: ["Fever more than 2 days"] };
     const rows = rowsFor(fam(s, "3120"), [...s.concerns, dad], s.bookings, today);
-    expect(rows.map((r) => r.member?.name)).toEqual(["Kavya", "Manjunath"]);
+    expect(rows.map((r) => r.member?.name)).toEqual(["Khushi", "Mahendra"]);
   });
 
   it("one person with two concerns is one row, under the most urgent", () => {
@@ -143,18 +143,18 @@ describe("rowFor: what each family needs today", () => {
 
   it("up next is the work that is due, not the brightest colour", () => {
     const s = seed();
-    // Kavya: red, but her visit is tomorrow. Shobha: a follow-up call due today.
+    // Khushi: red, but her visit is tomorrow. Rekha: a follow-up call due today.
     const tomorrow: Booking = { ...s.bookings[0], date: isoDate(1) };
     const bookings = [tomorrow, ...s.bookings.slice(1)];
     const rows = s.families.flatMap((f) => rowsFor(f, s.concerns, bookings, today)).filter((r) => r.band !== "done").sort(byWork(today));
     const todays = rows.filter((r) => !isUpcoming(r, today));
-    expect(todays[0].member?.name).not.toBe("Kavya");
-    expect(rows.at(-1)?.member?.name).toBe("Kavya"); // upcoming, last
+    expect(todays[0].member?.name).not.toBe("Khushi");
+    expect(rows.at(-1)?.member?.name).toBe("Khushi"); // upcoming, last
   });
 
   it("a person with two open items shows once, with the other counted", () => {
     const s = seed();
-    const second: Concern = { ...s.concerns[0], id: "c-k2", source: "ivr", urgency: "green" }; // Kavya again, from the line
+    const second: Concern = { ...s.concerns[0], id: "c-k2", source: "ivr", urgency: "green" }; // Khushi again, from the line
     const rows = rowsFor(fam(s, "3120"), [...s.concerns, second], s.bookings, today);
     expect(rows).toHaveLength(1);
     expect(rows[0].more).toBe(1);
@@ -170,7 +170,7 @@ describe("rowFor: what each family needs today", () => {
 
   it("an urgent case already seen does not outrank work due now: its follow-up is care work", () => {
     const s = seed();
-    // Kavya (red) was seen yesterday; her follow-up call is due today.
+    // Khushi (red) was seen yesterday; her follow-up call is due today.
     const seen: Booking = { ...s.bookings[0], date: isoDate(-1), advice: "Steam.", followUpDue: today, followUpStatus: "pending" };
     const row = rowFor(fam(s, "3120"), s.concerns, [seen, ...s.bookings.slice(1)], today)!;
     expect(row.task).toBe("Follow-up call");

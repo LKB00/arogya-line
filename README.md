@@ -3,7 +3,8 @@
 An interactive prototype for a rural primary-care service concept: one shared
 record that a community health worker, a family on a basic phone, and a
 doctor at the primary health centre (PHC) can all reach. It is the working
-demo behind a portfolio case study, not a product.
+demo behind a portfolio case study, not a product. The scenario is set in
+villages near Jaipur, Rajasthan; its people and records are illustrative.
 
 Everything runs in the browser from one in-memory store. There is no backend,
 no network call and no saved data. A page refresh, or **Reset demo**, returns
@@ -55,7 +56,7 @@ through the story in order:
    so use the demo-only "Patient arrives now", then record advice, answer
    whether it could have been handled without a visit, and choose the
    follow-up.
-4. Voice line: enter 4471, press 3, hear Dr. Ramesh's message for Arjun.
+4. Voice line: enter 4471, press 3, hear Dr. Meena's message for Arjun.
 
 The bar in the dark strip at the top (surface tabs, signal toggle, reset) is
 demo chrome, not part of the product; so is any control marked "Demo only".

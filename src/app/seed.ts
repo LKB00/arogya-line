@@ -4,8 +4,8 @@
 
 import type { Booking, Concern, Family, Store } from "./types";
 
-export const ASHA = { id: "asha-savitri", name: "Savitri" } as const;
-export const PHC = { facility: "PHC Tumkur", doctor: "Dr. Ramesh" } as const;
+export const ASHA = { id: "asha-sunita", name: "Sunita" } as const;
+export const PHC = { facility: "PHC Achrol", doctor: "Dr. Meena" } as const;
 
 /** An emergency arrival's "slot": it comes now, not at a booked time. */
 export const EMERGENCY_SLOT = "Now";
@@ -52,56 +52,56 @@ export function createSeed(): Store {
     {
       // The family the visitor walks through. No concern yet.
       id: "4471",
-      head: "Lakshmi",
-      village: "Hebbur",
+      head: "Pooja",
+      village: "Kukas",
       phone: "98••• ••471",
       ashaId: ASHA.id,
       members: [
-        { id: "4471-1", name: "Lakshmi", age: 28, role: "mother" },
+        { id: "4471-1", name: "Pooja", age: 28, role: "mother" },
         { id: "4471-2", name: "Arjun", age: 3, role: "child", note: "fever since Tuesday" },
       ],
     },
     {
       // Red booking today, reported by the ASHA.
       id: "3120",
-      head: "Manjunath",
-      village: "Hebbur",
+      head: "Mahendra",
+      village: "Kukas",
       phone: "97••• ••120",
       ashaId: ASHA.id,
       members: [
-        { id: "3120-1", name: "Manjunath", age: 34, role: "adult" },
-        { id: "3120-2", name: "Kavya", age: 5, role: "child", note: "breathing fast" },
+        { id: "3120-1", name: "Mahendra", age: 34, role: "adult" },
+        { id: "3120-2", name: "Khushi", age: 5, role: "child", note: "breathing fast" },
       ],
     },
     {
       // Green booking today, made on the Voice line.
       id: "5638",
-      head: "Gowramma",
-      village: "Kallur",
+      head: "Kamla",
+      village: "Naila",
       phone: "99••• ••638",
       ashaId: ASHA.id,
-      members: [{ id: "5638-1", name: "Gowramma", age: 62, role: "adult" }],
+      members: [{ id: "5638-1", name: "Kamla", age: 62, role: "adult" }],
     },
     {
       // Consulted yesterday; doctor's advice already saved.
       id: "2205",
-      head: "Basavaraj",
-      village: "Kallur",
+      head: "Suresh",
+      village: "Naila",
       phone: "96••• ••205",
       ashaId: ASHA.id,
       members: [
-        { id: "2205-1", name: "Basavaraj", age: 31, role: "adult" },
-        { id: "2205-2", name: "Shobha", age: 24, role: "pregnant" },
+        { id: "2205-1", name: "Suresh", age: 31, role: "adult" },
+        { id: "2205-2", name: "Rekha", age: 24, role: "pregnant" },
       ],
     },
     {
       // Walked in without a booking; follow-up missed.
       id: "7809",
-      head: "Nagaraj",
-      village: "Hebbur",
+      head: "Mohanlal",
+      village: "Kukas",
       phone: "95••• ••809",
       ashaId: ASHA.id,
-      members: [{ id: "7809-1", name: "Nagaraj", age: 45, role: "adult" }],
+      members: [{ id: "7809-1", name: "Mohanlal", age: 45, role: "adult" }],
     },
   ];
 

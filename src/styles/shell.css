@@ -234,30 +234,93 @@
   font-size: var(--size-xs);
 }
 
-/* ---------- Android frame (ASHA app and voice line) ----------
-   The screen alone, as a Figma frame shows it: the surface between the
-   status bar's and the gesture bar's spaces, both left empty. No drawn handset (bezel, camera, rounded glass). */
+/* ---------- Android handset (ASHA app and voice line) ----------
+   A real Pixel 8: Google's own device art from Android Studio (see
+   public/device/README.md). Its screen is 1080 × 2400 px, exactly three
+   times the 360 × 800 dp frame, so the art is drawn at a third of its size:
+   the body behind the screen, the glass's corners and camera over it. */
+
+.device {
+  position: relative;
+  flex: none;
+  align-self: flex-start;
+  width: calc(1187px / 3);
+  height: calc(2513px / 3);
+  background: url("/device/pixel-8-back.webp") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 2px 4px rgba(19, 19, 22, 0.2)) drop-shadow(0 24px 40px rgba(19, 19, 22, 0.22));
+}
+
+/* A short laptop screen shrinks the whole handset, keeping its proportions,
+   rather than scroll the page. */
+@media (max-height: 960px) { .device { zoom: 0.92; } }
+@media (max-height: 900px) { .device { zoom: 0.86; } }
+@media (max-height: 850px) { .device { zoom: 0.8; } }
+@media (max-height: 790px) { .device { zoom: 0.72; } }
+@media (max-height: 720px) { .device { zoom: 0.64; } }
 
 .phone {
-  position: relative;
+  position: absolute;
+  top: calc(55px / 3);
+  left: calc(49px / 3);
   width: var(--phone-width);
   height: var(--phone-height);
-  flex: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: var(--phone-safe);
+  border-radius: 26px;
   background: var(--surface-sunken);
-  box-shadow: var(--shadow-frame);
 }
 
-/* Android's status bar area, 24 dp, left empty: a frame keeps the space so
-   the layout sits where it will on a device, without drawing a clock and
-   icons that never change. */
+/* The glass's rounded corners and punch-hole camera, over everything. */
+.phone__glass {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: url("/device/pixel-8-mask.webp") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* Android's status bar, at SystemUI's own sizes: the clock is Roboto Medium
+   (sans-serif-medium) at 14sp; Wi-Fi and signal are 15sp; the battery is
+   7.8 x 13sp, 6dp after the signal cluster, its empty part at the meter's
+   30% alpha. The bar is the Pixel 8's height at this scale, 44 dp, so the
+   clock and icons sit level with the punch-hole camera. */
 .phone__status {
   flex: none;
   height: var(--phone-status);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 0 26px;
   background: var(--surface-sunken);
+  font: 500 14px / 20px "Roboto", sans-serif;
+}
+
+.phone__icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.phone__icons svg {
+  fill: currentColor;
+}
+
+.sb-wifi,
+.sb-signal {
+  width: 15px;
+  height: 15px;
+}
+
+.sb-battery {
+  width: 7.8px;
+  height: 13px;
+  margin-left: 4px;
+}
+
+.sb-battery__empty {
+  opacity: 0.3;
 }
 
 /* Android's gesture navigation area, 24 dp, left empty for the same reason. */
@@ -294,9 +357,9 @@
 }
 
 /*
- * On a real phone the prototype is the phone. No drawn system bars (status
- * bar, gesture handle) or frame outline: the handset in her hand already
- * has all of those. The surface fills the screen
+ * On a real phone the prototype is the phone. No drawn handset (the Pixel
+ * body, its glass and camera) or system bar spaces: the phone in her hand
+ * already has all of those. The surface fills the screen
  * under a one-row demo bar with short labels, and still scrolls inside, so
  * the buttons pinned to its foot stay at the thumb.
  */
@@ -392,12 +455,24 @@
     padding: 0;
   }
 
-  .demo .phone {
+  .demo .device {
     width: 100%;
-    height: calc(100dvh - var(--demo-bar-h));
-    box-shadow: none;
+    height: auto;
+    background: none;
+    filter: none;
+    zoom: 1;
   }
 
+  .demo .phone {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100dvh - var(--demo-bar-h));
+    border-radius: 0;
+  }
+
+  .demo .phone .phone__glass,
   .demo .phone .phone__status,
   .demo .phone .phone__nav {
     display: none;

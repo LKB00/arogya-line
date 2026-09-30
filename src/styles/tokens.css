@@ -138,17 +138,14 @@
   /* ---- Elevation ---- */
   --shadow-card: 0 1px 2px rgba(19, 19, 22, 0.05);
   --shadow-raised: 0 1px 3px rgba(19, 19, 22, 0.08), 0 6px 16px rgba(19, 19, 22, 0.07);
-  /* A frame on a canvas, as in Figma: a hairline, not a device's shadow. */
-  --shadow-frame: 0 0 0 1px rgba(19, 19, 22, 0.08), 0 1px 3px rgba(19, 19, 22, 0.06);
 
   /* ---- Frames ---- */
-  /* An Android screen drawn as a design frame, not a handset: Figma's
-     Android Compact size, 360 × 800 dp, no bezel, square corners. On a short
-     laptop screen it gives up height rather than scroll the page. */
+  /* The screen is Android Compact, 360 × 800 dp: the Pixel 8's own screen
+     at a third of its pixels. */
   --phone-width: 360px;
-  --phone-height: min(800px, max(640px, calc(100dvh - 124px)));
+  --phone-height: 800px;
   /* Android system bars inside the frame. */
-  --phone-status: 24px;
+  --phone-status: 44px;
   --phone-nav: 24px;
   /* The screen runs edge to edge; each surface keeps its own 16 px side
      margin inside it. */
